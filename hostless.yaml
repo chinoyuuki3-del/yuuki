@@ -1,13 +1,32 @@
 build:
+  command: ""
   system: docker
+  min_cpu: 0.1
+  max_cpu: 0.5
+  min_memory: 4096
+  max_memory: 8000
 
-dockerfile_path: "./Dockerfile"
-working_directory: "/"
-build_context_directory: "/"
+dockerfile_path: Dockerfile
+working_directory: /
+build_context_directory: ""
+pre_build_command: ""
+post_build_command: ""
+start_command: ""
 
-start_command: "python main.py"
+scaling:
+  min_cpu: 0.01
+  max_cpu: 0.1
+  min_memory: 128
+  max_memory: 1024
+  min_replicas: 1
+  max_replicas: 1
 
 health_check:
-  type: http
-  http_path: "/health"
-  interval_in_seconds: 30
+  type: tcp
+  interval_in_seconds: 60
+
+cron_jobs: []
+workers: []
+review_apps:
+  enabled: false
+  ttl_days: 7
