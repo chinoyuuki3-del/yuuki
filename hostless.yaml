@@ -22,8 +22,9 @@ scaling:
   max_replicas: 1
 
 health_check:
-  type: tcp
-  interval_in_seconds: 60
+  type: http
+  http_path: "/health"
+  interval_in_seconds: 30
 
 cron_jobs: []
 workers: []
