@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 
 app = FastAPI(
     title="Troll Engine Realtime Server",
-    version="1.0.1",
+    version="1.0.2",
     description="Realtime HTTP + WebSocket server for Troll Engine on Hostless.",
 )
 
