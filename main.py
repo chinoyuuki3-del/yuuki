@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from datetime import datetime, timezone
 from typing import Any
 
@@ -9,7 +10,7 @@ from fastapi.responses import JSONResponse
 
 app = FastAPI(
     title="Troll Engine Realtime Server",
-    version="1.0.2",
+    version="1.0.3",
     description="Realtime HTTP + WebSocket server for Troll Engine on Hostless.",
 )
 
@@ -117,3 +118,11 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                 "time": now_iso(),
             }
         )
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    port = int(os.environ.get("PORT", "8000"))
+    print(f"Starting Troll Engine on 0.0.0.0:{port}", flush=True)
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
