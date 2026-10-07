@@ -237,7 +237,7 @@ body[data-season] .musicBar{border:1px solid var(--season-grid)}
 
 <div class="app">
   <div class="top">
-    <div><div class="title">BLOCK POP!</div><div class="sub">MEGA SHOP 🧪 TEST v1.2.1</div></div>
+    <div><div class="title">BLOCK POP!</div><div class="sub">MEGA SHOP 📶 省通信 v1.2.2</div></div>
     <div class="scores">
       <div class="scoreBox"><small>SCORE</small><b id="score">0</b></div>
       <div class="scoreBox"><small>BEST</small><b id="best">0</b></div>
@@ -1368,7 +1368,7 @@ seasonModal.querySelectorAll('[data-season-choice]').forEach(b=>b.addEventListen
 }));
 setInterval(()=>{if(seasonChoice==='auto')applySeasonTheme()},15*60*1000);
 
-const CLIENT_VERSION='1.2.1';
+const CLIENT_VERSION='1.2.2';
 const ONLINE_ORIGIN=location.protocol==='file:'?'https://block-pop-online.onrender.com':location.origin;
 const ONLINE_SOCKET=ONLINE_ORIGIN.replace(/^http/,'ws')+'/ws';
 const onlineModal=document.getElementById('onlineModal');
@@ -1453,7 +1453,7 @@ function startBattleGame(seed){
   cardPowerState={score2Turns:0,lineBonusReady:false,rushTurns:0,nineBoostTurns:0,emperorTurns:0};
   board=Array.from({length:SIZE},()=>Array(SIZE).fill(null));
   score=0;combo=0;freeBombs=0;activeTool=null;scoreMultiplier=1;coinBoostTurns=0;comboShield=false;
-  lastCoinScore=0;coinRemainder=0;battleSeed=seed|0||1;battleRunning=true;
+  lastCoinScore=0;coinRemainder=0;battleSeed=seed|0||1;battleRunning=true;lastBattlePayload='';
   overlay.classList.remove('show');stageResultModal.classList.remove('show');
   makeBoardDOM();renderBoard();scoreEl.textContent='0';updateStageHud();updateBombButton();updateToolBar();
   generatePieces();battleHud.classList.add('show');
@@ -1461,11 +1461,14 @@ function startBattleGame(seed){
   if(onlineTimer)clearInterval(onlineTimer);onlineTimer=setInterval(matchTimer,300);matchTimer();
   sendBattleScore();toast('🌐 2分間の対戦スタート！');
 }
+let lastBattlePayload='';
 function sendBattleScore(){
-  if(gameMode!=='battle')return;
+  if(gameMode!=='battle'||!onlineWs||onlineWs.readyState!==WebSocket.OPEN)return;
   localBattleScore=score;
-  let compact=board.flat().map(c=>{if(!c)return 0;let n=COLORS.findIndex(p=>p[0]===c[0]&&p[1]===c[1]);return n<0?0:n+1;});
-  onlineSend({type:'score',score:Math.max(0,Math.floor(score)),board:compact});
+  const compact=board.flat().map(c=>{if(!c)return 0;let n=COLORS.findIndex(p=>p[0]===c[0]&&p[1]===c[1]);return n<0?0:n+1;});
+  const raw=JSON.stringify({type:'score',score:Math.max(0,Math.floor(score)),board:compact});
+  if(raw===lastBattlePayload||raw.length>512)return;
+  lastBattlePayload=raw;onlineWs.send(raw);
 }
 document.getElementById('onlineBtn').addEventListener('click',()=>{onlineModal.classList.add('show');if(!onlineWs||onlineWs.readyState!==WebSocket.OPEN)setOnlineStatus('🏠 部屋を作るか、ルームコードを入力してね');});
 document.getElementById('closeOnline').addEventListener('click',()=>onlineModal.classList.remove('show'));
@@ -1505,7 +1508,11 @@ function showUpdateNotice(message,version,available=false){
   latestBtn.textContent=isLocalHTML?'⬇ 最新版HTMLを保存':'🔄 最新版に更新';
   updateBanner.classList.add('show');
 }
+let lastUpdateCheckAt=0,updateCheckRunning=false;
 async function checkForOnlineUpdate(manual=false){
+  if(updateCheckRunning)return;
+  if(!manual&&(document.visibilityState==='hidden'||navigator.onLine===false))return;
+  updateCheckRunning=true;lastUpdateCheckAt=Date.now();
   if(manual)showUpdateNotice('🔎 サーバーの更新を確認しているよ…',null,false);
   try{
     const res=await fetch(ONLINE_ORIGIN+'/api/version?ts='+Date.now(),{cache:'no-store',mode:'cors'});
@@ -1522,6 +1529,8 @@ async function checkForOnlineUpdate(manual=false){
     }
   }catch(e){
     if(manual)showUpdateNotice('⚠️ サーバーを確認できなかったよ。ネット接続を確かめてね',null,false);
+  }finally{
+    updateCheckRunning=false;
   }
 }
 latestBtn.addEventListener('click',()=>{
@@ -1539,7 +1548,11 @@ latestBtn.addEventListener('click',()=>{
 document.getElementById('updateManual').addEventListener('click',()=>checkForOnlineUpdate(true));
 document.getElementById('closeUpdate').addEventListener('click',()=>updateBanner.classList.remove('show'));
 setTimeout(()=>checkForOnlineUpdate(false),1500);
-updateTimer=setInterval(()=>checkForOnlineUpdate(false),180000);
+// Only check every 30 minutes while the game is in use.
+updateTimer=setInterval(()=>checkForOnlineUpdate(false),1800000);
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&Date.now()-lastUpdateCheckAt>1800000)checkForOnlineUpdate(false);
+});
 // --- End ONLINE client ---
 
 applySeasonTheme();ensureStageCards();ensureCardUsage();renderCardBook();renderShop();renderDaily();if(!restoreSession())reset();else toast('💾 前回の続きから復活！');setTimeout(()=>{if(dailyStatus().claimable){renderDaily();dailyModal.classList.add('show')}},280);

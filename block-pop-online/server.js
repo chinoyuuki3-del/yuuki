@@ -1,6 +1,11 @@
 'use strict';
-const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
-const PORT=Number(process.env.PORT||3000),VERSION='1.2.1',ROUND_MS=120000;
+const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),zlib=require('node:zlib');
+const PORT=Number(process.env.PORT||3000),VERSION='1.2.2',ROUND_MS=120000;
+// Serve the game as one compressed, cached HTML resource (no external assets).
+const PAGE=fs.readFileSync(path.join(__dirname,'index.html'));
+if(PAGE.length>5*1024*1024)throw Error('Game HTML must stay under 5 MiB');
+const PAGE_GZIP=zlib.gzipSync(PAGE,{level:9});
+const PAGE_ETAG='W/"'+crypto.createHash('sha256').update(PAGE).digest('hex')+'"';
 const rooms=new Map(),ABC='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const stamp=()=>Date.now();
 function code(){let s;do{s=Array.from({length:6},()=>ABC[crypto.randomInt(ABC.length)]).join('')}while(rooms.has(s));return s;}
@@ -56,7 +61,9 @@ function receive(c,m){
     if(!Number.isInteger(m.score)||m.score<c.score||m.score>50000)return;
     c.score=m.score;
     const board=Array.isArray(m.board)&&m.board.length===64&&m.board.every(n=>Number.isInteger(n)&&n>=0&&n<=7)?m.board:null;
-    broadcast(room,'scores',{scores:room.players.map(p=>p.score),slot:c.slot,board});
+    const scores=room.players.map(p=>p.score);
+    for(const player of room.players)
+      send(player,{type:'scores',scores,slot:c.slot,board:player===c?null:board});
   }else if(m.type==='leave')leave(c);
   else if(m.type==='ping')send(c,{type:'pong'});
 }
@@ -71,12 +78,12 @@ function connection(socket){
   const close=()=>{if(c.closed)return;c.closed=true;leave(c,true);};
   socket.on('close',close);socket.on('error',close);
   socket.on('data',part=>{
-    c.buffer=Buffer.concat([c.buffer,part]);if(c.buffer.length>65536)return socket.destroy();
+    c.buffer=Buffer.concat([c.buffer,part]);if(c.buffer.length>4096)return socket.destroy();
     while(c.buffer.length>=2){
       const b=c.buffer,fin=!!(b[0]&128),opcode=b[0]&15,masked=!!(b[1]&128);
       let len=b[1]&127,at=2;
       if(len===126){if(b.length<4)return;len=b.readUInt16BE(2);at=4;}
-      if(len===127||len>8192||!masked||!fin)return socket.destroy();
+      if(len===127||len>1024||!masked||!fin)return socket.destroy();
       if(b.length<at+4+len)return;
       const mask=b.subarray(at,at+4),body=Buffer.from(b.subarray(at+4,at+4+len));
       for(let i=0;i<len;i++)body[i]^=mask[i%4];
@@ -94,24 +101,27 @@ const server=http.createServer((req,res)=>{
   const url=(req.url||'').split('?')[0];
   if(url==='/health'){res.writeHead(200,{'Content-Type':'application/json'});return res.end(JSON.stringify({ok:true,version:VERSION,rooms:rooms.size}));}
   if(url==='/download/latest'){
-    fs.readFile(path.join(__dirname,'index.html'),(err,data)=>{
-      if(err){res.writeHead(503);return res.end('Game unavailable');}
-      res.writeHead(200,{
-        'Content-Type':'text/html; charset=utf-8',
-        'Content-Disposition':'attachment; filename="BlockPop_ONLINE_latest.html"',
-        'Cache-Control':'no-store',
-        'Access-Control-Allow-Origin':'*'
-      });
-      res.end(data);
+    res.writeHead(200,{
+      'Content-Type':'text/html; charset=utf-8',
+      'Content-Disposition':'attachment; filename="BlockPop_ONLINE_latest.html"',
+      'Content-Length':PAGE.length,
+      'Cache-Control':'no-store',
+      'Access-Control-Allow-Origin':'*'
     });
-    return;
+    return res.end(PAGE);
   }
-  if(url==='/api/version'){res.setHeader('Access-Control-Allow-Origin','*');res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({version:VERSION,release:'Block Pop! テストアップデート v1.2.1',notes:'アップデート受信機能の公開テスト。画面に TEST v1.2.1 を追加しました。',url:'/',downloadUrl:'/download/latest'}));}
+  if(url==='/api/version'){res.setHeader('Access-Control-Allow-Origin','*');res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({version:VERSION,release:'Block Pop! 省通信 v1.2.2',notes:'HTMLをgzip圧縮・30分ごとに更新確認・対戦メッセージの重複通信を削減。',url:'/',downloadUrl:'/download/latest'}));}
   if(url!=='/'&&url!=='/index.html'){res.writeHead(404);return res.end('Not found');}
-  fs.readFile(path.join(__dirname,'index.html'),(e,data)=>{
-    if(e){res.writeHead(503);return res.end('Game unavailable');}
-    res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache, max-age=0, must-revalidate'});res.end(data);
-  });
+  res.setHeader('Cache-Control','private, no-cache');
+  res.setHeader('ETag',PAGE_ETAG);
+  res.setHeader('Vary','Accept-Encoding');
+  if(req.headers['if-none-match']===PAGE_ETAG){res.writeHead(304);return res.end();}
+  const acceptsGzip=String(req.headers['accept-encoding']||'').split(',').some(x=>x.trim().startsWith('gzip'));
+  const body=acceptsGzip?PAGE_GZIP:PAGE;
+  const headers={'Content-Type':'text/html; charset=utf-8','Content-Length':body.length};
+  if(acceptsGzip)headers['Content-Encoding']='gzip';
+  res.writeHead(200,headers);
+  res.end(body);
 });
 server.on('upgrade',(req,socket)=>{
   if((req.url||'').split('?')[0]!=='/ws')return socket.destroy();
