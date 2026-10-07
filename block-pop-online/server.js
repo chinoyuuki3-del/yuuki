@@ -1,11 +1,18 @@
 'use strict';
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),zlib=require('node:zlib');
-const PORT=Number(process.env.PORT||3000),VERSION='1.2.2',ROUND_MS=120000;
+const PORT=Number(process.env.PORT||3000),VERSION='1.2.3',ROUND_MS=120000;
 // Serve the game as one compressed, cached HTML resource (no external assets).
 const PAGE=fs.readFileSync(path.join(__dirname,'index.html'));
 if(PAGE.length>5*1024*1024)throw Error('Game HTML must stay under 5 MiB');
 const PAGE_GZIP=zlib.gzipSync(PAGE,{level:9});
 const PAGE_ETAG='W/"'+crypto.createHash('sha256').update(PAGE).digest('hex')+'"';
+// The shop catalog is a separate, deployable resource. Edits do not require a client update.
+const SHOP_JSON=fs.readFileSync(path.join(__dirname,'shop-catalog.json'));
+if(SHOP_JSON.length>30000)throw Error('Shop catalog exceeds 30 KB');
+const SHOP_DATA=JSON.parse(SHOP_JSON.toString('utf8'));
+if(!Array.isArray(SHOP_DATA.items)||SHOP_DATA.items.length!==27)throw Error('Invalid shop catalog');
+const SHOP_GZIP=zlib.gzipSync(SHOP_JSON,{level:9});
+const SHOP_ETAG='W/"'+crypto.createHash('sha256').update(SHOP_JSON).digest('hex')+'"';
 const rooms=new Map(),ABC='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const stamp=()=>Date.now();
 function code(){let s;do{s=Array.from({length:6},()=>ABC[crypto.randomInt(ABC.length)]).join('')}while(rooms.has(s));return s;}
@@ -100,6 +107,18 @@ const server=http.createServer((req,res)=>{
   res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');
   const url=(req.url||'').split('?')[0];
   if(url==='/health'){res.writeHead(200,{'Content-Type':'application/json'});return res.end(JSON.stringify({ok:true,version:VERSION,rooms:rooms.size}));}
+  if(url==='/api/shop/catalog'){
+    res.setHeader('Access-Control-Allow-Origin','*');
+    res.setHeader('Cache-Control','public, no-cache, must-revalidate');
+    res.setHeader('ETag',SHOP_ETAG);
+    res.setHeader('Vary','Accept-Encoding');
+    if(req.headers['if-none-match']===SHOP_ETAG){res.writeHead(304);return res.end();}
+    const gzip=String(req.headers['accept-encoding']||'').split(',').some(x=>x.trim().startsWith('gzip'));
+    const bytes=gzip?SHOP_GZIP:SHOP_JSON;
+    const headers={'Content-Type':'application/json; charset=utf-8','Content-Length':bytes.length};
+    if(gzip)headers['Content-Encoding']='gzip';
+    res.writeHead(200,headers);return res.end(bytes);
+  }
   if(url==='/download/latest'){
     res.writeHead(200,{
       'Content-Type':'text/html; charset=utf-8',
@@ -110,7 +129,7 @@ const server=http.createServer((req,res)=>{
     });
     return res.end(PAGE);
   }
-  if(url==='/api/version'){res.setHeader('Access-Control-Allow-Origin','*');res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({version:VERSION,release:'Block Pop! 省通信 v1.2.2',notes:'HTMLをgzip圧縮・30分ごとに更新確認・対戦メッセージの重複通信を削減。',url:'/',downloadUrl:'/download/latest'}));}
+  if(url==='/api/version'){res.setHeader('Access-Control-Allow-Origin','*');res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({version:VERSION,release:'Block Pop! ONLINE SHOP v1.2.3',notes:'27種類のショップカタログをオンライン配信。省通信キャッシュとオフライン利用に対応。',url:'/',downloadUrl:'/download/latest'}));}
   if(url!=='/'&&url!=='/index.html'){res.writeHead(404);return res.end('Not found');}
   res.setHeader('Cache-Control','private, no-cache');
   res.setHeader('ETag',PAGE_ETAG);

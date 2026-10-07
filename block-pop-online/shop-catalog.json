@@ -1,0 +1,253 @@
+{
+  "version": "2026.10.08.1",
+  "title": "Block Pop! オンラインショップ",
+  "updatedAt": "2026-10-08",
+  "items": [
+    {
+      "category": "消去アイテム",
+      "id": "hammer",
+      "icon": "🔨",
+      "name": "ハンマー",
+      "price": 10,
+      "desc": "選んだ1マスのブロックを消す。",
+      "mode": "target",
+      "badge": "おすすめ"
+    },
+    {
+      "category": "消去アイテム",
+      "id": "bomb3",
+      "icon": "🧨",
+      "name": "ミニ爆弾 3×3",
+      "price": 18,
+      "desc": "選んだ場所を中心に3×3を消す。",
+      "mode": "target"
+    },
+    {
+      "category": "消去アイテム",
+      "id": "bomb5",
+      "icon": "💣",
+      "name": "爆弾 5×5",
+      "price": 26,
+      "desc": "いつもの爆弾。中心から最大5×5を消す。",
+      "mode": "target",
+      "badge": "セール"
+    },
+    {
+      "category": "消去アイテム",
+      "id": "bomb7",
+      "icon": "💥",
+      "name": "メガ爆弾 7×7",
+      "price": 70,
+      "desc": "最大7×7を豪快に消す。",
+      "mode": "target"
+    },
+    {
+      "category": "消去アイテム",
+      "id": "row",
+      "icon": "➡️",
+      "name": "横レーザー",
+      "price": 28,
+      "desc": "選んだマスの横1列を全部消す。",
+      "mode": "target"
+    },
+    {
+      "category": "消去アイテム",
+      "id": "col",
+      "icon": "⬇️",
+      "name": "縦レーザー",
+      "price": 28,
+      "desc": "選んだマスの縦1列を全部消す。",
+      "mode": "target"
+    },
+    {
+      "category": "消去アイテム",
+      "id": "cross",
+      "icon": "✚",
+      "name": "クロスレーザー",
+      "price": 44,
+      "desc": "選んだマスの縦と横を同時に消す。",
+      "mode": "target"
+    },
+    {
+      "category": "消去アイテム",
+      "id": "diag",
+      "icon": "✖️",
+      "name": "Xレーザー",
+      "price": 38,
+      "desc": "選んだマスを通る2本の斜め線を消す。",
+      "mode": "target"
+    },
+    {
+      "category": "消去アイテム",
+      "id": "color",
+      "icon": "🌈",
+      "name": "カラークリーナー",
+      "price": 42,
+      "desc": "選んだ色と同じ色のブロックを全部消す。",
+      "mode": "target"
+    },
+    {
+      "category": "消去アイテム",
+      "id": "checker",
+      "icon": "♟️",
+      "name": "チェッカーボム",
+      "price": 36,
+      "desc": "中心5×5を市松模様に半分ほど消す。",
+      "mode": "target"
+    },
+    {
+      "category": "消去アイテム",
+      "id": "frame",
+      "icon": "🖼️",
+      "name": "フレーム爆破",
+      "price": 34,
+      "desc": "中心5×5の外周を四角く消す。",
+      "mode": "target"
+    },
+    {
+      "category": "消去アイテム",
+      "id": "edge",
+      "icon": "🧹",
+      "name": "外周クリーナー",
+      "price": 45,
+      "desc": "盤面の一番外側のブロックを全部消す。",
+      "mode": "instant"
+    },
+    {
+      "category": "消去アイテム",
+      "id": "random8",
+      "icon": "🎯",
+      "name": "ランダム8",
+      "price": 32,
+      "desc": "埋まっているマスをランダムに最大8個消す。",
+      "mode": "instant"
+    },
+    {
+      "category": "消去アイテム",
+      "id": "random16",
+      "icon": "🎆",
+      "name": "ランダム16",
+      "price": 58,
+      "desc": "埋まっているマスをランダムに最大16個消す。",
+      "mode": "instant"
+    },
+    {
+      "category": "消去アイテム",
+      "id": "clearAll",
+      "icon": "🌪️",
+      "name": "オールクリア",
+      "price": 140,
+      "desc": "盤面上のブロックを全部消す超レアアイテム。",
+      "mode": "instant"
+    },
+    {
+      "category": "ブロック操作",
+      "id": "shuffle",
+      "icon": "🔄",
+      "name": "ブロック再抽選",
+      "price": 22,
+      "desc": "手元の3個を新しいブロックに交換する。",
+      "mode": "instant"
+    },
+    {
+      "category": "ブロック操作",
+      "id": "smallSet",
+      "icon": "🧩",
+      "name": "ちびブロックセット",
+      "price": 28,
+      "desc": "手元を3マス以下の小さい形3個に交換。",
+      "mode": "instant"
+    },
+    {
+      "category": "ブロック操作",
+      "id": "singleSet",
+      "icon": "▪️",
+      "name": "1マス祭り",
+      "price": 45,
+      "desc": "手元の3個を全部1マスブロックにする。",
+      "mode": "instant"
+    },
+    {
+      "category": "ブースト",
+      "id": "score2",
+      "icon": "⭐",
+      "name": "スコア×2",
+      "price": 35,
+      "desc": "次に置くブロックとそのライン消し得点が2倍。",
+      "mode": "instant"
+    },
+    {
+      "category": "ブースト",
+      "id": "score3",
+      "icon": "🌟",
+      "name": "スコア×3",
+      "price": 70,
+      "desc": "次の1手の得点が3倍になる。",
+      "mode": "instant"
+    },
+    {
+      "category": "ブースト",
+      "id": "comboShield",
+      "icon": "🔥",
+      "name": "コンボキープ",
+      "price": 30,
+      "desc": "次にラインを消せなくてもコンボを1回だけ維持。",
+      "mode": "instant"
+    },
+    {
+      "category": "ブースト",
+      "id": "coinBoost",
+      "icon": "🪙",
+      "name": "コイン×2 3手",
+      "price": 40,
+      "desc": "次の3手だけ、得点からもらえるコインが2倍。",
+      "mode": "instant"
+    },
+    {
+      "category": "ブースト",
+      "id": "continue",
+      "icon": "🎟️",
+      "name": "復活チケット",
+      "price": 85,
+      "desc": "詰んだとき自動で最大12マス消して続行。",
+      "mode": "passive"
+    },
+    {
+      "category": "お得パック",
+      "id": "hammerPack",
+      "icon": "🧰",
+      "name": "ハンマー5個パック",
+      "price": 48,
+      "desc": "ハンマーを5個まとめて追加。",
+      "mode": "pack"
+    },
+    {
+      "category": "お得パック",
+      "id": "bombPack",
+      "icon": "📦",
+      "name": "爆弾3個パック",
+      "price": 75,
+      "desc": "5×5爆弾を3個まとめて追加。",
+      "mode": "pack"
+    },
+    {
+      "category": "お得パック",
+      "id": "laserPack",
+      "icon": "⚡",
+      "name": "レーザー3種セット",
+      "price": 82,
+      "desc": "横・縦・クロスレーザーを各1個追加。",
+      "mode": "pack"
+    },
+    {
+      "category": "お得パック",
+      "id": "rescuePack",
+      "icon": "🚑",
+      "name": "レスキューセット",
+      "price": 105,
+      "desc": "ミニ爆弾×2、ハンマー×3、再抽選×1、復活×1。",
+      "mode": "pack",
+      "badge": "お得"
+    }
+  ]
+}

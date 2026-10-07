@@ -214,6 +214,13 @@ body[data-season] .musicBar{border:1px solid var(--season-grid)}
 #updateVersion{font-size:11px;opacity:.7;display:block;margin-top:3px}
 #updateManual{background:linear-gradient(180deg,#55c2d6,#328da8)!important;box-shadow:0 5px 0 #266e83,0 8px 14px rgba(43,110,140,.2)!important}
 #closeUpdate{background:linear-gradient(180deg,#9ba8c0,#75859e)!important;box-shadow:0 4px 0 #53637e!important}
+
+/* Online catalogue status / refresh */
+.shopCatalogLine{display:flex;align-items:center;gap:8px;padding:6px 12px 8px;border-bottom:1px solid #dce6f5;background:rgba(235,245,255,.75)}
+#shopCatalogStatus{font-size:10px;font-weight:850;color:#496784;flex:1;line-height:1.4}
+#shopCatalogRefresh{font-size:10px;padding:6px 9px;border-radius:9px;background:linear-gradient(#72aaf3,#407bd2);box-shadow:0 3px 0 #27559a;color:white;white-space:nowrap}
+#shopCatalogRefresh:disabled{opacity:.65}
+.shopBadge{font-size:9px;font-weight:950;border-radius:6px;color:#8b4900;background:#fff0b0;padding:3px 5px;display:inline-block;margin-top:4px}
 </style>
 </head>
 <body>
@@ -366,6 +373,7 @@ body[data-season] .musicBar{border:1px solid var(--season-grid)}
       <button class="closeShop" id="closeShop">✕</button>
     </div>
     <div class="shopInfo">スコア5点ごとに🪙1枚。購入したアイテムとコインはブラウザに保存されるよ。</div>
+    <div class="shopCatalogLine"><span id="shopCatalogStatus" aria-live="polite">📦 内蔵カタログ</span><button id="shopCatalogRefresh" type="button">🔄 カタログ更新</button></div>
     <div class="shopScroll" id="shopList"></div>
   </div>
 </div>
@@ -812,7 +820,7 @@ function stageRecordRemoved(n){
 }
 
 
-const ITEM_DEFS=[
+let ITEM_DEFS=[
  {category:'消去アイテム',id:'hammer',icon:'🔨',name:'ハンマー',price:12,desc:'選んだ1マスのブロックを消す。',mode:'target'},
  {category:'消去アイテム',id:'bomb3',icon:'🧨',name:'ミニ爆弾 3×3',price:18,desc:'選んだ場所を中心に3×3を消す。',mode:'target'},
  {category:'消去アイテム',id:'bomb5',icon:'💣',name:'爆弾 5×5',price:30,desc:'いつもの爆弾。中心から最大5×5を消す。',mode:'target'},
@@ -845,6 +853,70 @@ const ITEM_DEFS=[
  {category:'お得パック',id:'rescuePack',icon:'🚑',name:'レスキューセット',price:120,desc:'ミニ爆弾×2、ハンマー×3、再抽選×1、復活×1。',mode:'pack'}
 ];
 
+
+// Online catalogue: only existing, implemented item IDs and modes are accepted.
+const SHOP_DEFAULT_ITEMS=ITEM_DEFS.map(item=>({...item}));
+const SHOP_CACHE_KEY='blockpop_shop_catalog_v1';
+const SHOP_CATALOG_TTL=30*60*1000;
+let shopCatalogCheckedAt=0,shopCatalogPending=null,shopCatalogMode='📦 内蔵カタログ';
+function escapeShopText(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function parseShopCatalog(data){
+  if(!data||!Array.isArray(data.items)||data.items.length!==SHOP_DEFAULT_ITEMS.length)return null;
+  const defaults=new Map(SHOP_DEFAULT_ITEMS.map(x=>[x.id,x]));
+  const used=new Set(),clean=[];
+  for(const entry of data.items){
+    if(!entry||typeof entry.id!=='string'||used.has(entry.id))return null;
+    const def=defaults.get(entry.id);
+    if(!def||entry.mode!==def.mode||!Number.isInteger(entry.price)||entry.price<0||entry.price>9999)return null;
+    if(['name','icon','desc','category'].some(k=>typeof entry[k]!=='string'||entry[k].length>160||!entry[k].trim()))return null;
+    if(entry.badge!==undefined&&(typeof entry.badge!=='string'||entry.badge.length>24))return null;
+    used.add(entry.id);
+    clean.push({...def,name:entry.name,icon:entry.icon,desc:entry.desc,category:entry.category,price:entry.price,badge:entry.badge||''});
+  }
+  return used.size===SHOP_DEFAULT_ITEMS.length?clean:null;
+}
+function shopCatalogStatus(text){
+  shopCatalogMode=text;
+  const el=document.getElementById('shopCatalogStatus');if(el)el.textContent=text;
+}
+function loadShopCatalogCache(){
+  try{
+    const data=JSON.parse(localStorage.getItem(SHOP_CACHE_KEY)||'null');
+    const clean=parseShopCatalog(data);
+    if(clean){ITEM_DEFS=clean;shopCatalogStatus('💾 保存済みオンラインカタログ');}
+  }catch(e){}
+}
+async function fetchShopCatalog(force=false){
+  if(shopCatalogPending)return shopCatalogPending;
+  if(!force&&Date.now()-shopCatalogCheckedAt<SHOP_CATALOG_TTL)return;
+  if(!force&&(navigator.onLine===false||document.visibilityState==='hidden')){
+    shopCatalogStatus('📴 オフライン：保存済みの商品を表示');return;
+  }
+  shopCatalogCheckedAt=Date.now();
+  const refresh=document.getElementById('shopCatalogRefresh');
+  if(refresh)refresh.disabled=true;
+  shopCatalogStatus('📡 オンラインカタログを確認中…');
+  shopCatalogPending=(async()=>{
+    const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),6000);
+    try{
+      const res=await fetch(ONLINE_ORIGIN+'/api/shop/catalog',{method:'GET',cache:'no-cache',mode:'cors',signal:controller.signal});
+      if(!res.ok)throw Error('HTTP '+res.status);
+      if(Number(res.headers.get('content-length')||0)>30000)throw Error('catalog too large');
+      const text=await res.text();if(text.length>32000)throw Error('catalog too large');
+      const data=JSON.parse(text),clean=parseShopCatalog(data);
+      if(!clean)throw Error('invalid catalog');
+      ITEM_DEFS=clean;
+      try{localStorage.setItem(SHOP_CACHE_KEY,JSON.stringify(data))}catch(e){}
+      shopCatalogStatus('🌐 オンライン商品 '+clean.length+'種類 · '+String(data.version||'最新').slice(0,25));
+      if(shopModal.classList.contains('show'))renderShop();
+    }catch(e){
+      if(e?.name!=='AbortError')console.warn('Shop catalogue fallback:',e);
+      shopCatalogStatus('📴 通信できないため、保存済みの商品を表示');
+      shopCatalogCheckedAt=Date.now()-SHOP_CATALOG_TTL+120000;
+    }finally{clearTimeout(timer);if(refresh)refresh.disabled=false;shopCatalogPending=null;}
+  })();
+  return shopCatalogPending;
+}
 
 const DAILY_REWARDS=[
  {icon:'🪙',label:'30コイン',coins:30},
@@ -1212,7 +1284,7 @@ function buyItem(id){let def=ITEM_DEFS.find(x=>x.id===id);if(!def)return;if(coin
  if(def.mode==='pack'){if(id==='hammerPack')addInv('hammer',5);if(id==='bombPack')addInv('bomb5',3);if(id==='laserPack'){addInv('row',1);addInv('col',1);addInv('cross',1)}if(id==='rescuePack'){addInv('bomb3',2);addInv('hammer',3);addInv('shuffle',1);addInv('continue',1)}toast('📦 パックを購入！')}
  else{addInv(id,1);toast(def.icon+' '+def.name+' を購入！')}
  renderShop();updateBombButton()}
-function renderShop(){if(!shopList)return;updateCoinUI();let html='',cats=[...new Set(ITEM_DEFS.map(x=>x.category))];cats.forEach(cat=>{html+=`<div class="categoryTitle">${cat}</div><div class="shopGrid">`;ITEM_DEFS.filter(x=>x.category===cat).forEach(def=>{let owned=def.id==='bomb5'?inv('bomb5'):inv(def.id),ownedText=def.mode==='pack'?'まとめ買い':`所持：${owned}`;let use='';if(def.mode==='target')use=`<button class="use" data-use="${def.id}" ${def.id==='bomb5'?(totalBombs()<=0?'disabled':''):(owned<=0?'disabled':'')}>使用</button>`;else if(def.mode==='instant')use=`<button class="use" data-use="${def.id}" ${owned<=0?'disabled':''}>使用</button>`;else if(def.mode==='passive')use=`<button class="use" data-use="${def.id}" ${owned<=0?'disabled':''}>説明</button>`;html+=`<div class="shopItem"><div class="itemTop"><div class="itemIcon">${def.icon}</div><div><div class="itemName">${def.name}</div><div class="owned">${ownedText}</div></div></div><div class="itemDesc">${def.desc}</div><div class="itemActions"><button class="${def.mode==='pack'?'pack':'buy'}" data-buy="${def.id}">🪙${def.price}</button>${use}</div></div>`});html+='</div>'});shopList.innerHTML=html}
+function renderShop(){if(!shopList)return;updateCoinUI();let html='',cats=[...new Set(ITEM_DEFS.map(x=>x.category))];cats.forEach(cat=>{html+=`<div class="categoryTitle">${escapeShopText(cat)}</div><div class="shopGrid">`;ITEM_DEFS.filter(x=>x.category===cat).forEach(def=>{let owned=def.id==='bomb5'?inv('bomb5'):inv(def.id),ownedText=def.mode==='pack'?'まとめ買い':`所持：${owned}`;let use='';if(def.mode==='target')use=`<button class="use" data-use="${def.id}" ${def.id==='bomb5'?(totalBombs()<=0?'disabled':''):(owned<=0?'disabled':'')}>使用</button>`;else if(def.mode==='instant')use=`<button class="use" data-use="${def.id}" ${owned<=0?'disabled':''}>使用</button>`;else if(def.mode==='passive')use=`<button class="use" data-use="${def.id}" ${owned<=0?'disabled':''}>説明</button>`;html+=`<div class="shopItem"><div class="itemTop"><div class="itemIcon">${escapeShopText(def.icon)}</div><div><div class="itemName">${escapeShopText(def.name)}</div>${def.badge?`<span class="shopBadge">${escapeShopText(def.badge)}</span>`:''}<div class="owned">${ownedText}</div></div></div><div class="itemDesc">${escapeShopText(def.desc)}</div><div class="itemActions"><button class="${def.mode==='pack'?'pack':'buy'}" data-buy="${def.id}">🪙${def.price}</button>${use}</div></div>`});html+='</div>'});shopList.innerHTML=html}
 
 function pieceFitsAnywhere(piece){let shape=piece.shape.map(row=>row.slice());for(let turn=0;turn<4;turn++){for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)if(canPlace(shape,r,c))return true;shape=rotateShape(shape)}return false}
 function hasRescueItem(){return totalBombs()>0||['hammer','bomb3','bomb7','row','col','cross','diag','color','checker','frame','edge','random8','random16','clearAll','shuffle','smallSet','singleSet'].some(id=>inv(id)>0)}
@@ -1223,7 +1295,8 @@ bombBtn.addEventListener('click',()=>{if(totalBombs()<=0)return;activeTool=activ
 boardEl.addEventListener('pointermove',e=>{if(!activeTool)return;let cell=e.target.closest('.cell');if(cell&&boardEl.contains(cell))showToolPreview(Number(cell.dataset.index))});
 boardEl.addEventListener('pointerleave',()=>{if(activeTool)clearToolPreview()});
 boardEl.addEventListener('click',e=>{if(!activeTool)return;let cell=e.target.closest('.cell');if(!cell||!boardEl.contains(cell))return;e.preventDefault();e.stopPropagation();useTargetTool(activeTool,Number(cell.dataset.index))});
-shopBtn.addEventListener('click',()=>{cancelTool();renderShop();shopModal.classList.add('show');beep(540,.05,'triangle',.025,680)});
+shopBtn.addEventListener('click',()=>{cancelTool();renderShop();shopModal.classList.add('show');fetchShopCatalog(false);beep(540,.05,'triangle',.025,680)});
+document.getElementById('shopCatalogRefresh').addEventListener('click',()=>fetchShopCatalog(true));
 
 stageBtn.addEventListener('click',()=>{cancelTool();renderStageSelect();stageModal.classList.add('show');beep(610,.06,'triangle',.03,820)});
 document.getElementById('closeStage').addEventListener('click',()=>stageModal.classList.remove('show'));
@@ -1343,7 +1416,7 @@ function applySeasonTheme(){
   document.body.dataset.season=selected;
   if(selected!==activeSeason){activeSeason=selected;seasonParticleField(selected)}
   seasonBtn.textContent=item.icon+' 季節';
-  const sub=document.querySelector('.top .sub');if(sub)sub.textContent=`${item.icon} ${item.name} SEASON · ONLINE v1.2`;
+  const sub=document.querySelector('.top .sub');if(sub)sub.textContent=`${item.icon} ${item.name} SEASON · ONLINE v1.2.3`;
   seasonStatus.textContent=`現在は ${item.icon} ${item.name}！ `+(seasonChoice==='auto'?'📆 月ごとに自動で変わるよ':'🎨 手動で固定中');
   seasonModal.querySelectorAll('[data-season-choice]').forEach(b=>{b.classList.toggle('selected',b.dataset.seasonChoice===seasonChoice);b.setAttribute('aria-pressed',String(b.dataset.seasonChoice===seasonChoice))});
 }
@@ -1368,7 +1441,7 @@ seasonModal.querySelectorAll('[data-season-choice]').forEach(b=>b.addEventListen
 }));
 setInterval(()=>{if(seasonChoice==='auto')applySeasonTheme()},15*60*1000);
 
-const CLIENT_VERSION='1.2.2';
+const CLIENT_VERSION='1.2.3';
 const ONLINE_ORIGIN=location.protocol==='file:'?'https://block-pop-online.onrender.com':location.origin;
 const ONLINE_SOCKET=ONLINE_ORIGIN.replace(/^http/,'ws')+'/ws';
 const onlineModal=document.getElementById('onlineModal');
@@ -1555,7 +1628,7 @@ document.addEventListener('visibilitychange',()=>{
 });
 // --- End ONLINE client ---
 
-applySeasonTheme();ensureStageCards();ensureCardUsage();renderCardBook();renderShop();renderDaily();if(!restoreSession())reset();else toast('💾 前回の続きから復活！');setTimeout(()=>{if(dailyStatus().claimable){renderDaily();dailyModal.classList.add('show')}},280);
+loadShopCatalogCache();applySeasonTheme();ensureStageCards();ensureCardUsage();renderCardBook();renderShop();renderDaily();if(!restoreSession())reset();else toast('💾 前回の続きから復活！');setTimeout(()=>{if(dailyStatus().claimable){renderDaily();dailyModal.classList.add('show')}},280);
 })();
 </script>
 </body>
