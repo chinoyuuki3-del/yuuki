@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Block Pop! ONLINE 🌐</title>
+<title>Block Pop! ONLINE SEASONS 🌸☀️🍁❄️</title>
 <style>
 :root{--panel:rgba(255,255,255,.94);--text:#24324a;--shadow:0 14px 34px rgba(44,72,125,.17);--blue:#4d79ff}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -173,9 +173,58 @@ button.dataButton{background:linear-gradient(180deg,#5fc8de,#3297b3);box-shadow:
 #updateBanner.show{display:block}#updateBanner button{margin-left:8px;font-size:11px;padding:8px 12px;max-width:135px}
 @media(max-width:390px){.footer{grid-template-columns:repeat(4,minmax(0,1fr))!important}.footer button{padding:7px 3px}.app{gap:5px}.boardWrap{width:min(100%,50vh)!important;align-self:center}}
 
+
+/* SEASONS 1.1.0 - cosmetic only, no changes to battle RNG/scoring */
+body[data-season="spring"]{--season-a:#ffe2ed;--season-b:#f7dfff;--season-grid:#e6bfd9;--season-empty:#fff1f8;--season-accent:#bd4d85;--panel:rgba(255,251,254,.95)}
+body[data-season="summer"]{--season-a:#bdf2ff;--season-b:#fff0b0;--season-grid:#8dd3da;--season-empty:#e9fdff;--season-accent:#127fa8;--panel:rgba(248,254,255,.95)}
+body[data-season="autumn"]{--season-a:#ffe8bc;--season-b:#f9d7bb;--season-grid:#dcb58b;--season-empty:#fff4dd;--season-accent:#a35b2d;--panel:rgba(255,250,239,.95)}
+body[data-season="winter"]{--season-a:#d9f2ff;--season-b:#e0e3ff;--season-grid:#a9c5e5;--season-empty:#edf8ff;--season-accent:#446eae;--panel:rgba(252,254,255,.96)}
+body[data-season]{background:radial-gradient(circle at 85% 10%,rgba(255,255,255,.78),transparent 25%),linear-gradient(150deg,var(--season-a),var(--season-b) 72%,#fff)}
+body[data-season] .title{color:var(--season-accent)}
+body[data-season] #board{background:linear-gradient(145deg,var(--season-grid),var(--season-empty))}
+body[data-season] .cell:not(.filled):not(.preview):not(.bad){background:linear-gradient(145deg,#fff,var(--season-empty))}
+body[data-season] .pieceSlot{background:linear-gradient(180deg,#fff,var(--season-empty));border-color:var(--season-grid)}
+body[data-season] .boardWrap{border:2px solid var(--season-grid)}
+#seasonBtn{flex:0 0 88px;padding:8px 6px;font-size:11px;background:linear-gradient(180deg,#dd9e62,#b8734c);box-shadow:0 4px 0 #975939,0 7px 13px rgba(100,65,40,.19)}
+#seasonModal{display:none;position:fixed;inset:0;z-index:4800;align-items:center;justify-content:center;padding:16px;background:rgba(20,31,57,.76)}
+#seasonModal.show{display:flex}
+.seasonSheet{width:min(95vw,460px);padding:19px;border-radius:24px;background:linear-gradient(150deg,#fffdf8,#f7edff);box-shadow:0 24px 66px rgba(20,26,55,.34);text-align:center}
+.seasonSheet h2{margin:0 0 8px;font-size:23px;color:#5d587c}
+.seasonSheet p{font-size:12px;line-height:1.6;margin:0 0 14px;color:#627087;font-weight:750}
+.seasonChoices{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.seasonChoices button{font-size:13px;background:linear-gradient(145deg,#819ce8,#6f78bf);box-shadow:0 4px 0 #535d95;padding:12px 8px}
+.seasonChoices button.selected{background:linear-gradient(140deg,#ffc457,#ec8d46);box-shadow:0 4px 0 #bb6230;outline:3px solid #ffdf7f}
+#seasonClose{margin-top:16px;min-width:135px;background:linear-gradient(#8fa1b8,#657b9c);box-shadow:0 4px 0 #52617b}
+#seasonStatus{font-size:11px;color:#5c647a;margin-top:12px;font-weight:800}
+#seasonParticles{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+.app{z-index:1}
+.seasonDrift{position:absolute;top:-55px;opacity:.72;animation:seasonFall var(--duration) linear infinite;animation-delay:var(--delay);font-size:var(--size);left:var(--left)}
+@keyframes seasonFall{0%{transform:translate3d(0,-20px,0) rotate(0);opacity:0}12%{opacity:.78}88%{opacity:.78}100%{transform:translate3d(var(--drift),108vh,0) rotate(370deg);opacity:0}}
+.seasonSpark{position:fixed;font-size:22px;pointer-events:none;z-index:2005;animation:seasonPop .75s ease-out forwards}
+@keyframes seasonPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.25)}26%{opacity:1;transform:translate(-50%,-80%) scale(1.15)}100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-125% + var(--dy))) scale(.5)}}
+@media(prefers-reduced-motion:reduce){.seasonDrift,.seasonSpark{display:none}}
+@media(max-height:740px){#seasonBtn{flex-basis:65px;font-size:9px}.musicBar{gap:5px;padding:6px}}
 </style>
 </head>
 <body>
+
+<div id="seasonParticles" aria-hidden="true"></div>
+<div id="seasonModal" role="dialog" aria-modal="true" aria-label="季節テーマ選択">
+ <div class="seasonSheet">
+  <h2>🌸☀️🍁❄️ 四季の世界</h2>
+  <p>春・夏・秋・冬でゲームが変身！<br>いつでも変更できるよ。対戦ルールは同じだから安心。</p>
+  <div class="seasonChoices">
+   <button data-season-choice="auto">📆 自動切替</button>
+   <button data-season-choice="spring">🌸 春</button>
+   <button data-season-choice="summer">☀️ 夏</button>
+   <button data-season-choice="autumn">🍁 秋</button>
+   <button data-season-choice="winter">❄️ 冬</button>
+  </div>
+  <div id="seasonStatus" aria-live="polite"></div>
+  <button id="seasonClose">ゲームに戻る</button>
+ </div>
+</div>
+
 <div class="app">
   <div class="top">
     <div><div class="title">BLOCK POP!</div><div class="sub">MEGA SHOP</div></div>
@@ -207,6 +256,7 @@ button.dataButton{background:linear-gradient(180deg,#5fc8de,#3297b3);box-shadow:
   </div>
 
   <div class="musicBar">
+    <button id="seasonBtn" type="button">🍁 季節</button>
     <button id="bgmBtn" class="secondary">🎵 BGM ON</button>
     <span class="musicLabel">音量</span>
     <input id="bgmVolume" type="range" min="0" max="100" value="35" aria-label="BGM音量">
@@ -1104,7 +1154,7 @@ function burstParticles(x,y,col){for(let i=0;i<5;i++){let p=document.createEleme
 function boomAt(index,emoji='💥'){let cr=boardEl.children[index].getBoundingClientRect(),e=document.createElement('div');e.className='bombBoom';e.textContent=emoji;e.style.left=cr.left+cr.width/2+'px';e.style.top=cr.top+cr.height/2+'px';fxLayer.appendChild(e);setTimeout(()=>e.remove(),620)}
 function showScoreBurst(points){let r=boardEl.getBoundingClientRect(),e=document.createElement('div');e.className='scoreBurst';e.textContent='+'+points;e.style.left=r.left+r.width/2+'px';e.style.top=r.top+r.height*.55+'px';fxLayer.appendChild(e);setTimeout(()=>e.remove(),800)}
 function showCombo(level){if(level<2)return;comboBanner.classList.remove('show');void comboBanner.offsetWidth;comboBanner.textContent=level===2?'COMBO ×2!':level===3?'SUPER ×3!':`MEGA ×${level}!`;comboBanner.classList.add('show');setTimeout(()=>comboBanner.classList.remove('show'),820)}
-function animateRemove(indexes,after){let uniq=[...new Set(indexes)].filter(i=>i>=0&&i<SIZE*SIZE&&board[Math.floor(i/SIZE)][i%SIZE]);boardWrap.classList.remove('boardShake');void boardWrap.offsetWidth;boardWrap.classList.add('boardShake');uniq.forEach((i,n)=>{let cell=boardEl.children[i],cr=cell.getBoundingClientRect(),rr=Math.floor(i/SIZE),cc=i%SIZE,col=board[rr][cc];setTimeout(()=>{cell.classList.add('clearFlash');burstParticles(cr.left+cr.width/2,cr.top+cr.height/2,col)},Math.min(120,n*6))});setTimeout(()=>{if(after)after();else uniq.forEach(i=>board[Math.floor(i/SIZE)][i%SIZE]=null);stageRecordRemoved(uniq.length);renderBoard();boardWrap.classList.remove('boardShake');saveSession();updateStageHud();evaluateStage();checkGameOver()},310);return uniq.length}
+function animateRemove(indexes,after){let uniq=[...new Set(indexes)].filter(i=>i>=0&&i<SIZE*SIZE&&board[Math.floor(i/SIZE)][i%SIZE]);seasonCelebrate(uniq.length);boardWrap.classList.remove('boardShake');void boardWrap.offsetWidth;boardWrap.classList.add('boardShake');uniq.forEach((i,n)=>{let cell=boardEl.children[i],cr=cell.getBoundingClientRect(),rr=Math.floor(i/SIZE),cc=i%SIZE,col=board[rr][cc];setTimeout(()=>{cell.classList.add('clearFlash');burstParticles(cr.left+cr.width/2,cr.top+cr.height/2,col)},Math.min(120,n*6))});setTimeout(()=>{if(after)after();else uniq.forEach(i=>board[Math.floor(i/SIZE)][i%SIZE]=null);stageRecordRemoved(uniq.length);renderBoard();boardWrap.classList.remove('boardShake');saveSession();updateStageHud();evaluateStage();checkGameOver()},310);return uniq.length}
 
 function toolIndices(id,index){let row=Math.floor(index/SIZE),col=index%SIZE,out=[];if(id==='hammer')out=[index];
  else if(id==='bomb3'||id==='bomb5'||id==='bomb7'){let rad=id==='bomb3'?1:id==='bomb5'?2:3;for(let r=row-rad;r<=row+rad;r++)for(let c=col-rad;c<=col+rad;c++)if(r>=0&&r<SIZE&&c>=0&&c<SIZE)out.push(r*SIZE+c)}
@@ -1241,7 +1291,68 @@ document.getElementById('againBtn').addEventListener('click',()=>{beep(520,.08,'
 
 
 // --- Block Pop! ONLINE client ---
-const CLIENT_VERSION='1.0.0';
+
+// --- SEASONS 1.1: appearance-only effects ---
+const SEASON_DATA={spring:{name:'春',icon:'🌸',particles:['🌸','🌷','✨']},summer:{name:'夏',icon:'☀️',particles:['✨','🌻','🫧']},autumn:{name:'秋',icon:'🍁',particles:['🍁','🍂','✨']},winter:{name:'冬',icon:'❄️',particles:['❄️','✧','✨']}};
+const seasonBtn=document.getElementById('seasonBtn');
+const seasonModal=document.getElementById('seasonModal');
+const seasonParticles=document.getElementById('seasonParticles');
+const seasonStatus=document.getElementById('seasonStatus');
+let seasonChoice=localStorage.getItem('blockpop_season_choice_v1')||'auto';
+if(seasonChoice!=='auto'&&!SEASON_DATA[seasonChoice])seasonChoice='auto';
+let activeSeason='';
+function calendarSeason(){
+  const m=new Date().getMonth()+1;
+  return m>=3&&m<=5?'spring':m>=6&&m<=8?'summer':m>=9&&m<=11?'autumn':'winter';
+}
+function seasonParticleField(s){
+  seasonParticles.replaceChildren();
+  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const items=SEASON_DATA[s].particles;
+  for(let i=0;i<13;i++){
+    let p=document.createElement('span');p.className='seasonDrift';p.textContent=items[i%items.length];
+    p.style.setProperty('--left',(5+(i*73)%92)+'%');
+    p.style.setProperty('--delay',(-i*1.37)+'s');
+    p.style.setProperty('--duration',(11+i%5*2)+'s');
+    p.style.setProperty('--size',(17+i%4*4)+'px');
+    p.style.setProperty('--drift',((i%2?-1:1)*(26+i%6*13))+'px');
+    seasonParticles.appendChild(p);
+  }
+}
+function applySeasonTheme(){
+  const selected=seasonChoice==='auto'?calendarSeason():seasonChoice;
+  const item=SEASON_DATA[selected];
+  document.body.dataset.season=selected;
+  if(selected!==activeSeason){activeSeason=selected;seasonParticleField(selected)}
+  seasonBtn.textContent=item.icon+' 季節';
+  const sub=document.querySelector('.top .sub');if(sub)sub.textContent=item.icon+' '+item.name+' SEASON · ONLINE v1.1';
+  seasonStatus.textContent='現在は '+item.icon+' '+item.name+'！ '+(seasonChoice==='auto'?'📆 月ごとに自動で変わるよ':'🎨 手動で固定中');
+  seasonModal.querySelectorAll('[data-season-choice]').forEach(b=>{
+    b.classList.toggle('selected',b.dataset.seasonChoice===seasonChoice);
+    b.setAttribute('aria-pressed',String(b.dataset.seasonChoice===seasonChoice));
+  });
+}
+function seasonCelebrate(count){
+  if(count<=0||(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches))return;
+  const r=boardEl.getBoundingClientRect();const items=SEASON_DATA[activeSeason]?.particles||['✨'];
+  for(let i=0;i<Math.min(7,3+Math.floor(count/5));i++){
+    const p=document.createElement('span');p.className='seasonSpark';p.textContent=items[i%items.length];
+    p.style.left=(r.left+r.width*(.22+Math.random()*.56))+'px';
+    p.style.top=(r.top+r.height*(.25+Math.random()*.5))+'px';
+    p.style.setProperty('--dx',((Math.random()-.5)*115)+'px');p.style.setProperty('--dy',((Math.random()-.5)*60)+'px');
+    document.body.appendChild(p);setTimeout(()=>p.remove(),780);
+  }
+}
+seasonBtn.addEventListener('click',()=>{applySeasonTheme();seasonModal.classList.add('show')});
+document.getElementById('seasonClose').addEventListener('click',()=>seasonModal.classList.remove('show'));
+seasonModal.addEventListener('click',e=>{if(e.target===seasonModal)seasonModal.classList.remove('show')});
+seasonModal.querySelectorAll('[data-season-choice]').forEach(b=>b.addEventListener('click',()=>{
+  seasonChoice=b.dataset.seasonChoice;
+  localStorage.setItem('blockpop_season_choice_v1',seasonChoice);applySeasonTheme();
+}));
+setInterval(()=>{if(seasonChoice==='auto')applySeasonTheme()},15*60*1000);
+
+const CLIENT_VERSION='1.1.0';
 const ONLINE_ORIGIN=location.protocol==='file:'?'__BLOCK_POP_SERVER_URL__':location.origin;
 const ONLINE_SOCKET=ONLINE_ORIGIN.replace(/^http/,'ws')+'/ws';
 const onlineModal=document.getElementById('onlineModal');
@@ -1374,7 +1485,7 @@ setTimeout(checkForOnlineUpdate,4500);
 updateTimer=setInterval(checkForOnlineUpdate,180000);
 // --- End ONLINE client ---
 
-ensureStageCards();ensureCardUsage();renderCardBook();renderShop();renderDaily();if(!restoreSession())reset();else toast('💾 前回の続きから復活！');setTimeout(()=>{if(dailyStatus().claimable){renderDaily();dailyModal.classList.add('show')}},280);
+applySeasonTheme();ensureStageCards();ensureCardUsage();renderCardBook();renderShop();renderDaily();if(!restoreSession())reset();else toast('💾 前回の続きから復活！');setTimeout(()=>{if(dailyStatus().claimable){renderDaily();dailyModal.classList.add('show')}},280);
 })();
 </script>
 </body>
