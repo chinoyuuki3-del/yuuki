@@ -216,6 +216,9 @@ body[data-season] .musicBar{border:1px solid var(--season-grid)}
 #closeUpdate{background:linear-gradient(180deg,#9ba8c0,#75859e)!important;box-shadow:0 4px 0 #53637e!important}
 
 /* Online catalogue status / refresh */
+#shopSearch{border:1px solid #b5cae9;border-radius:11px;padding:9px 10px;font-size:12px;width:100%;outline:none;background:#fff;color:#344762}
+.shopSearchBar{padding:8px 12px 2px;background:#f7faff}
+#shopCount{font-size:10px;color:#516b94;font-weight:900;padding:2px 14px}
 .shopCatalogLine{display:flex;align-items:center;gap:8px;padding:6px 12px 8px;border-bottom:1px solid #dce6f5;background:rgba(235,245,255,.75)}
 #shopCatalogStatus{font-size:10px;font-weight:850;color:#496784;flex:1;line-height:1.4}
 #shopCatalogRefresh{font-size:10px;padding:6px 9px;border-radius:9px;background:linear-gradient(#72aaf3,#407bd2);box-shadow:0 3px 0 #27559a;color:white;white-space:nowrap}
@@ -368,12 +371,14 @@ body[data-season] .musicBar{border:1px solid var(--season-grid)}
 <div id="shopModal">
   <div class="shopSheet">
     <div class="shopHead">
-      <div class="shopTitle">🛒 メガショップ</div>
+      <div class="shopTitle">🛒 メガショップ <small style="font-size:11px">62種類</small></div>
       <div class="coinPill">🪙 <span id="shopCoins">0</span></div>
       <button class="closeShop" id="closeShop">✕</button>
     </div>
-    <div class="shopInfo">スコア5点ごとに🪙1枚。購入したアイテムとコインはブラウザに保存されるよ。</div>
+    <div class="shopInfo">全62種類！ スコア5点ごとに🪙1枚。購入アイテムとコインは端末保存。</div>
     <div class="shopCatalogLine"><span id="shopCatalogStatus" aria-live="polite">📦 内蔵カタログ</span><button id="shopCatalogRefresh" type="button">🔄 カタログ更新</button></div>
+    <div class="shopSearchBar"><input id="shopSearch" placeholder="🔎 商品名・カテゴリ・効果で検索" maxlength="40" aria-label="商品を検索"></div>
+    <div id="shopCount">62種類</div>
     <div class="shopScroll" id="shopList"></div>
   </div>
 </div>
@@ -850,13 +855,48 @@ let ITEM_DEFS=[
  {category:'お得パック',id:'hammerPack',icon:'🧰',name:'ハンマー5個パック',price:48,desc:'ハンマーを5個まとめて追加。',mode:'pack'},
  {category:'お得パック',id:'bombPack',icon:'📦',name:'爆弾3個パック',price:75,desc:'5×5爆弾を3個まとめて追加。',mode:'pack'},
  {category:'お得パック',id:'laserPack',icon:'⚡',name:'レーザー3種セット',price:82,desc:'横・縦・クロスレーザーを各1個追加。',mode:'pack'},
- {category:'お得パック',id:'rescuePack',icon:'🚑',name:'レスキューセット',price:120,desc:'ミニ爆弾×2、ハンマー×3、再抽選×1、復活×1。',mode:'pack'}
+ {category:'お得パック',id:'rescuePack',icon:'🚑',name:'レスキューセット',price:120,desc:'ミニ爆弾×2、ハンマー×3、再抽選×1、復活×1。',mode:'pack'},
+ {category:"精密爆破",id:"tinyBomb",icon:"🟨",name:"スクエア爆弾 2×2",price:15,desc:"タップしたマスを左上に2×2を消す。",mode:"target"},
+ {category:"精密爆破",id:"longCross",icon:"✳️",name:"ロングクロス",price:55,desc:"タップ地点から上下左右2マスの十字を消す。",mode:"target"},
+ {category:"精密爆破",id:"rowTriple",icon:"📶",name:"横3連レーザー",price:88,desc:"タップ地点と上下の横3列を消す。",mode:"target"},
+ {category:"精密爆破",id:"colTriple",icon:"🛰️",name:"縦3連レーザー",price:88,desc:"タップ地点と左右の縦3列を消す。",mode:"target"},
+ {category:"精密爆破",id:"diamondBomb",icon:"💎",name:"ダイヤ爆弾",price:48,desc:"中心からひし形の13マスを消す。",mode:"target"},
+ {category:"精密爆破",id:"ringBomb",icon:"⭕",name:"リング爆弾",price:66,desc:"中心の周囲7×7の外周だけ消す。",mode:"target"},
+ {category:"精密爆破",id:"tLaser",icon:"🔱",name:"T字レーザー",price:42,desc:"横1列とタップ地点より下の縦ラインを消す。",mode:"target"},
+ {category:"精密爆破",id:"uLaser",icon:"🧲",name:"U字レーザー",price:49,desc:"中心5×5の左右と下の3辺を消す。",mode:"target"},
+ {category:"精密爆破",id:"rowDouble",icon:"🟰",name:"横2連レーザー",price:54,desc:"タップ行とその下の2列を消す。",mode:"target"},
+ {category:"精密爆破",id:"colDouble",icon:"║",name:"縦2連レーザー",price:54,desc:"タップ列とその右の2列を消す。",mode:"target"},
+ {category:"一斉消去",id:"random4",icon:"🎲",name:"ランダム4",price:18,desc:"盤面からランダムに最大4個消す。",mode:"instant"},
+ {category:"一斉消去",id:"random32",icon:"☄️",name:"ランダム32",price:115,desc:"盤面からランダムに最大32個消す。",mode:"instant"},
+ {category:"一斉消去",id:"topHalf",icon:"☁️",name:"上半分クリア",price:86,desc:"上4段にあるブロックを全部消す。",mode:"instant"},
+ {category:"一斉消去",id:"bottomHalf",icon:"🌊",name:"下半分クリア",price:86,desc:"下4段にあるブロックを全部消す。",mode:"instant"},
+ {category:"一斉消去",id:"center4",icon:"🎯",name:"中央4×4クリア",price:58,desc:"盤面中央の4×4を消す。",mode:"instant"},
+ {category:"一斉消去",id:"fourCorners",icon:"📐",name:"4隅クリア",price:41,desc:"盤面の四隅にある2×2ずつを消す。",mode:"instant"},
+ {category:"一斉消去",id:"denseRows",icon:"🧹",name:"満員横2列クリア",price:64,desc:"一番ブロックが多い横2列を消す。",mode:"instant"},
+ {category:"一斉消去",id:"denseCols",icon:"🧽",name:"満員縦2列クリア",price:64,desc:"一番ブロックが多い縦2列を消す。",mode:"instant"},
+ {category:"一斉消去",id:"rainbowStorm",icon:"🌈",name:"レインボーストーム",price:56,desc:"盤面に一番多い色を全消去する。",mode:"instant"},
+ {category:"一斉消去",id:"cleanHalf",icon:"🪄",name:"ハーフクリーナー",price:83,desc:"盤面のブロックをランダムに半分消す。",mode:"instant"},
+ {category:"ブロック操作",id:"pairSet",icon:"🧱",name:"2マスセット",price:37,desc:"手元の未使用ブロックを2マス形に変える。",mode:"instant"},
+ {category:"ブロック操作",id:"tripleSet",icon:"📏",name:"3マスラインセット",price:42,desc:"手元の未使用ブロックを3マス直線に変える。",mode:"instant"},
+ {category:"ブロック操作",id:"lineSet",icon:"📐",name:"4マスラインセット",price:40,desc:"手元の未使用ブロックを4マス直線に変える。",mode:"instant"},
+ {category:"ブロック操作",id:"rerollUnused",icon:"🎰",name:"未使用だけ再抽選",price:21,desc:"置いていない手元のブロックだけ再抽選。",mode:"instant"},
+ {category:"ブロック操作",id:"rotateHand",icon:"🔃",name:"全員90度回転",price:16,desc:"手元の未使用ブロックを一斉に90度回転。",mode:"instant"},
+ {category:"スーパー強化",id:"score4",icon:"🌠",name:"スコア×4",price:124,desc:"次に置くブロックとラインの得点×4。",mode:"instant"},
+ {category:"スーパー強化",id:"coinBoost8",icon:"💰",name:"コイン×2 8手",price:91,desc:"次の8手だけ獲得コインが2倍。",mode:"instant"},
+ {category:"スーパー強化",id:"scoreGift100",icon:"💯",name:"スコア+100",price:75,desc:"すぐにスコア100点を追加。",mode:"instant"},
+ {category:"スーパー強化",id:"comboPlus",icon:"🔥",name:"コンボ+2",price:96,desc:"現在のコンボ数を2増やす。",mode:"instant"},
+ {category:"スーパー強化",id:"bombGift",icon:"🎁",name:"爆弾おまけ+2",price:50,desc:"無料5×5爆弾を2個追加する。",mode:"instant"},
+ {category:"お得パック",id:"starterKit",icon:"🧰",name:"スターターBOX",price:75,desc:"ハンマー×2・2×2爆弾×2・再抽選×1。",mode:"pack"},
+ {category:"お得パック",id:"rainbowKit",icon:"🌈",name:"虹の宝箱",price:120,desc:"カラークリーナー・虹ストーム・ダイヤ爆弾を各1個。",mode:"pack"},
+ {category:"お得パック",id:"tripleKit",icon:"📡",name:"3連兵器セット",price:178,desc:"横3連・縦3連・ロングクロスを各1個。",mode:"pack"},
+ {category:"お得パック",id:"boostKit",icon:"🚀",name:"ブースト全部盛り",price:189,desc:"スコア×4・コイン×2 8手・コンボキープ。",mode:"pack"},
+ {category:"お得パック",id:"emergencyKit",icon:"🚑",name:"緊急救助BOX",price:210,desc:"復活チケット・ハーフクリーナー・ランダム32。",mode:"pack"}
 ];
 
 
 // Online catalogue: only existing, implemented item IDs and modes are accepted.
 const SHOP_DEFAULT_ITEMS=ITEM_DEFS.map(item=>({...item}));
-const SHOP_CACHE_KEY='blockpop_shop_catalog_v1';
+const SHOP_CACHE_KEY='blockpop_shop_catalog_v2';
 const SHOP_CATALOG_TTL=30*60*1000;
 let shopCatalogCheckedAt=0,shopCatalogPending=null,shopCatalogMode='📦 内蔵カタログ';
 function escapeShopText(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -901,8 +941,8 @@ async function fetchShopCatalog(force=false){
     try{
       const res=await fetch(ONLINE_ORIGIN+'/api/shop/catalog',{method:'GET',cache:'no-cache',mode:'cors',signal:controller.signal});
       if(!res.ok)throw Error('HTTP '+res.status);
-      if(Number(res.headers.get('content-length')||0)>30000)throw Error('catalog too large');
-      const text=await res.text();if(text.length>32000)throw Error('catalog too large');
+      if(Number(res.headers.get('content-length')||0)>45000)throw Error('catalog too large');
+      const text=await res.text();if(text.length>45000)throw Error('catalog too large');
       const data=JSON.parse(text),clean=parseShopCatalog(data);
       if(!clean)throw Error('invalid catalog');
       ITEM_DEFS=clean;
@@ -993,7 +1033,7 @@ function applySession(s){
   combo=Math.max(0,Number(s.combo)||0);
   freeBombs=Math.max(0,Number(s.freeBombs)||0);
   activeTool=typeof s.activeTool==='string'?s.activeTool:null;
-  scoreMultiplier=[1,2,3].includes(Number(s.scoreMultiplier))?Number(s.scoreMultiplier):1;
+  scoreMultiplier=[1,2,3,4].includes(Number(s.scoreMultiplier))?Number(s.scoreMultiplier):1;
   comboShield=!!s.comboShield;
   coinBoostTurns=Math.max(0,Number(s.coinBoostTurns)||0);
   lastCoinScore=Math.max(0,Number(s.lastCoinScore)||score);
@@ -1255,6 +1295,15 @@ function toolIndices(id,index){let row=Math.floor(index/SIZE),col=index%SIZE,out
  else if(id==='color'){let target=board[row][col];if(!target)return[];let key=colorKey(target);for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)if(colorKey(board[r][c])===key)out.push(r*SIZE+c)}
  else if(id==='checker'){for(let dr=-2;dr<=2;dr++)for(let dc=-2;dc<=2;dc++){let r=row+dr,c=col+dc;if(r>=0&&r<SIZE&&c>=0&&c<SIZE&&(dr+dc)%2===0)out.push(r*SIZE+c)}}
  else if(id==='frame'){for(let dr=-2;dr<=2;dr++)for(let dc=-2;dc<=2;dc++){let r=row+dr,c=col+dc;if(r>=0&&r<SIZE&&c>=0&&c<SIZE&&(Math.abs(dr)===2||Math.abs(dc)===2))out.push(r*SIZE+c)}}
+
+ else if(id==='tinyBomb'){for(let r=row;r<row+2;r++)for(let c=col;c<col+2;c++)if(r<SIZE&&c<SIZE)out.push(r*SIZE+c)}
+ else if(id==='longCross'){for(let d=-2;d<=2;d++){if(row+d>=0&&row+d<SIZE)out.push((row+d)*SIZE+col);if(col+d>=0&&col+d<SIZE)out.push(row*SIZE+col+d)}}
+ else if(id==='rowTriple'||id==='rowDouble'){let offsets=id==='rowTriple'?[-1,0,1]:[0,1];for(const dr of offsets)if(row+dr>=0&&row+dr<SIZE)for(let c=0;c<SIZE;c++)out.push((row+dr)*SIZE+c)}
+ else if(id==='colTriple'||id==='colDouble'){let offsets=id==='colTriple'?[-1,0,1]:[0,1];for(const dc of offsets)if(col+dc>=0&&col+dc<SIZE)for(let r=0;r<SIZE;r++)out.push(r*SIZE+col+dc)}
+ else if(id==='diamondBomb'){for(let dr=-2;dr<=2;dr++)for(let dc=-2;dc<=2;dc++)if(Math.abs(dr)+Math.abs(dc)<=2){let r=row+dr,c=col+dc;if(r>=0&&r<SIZE&&c>=0&&c<SIZE)out.push(r*SIZE+c)}}
+ else if(id==='ringBomb'){for(let dr=-3;dr<=3;dr++)for(let dc=-3;dc<=3;dc++)if(Math.max(Math.abs(dr),Math.abs(dc))===3){let r=row+dr,c=col+dc;if(r>=0&&r<SIZE&&c>=0&&c<SIZE)out.push(r*SIZE+c)}}
+ else if(id==='tLaser'){for(let c=0;c<SIZE;c++)out.push(row*SIZE+c);for(let r=row;r<SIZE;r++)out.push(r*SIZE+col)}
+ else if(id==='uLaser'){for(let dr=-2;dr<=2;dr++)for(let dc=-2;dc<=2;dc++)if(Math.abs(dc)===2||dr===2){let r=row+dr,c=col+dc;if(r>=0&&r<SIZE&&c>=0&&c<SIZE)out.push(r*SIZE+c)}}
  return [...new Set(out)]}
 function clearToolPreview(){[...boardEl.children].forEach(c=>c.classList.remove('toolPreview'))}
 function showToolPreview(index){clearToolPreview();if(!activeTool)return;toolIndices(activeTool,index).forEach(i=>boardEl.children[i].classList.add('toolPreview'))}
@@ -1262,7 +1311,7 @@ function updateToolBar(){if(!activeTool){toolBar.classList.remove('show');toolTe
 function cancelTool(){activeTool=null;clearToolPreview();updateBombButton();updateToolBar();saveSession()}
 function activateTool(id){let count=id==='bomb5'?totalBombs():inv(id);if(count<=0){toast('そのアイテムを持ってないよ');return}activeTool=activeTool===id?null:id;shopModal.classList.remove('show');updateBombButton();updateToolBar();clearToolPreview();saveSession();if(activeTool)toast('盤面の好きなマスをタップ！')}
 function consumeTool(id){if(id==='bomb5'){if(freeBombs>0)freeBombs--;else return consumeInv('bomb5')}else return consumeInv(id);updateBombButton();return true}
-function useTargetTool(id,index){if(!activeTool||id!==activeTool)return;let indexes=toolIndices(id,index);if(id==='color'&&indexes.length===0){toast('色つきブロックをタップしてね');return}if(!consumeTool(id)){cancelTool();return}cancelTool();boomAt(index,id==='hammer'?'🔨':id==='color'?'🌈':'💥');toolSound();let removed=animateRemove(indexes,()=>{indexes.forEach(i=>board[Math.floor(i/SIZE)][i%SIZE]=null)});if(removed>0)addScore(removed);else toast('空っぽだった！');renderShop()}
+function useTargetTool(id,index){if(!activeTool||id!==activeTool)return;let indexes=toolIndices(id,index);if(id==='color'&&indexes.length===0){toast('色つきブロックをタップしてね');return}if(!indexes.some(i=>board[Math.floor(i/SIZE)][i%SIZE])){toast('その場所には消せるブロックがないよ！');return}if(!consumeTool(id)){cancelTool();return}cancelTool();boomAt(index,id==='hammer'?'🔨':id==='color'?'🌈':'💥');toolSound();let removed=animateRemove(indexes,()=>{indexes.forEach(i=>board[Math.floor(i/SIZE)][i%SIZE]=null)});if(removed>0)addScore(removed);else toast('空っぽだった！');renderShop()}
 
 function filledIndexes(){let a=[];for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)if(board[r][c])a.push(r*SIZE+c);return a}
 function randomPick(arr,n){let a=arr.slice();for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a.slice(0,n)}
@@ -1277,17 +1326,60 @@ function useInstant(id){if(inv(id)<=0){toast('そのアイテムを持ってな�
  else if(id==='score3'){scoreMultiplier=3;toast('🌟 次の1手はスコア×3！')}
  else if(id==='comboShield'){comboShield=true;toast('🔥 コンボキープを装備！')}
  else if(id==='coinBoost'){coinBoostTurns+=3;toast('🪙 3手だけコイン×2！')}
+ else if(['random4','random32','topHalf','bottomHalf','center4','fourCorners','denseRows','denseCols','rainbowStorm','cleanHalf'].includes(id)){
+   let indexes=[];
+   if(id==='random4'||id==='random32')indexes=randomPick(filledIndexes(),id==='random4'?4:32);
+   else if(id==='topHalf'||id==='bottomHalf'){const from=id==='topHalf'?0:4;for(let r=from;r<from+4;r++)for(let c=0;c<SIZE;c++)indexes.push(r*SIZE+c)}
+   else if(id==='center4'){for(let r=2;r<=5;r++)for(let c=2;c<=5;c++)indexes.push(r*SIZE+c)}
+   else if(id==='fourCorners'){for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)if((r<=1||r>=6)&&(c<=1||c>=6))indexes.push(r*SIZE+c)}
+   else if(id==='denseRows'){const rows=[...Array(SIZE)].map((_,r)=>({r,n:board[r].filter(Boolean).length})).sort((a,b)=>b.n-a.n).slice(0,2);for(const item of rows)for(let c=0;c<SIZE;c++)indexes.push(item.r*SIZE+c)}
+   else if(id==='denseCols'){const cols=[...Array(SIZE)].map((_,c)=>({c,n:board.filter(row=>!!row[c]).length})).sort((a,b)=>b.n-a.n).slice(0,2);for(const item of cols)for(let r=0;r<SIZE;r++)indexes.push(r*SIZE+item.c)}
+   else if(id==='rainbowStorm'){const counts=new Map();for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)if(board[r][c]){let key=colorKey(board[r][c]);counts.set(key,(counts.get(key)||0)+1)}let winner=[...counts].sort((a,b)=>b[1]-a[1])[0]?.[0];if(winner)for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)if(colorKey(board[r][c])===winner)indexes.push(r*SIZE+c)}
+   else if(id==='cleanHalf')indexes=randomPick(filledIndexes(),Math.ceil(filledIndexes().length/2));
+   const removed=animateRemove(indexes,()=>indexes.forEach(i=>board[Math.floor(i/SIZE)][i%SIZE]=null));if(removed)addScore(removed);toolSound();toast('✨ 大掃除 '+removed+'マス！');
+ }
+ else if(['pairSet','tripleSet','lineSet','rerollUnused','rotateHand'].includes(id)){
+   let shapePool=id==='pairSet'?[[[1,1]],[[1],[1]]]:id==='tripleSet'?[[[1,1,1]],[[1],[1],[1]]]:[[[1,1,1,1]],[[1],[1],[1],[1]]];
+   currentPieces=currentPieces.map(p=>{
+     if(p.used)return p;
+     if(id==='rerollUnused')return randomPiece();
+     if(id==='rotateHand')return {...p,shape:rotateShape(p.shape)};
+     return randomPiece(shapePool);
+   });renderPieces();toast('🧩 手元ブロックを変更！');
+ }
+ else if(id==='score4'){scoreMultiplier=4;toast('🌠 次の1手 スコア×4！')}
+ else if(id==='coinBoost8'){coinBoostTurns+=8;toast('💰 次の8手 コイン×2！')}
+ else if(id==='scoreGift100'){addScore(100,true);toast('💯 スコア+100！')}
+ else if(id==='comboPlus'){combo+=2;toast('🔥 コンボが2アップ！')}
+ else if(id==='bombGift'){freeBombs+=2;updateBombButton();toast('🎁 無料爆弾を2個追加！')}
  shopModal.classList.remove('show');renderShop();checkGameOver()}
 function usePassive(id){toast(id==='continue'?'🎟️ 復活チケットは詰んだ時に自動使用！':'持っているだけで発動するよ')}
 
-function buyItem(id){let def=ITEM_DEFS.find(x=>x.id===id);if(!def)return;if(coins<def.price){toast('🪙 コインが足りない！');beep(120,.08,'square',.025,95);return}coins-=def.price;saveCoins();beep(660,.06,'triangle',.035,880);
- if(def.mode==='pack'){if(id==='hammerPack')addInv('hammer',5);if(id==='bombPack')addInv('bomb5',3);if(id==='laserPack'){addInv('row',1);addInv('col',1);addInv('cross',1)}if(id==='rescuePack'){addInv('bomb3',2);addInv('hammer',3);addInv('shuffle',1);addInv('continue',1)}toast('📦 パックを購入！')}
- else{addInv(id,1);toast(def.icon+' '+def.name+' を購入！')}
- renderShop();updateBombButton()}
-function renderShop(){if(!shopList)return;updateCoinUI();let html='',cats=[...new Set(ITEM_DEFS.map(x=>x.category))];cats.forEach(cat=>{html+=`<div class="categoryTitle">${escapeShopText(cat)}</div><div class="shopGrid">`;ITEM_DEFS.filter(x=>x.category===cat).forEach(def=>{let owned=def.id==='bomb5'?inv('bomb5'):inv(def.id),ownedText=def.mode==='pack'?'まとめ買い':`所持：${owned}`;let use='';if(def.mode==='target')use=`<button class="use" data-use="${def.id}" ${def.id==='bomb5'?(totalBombs()<=0?'disabled':''):(owned<=0?'disabled':'')}>使用</button>`;else if(def.mode==='instant')use=`<button class="use" data-use="${def.id}" ${owned<=0?'disabled':''}>使用</button>`;else if(def.mode==='passive')use=`<button class="use" data-use="${def.id}" ${owned<=0?'disabled':''}>説明</button>`;html+=`<div class="shopItem"><div class="itemTop"><div class="itemIcon">${escapeShopText(def.icon)}</div><div><div class="itemName">${escapeShopText(def.name)}</div>${def.badge?`<span class="shopBadge">${escapeShopText(def.badge)}</span>`:''}<div class="owned">${ownedText}</div></div></div><div class="itemDesc">${escapeShopText(def.desc)}</div><div class="itemActions"><button class="${def.mode==='pack'?'pack':'buy'}" data-buy="${def.id}">🪙${def.price}</button>${use}</div></div>`});html+='</div>'});shopList.innerHTML=html}
+const PACK_RECIPES={
+ hammerPack:{hammer:5},bombPack:{bomb5:3},laserPack:{row:1,col:1,cross:1},
+ rescuePack:{bomb3:2,hammer:3,shuffle:1,continue:1},
+ starterKit:{hammer:2,tinyBomb:2,shuffle:1},
+ rainbowKit:{color:1,rainbowStorm:1,diamondBomb:1},
+ tripleKit:{rowTriple:1,colTriple:1,longCross:1},
+ boostKit:{score4:1,coinBoost8:1,comboShield:1},
+ emergencyKit:{continue:1,cleanHalf:1,random32:1}
+};
+function buyItem(id){
+ if(gameMode==='battle'){toast('🌐 対戦中はショップを使えないよ');return}
+ const def=ITEM_DEFS.find(x=>x.id===id);if(!def)return;
+ if(coins<def.price){toast('🪙 コインが足りない！');beep(120,.08,'square',.025,95);return}
+ if(def.mode==='pack'&&!PACK_RECIPES[id])return;
+ coins-=def.price;saveCoins();beep(660,.06,'triangle',.035,880);
+ if(def.mode==='pack'){
+   for(const [key,count] of Object.entries(PACK_RECIPES[id]))addInv(key,count);
+   toast('📦 '+def.name+' を購入！');
+ }else{addInv(id,1);toast(def.icon+' '+def.name+' を購入！')}
+ renderShop();updateBombButton();
+}
+function renderShop(){if(!shopList)return;updateCoinUI();const term=(document.getElementById('shopSearch')?.value||'').trim().toLowerCase();const visible=ITEM_DEFS.filter(x=>[x.category,x.name,x.desc,x.id].some(t=>t.toLowerCase().includes(term)));const count=document.getElementById('shopCount');if(count)count.textContent=`全${ITEM_DEFS.length}種類 / 表示${visible.length}種類`;let html='',cats=[...new Set(visible.map(x=>x.category))];cats.forEach(cat=>{html+=`<div class="categoryTitle">${escapeShopText(cat)}</div><div class="shopGrid">`;visible.filter(x=>x.category===cat).forEach(def=>{let owned=def.id==='bomb5'?inv('bomb5'):inv(def.id),ownedText=def.mode==='pack'?'まとめ買い':`所持：${owned}`;let use='';if(def.mode==='target')use=`<button class="use" data-use="${def.id}" ${def.id==='bomb5'?(totalBombs()<=0?'disabled':''):(owned<=0?'disabled':'')}>使用</button>`;else if(def.mode==='instant')use=`<button class="use" data-use="${def.id}" ${owned<=0?'disabled':''}>使用</button>`;else if(def.mode==='passive')use=`<button class="use" data-use="${def.id}" ${owned<=0?'disabled':''}>説明</button>`;html+=`<div class="shopItem"><div class="itemTop"><div class="itemIcon">${escapeShopText(def.icon)}</div><div><div class="itemName">${escapeShopText(def.name)}</div>${def.badge?`<span class="shopBadge">${escapeShopText(def.badge)}</span>`:''}<div class="owned">${ownedText}</div></div></div><div class="itemDesc">${escapeShopText(def.desc)}</div><div class="itemActions"><button class="${def.mode==='pack'?'pack':'buy'}" data-buy="${def.id}">🪙${def.price}</button>${use}</div></div>`});html+='</div>'});shopList.innerHTML=html}
 
 function pieceFitsAnywhere(piece){let shape=piece.shape.map(row=>row.slice());for(let turn=0;turn<4;turn++){for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)if(canPlace(shape,r,c))return true;shape=rotateShape(shape)}return false}
-function hasRescueItem(){return totalBombs()>0||['hammer','bomb3','bomb7','row','col','cross','diag','color','checker','frame','edge','random8','random16','clearAll','shuffle','smallSet','singleSet'].some(id=>inv(id)>0)}
+function hasRescueItem(){return totalBombs()>0||['hammer','bomb3','bomb7','row','col','cross','diag','color','checker','frame','edge','random8','random16','clearAll','shuffle','smallSet','singleSet','tinyBomb','longCross','rowTriple','colTriple','diamondBomb','ringBomb','tLaser','uLaser','rowDouble','colDouble','random4','random32','topHalf','bottomHalf','center4','fourCorners','denseRows','denseCols','rainbowStorm','cleanHalf','pairSet','tripleSet','lineSet','rerollUnused','rotateHand'].some(id=>inv(id)>0)}
 function autoContinue(){if(inv('continue')<=0)return false;consumeInv('continue');let idx=randomPick(filledIndexes(),12),rem=animateRemove(idx,()=>idx.forEach(i=>board[Math.floor(i/SIZE)][i%SIZE]=null));if(rem)addScore(rem);toast('🎟️ 復活チケット発動！');beep(470,.14,'triangle',.05,900);return true}
 function checkGameOver(){let active=currentPieces.filter(p=>!p.used);if(active.length===0)return;if(!active.some(pieceFitsAnywhere)){if(gameMode==='battle'){battleRunning=false;sendBattleScore();toast('🧱 置ける場所がない！ 対戦結果を待とう');return;}if(hasRescueItem())return;if(autoContinue())return;if(gameMode==='stage'){failStage('置ける場所がなくなった！');return}finalScoreEl.textContent=score;stopBgm(false);soundGameOver();overlay.classList.add('show');saveSession()}}
 
@@ -1295,6 +1387,7 @@ bombBtn.addEventListener('click',()=>{if(totalBombs()<=0)return;activeTool=activ
 boardEl.addEventListener('pointermove',e=>{if(!activeTool)return;let cell=e.target.closest('.cell');if(cell&&boardEl.contains(cell))showToolPreview(Number(cell.dataset.index))});
 boardEl.addEventListener('pointerleave',()=>{if(activeTool)clearToolPreview()});
 boardEl.addEventListener('click',e=>{if(!activeTool)return;let cell=e.target.closest('.cell');if(!cell||!boardEl.contains(cell))return;e.preventDefault();e.stopPropagation();useTargetTool(activeTool,Number(cell.dataset.index))});
+document.getElementById('shopSearch').addEventListener('input',renderShop);
 shopBtn.addEventListener('click',()=>{cancelTool();renderShop();shopModal.classList.add('show');fetchShopCatalog(false);beep(540,.05,'triangle',.025,680)});
 document.getElementById('shopCatalogRefresh').addEventListener('click',()=>fetchShopCatalog(true));
 
@@ -1416,7 +1509,7 @@ function applySeasonTheme(){
   document.body.dataset.season=selected;
   if(selected!==activeSeason){activeSeason=selected;seasonParticleField(selected)}
   seasonBtn.textContent=item.icon+' 季節';
-  const sub=document.querySelector('.top .sub');if(sub)sub.textContent=`${item.icon} ${item.name} SEASON · ONLINE v1.2.3`;
+  const sub=document.querySelector('.top .sub');if(sub)sub.textContent=`${item.icon} ${item.name} SEASON · ONLINE v1.2.4 · 62 ITEMS`;
   seasonStatus.textContent=`現在は ${item.icon} ${item.name}！ `+(seasonChoice==='auto'?'📆 月ごとに自動で変わるよ':'🎨 手動で固定中');
   seasonModal.querySelectorAll('[data-season-choice]').forEach(b=>{b.classList.toggle('selected',b.dataset.seasonChoice===seasonChoice);b.setAttribute('aria-pressed',String(b.dataset.seasonChoice===seasonChoice))});
 }
@@ -1441,7 +1534,7 @@ seasonModal.querySelectorAll('[data-season-choice]').forEach(b=>b.addEventListen
 }));
 setInterval(()=>{if(seasonChoice==='auto')applySeasonTheme()},15*60*1000);
 
-const CLIENT_VERSION='1.2.3';
+const CLIENT_VERSION='1.2.4';
 const ONLINE_ORIGIN=location.protocol==='file:'?'https://block-pop-online.onrender.com':location.origin;
 const ONLINE_SOCKET=ONLINE_ORIGIN.replace(/^http/,'ws')+'/ws';
 const onlineModal=document.getElementById('onlineModal');

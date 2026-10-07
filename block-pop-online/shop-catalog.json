@@ -1,6 +1,6 @@
 {
-  "version": "2026.10.08.1",
-  "title": "Block Pop! オンラインショップ",
+  "version": "2026.10.08.2",
+  "title": "Block Pop! オンラインメガショップ 62種類",
   "updatedAt": "2026-10-08",
   "items": [
     {
@@ -248,6 +248,329 @@
       "desc": "ミニ爆弾×2、ハンマー×3、再抽選×1、復活×1。",
       "mode": "pack",
       "badge": "お得"
+    },
+    {
+      "category": "精密爆破",
+      "id": "tinyBomb",
+      "icon": "🟨",
+      "name": "スクエア爆弾 2×2",
+      "price": 15,
+      "desc": "タップしたマスを左上に2×2を消す。",
+      "mode": "target",
+      "badge": "NEW"
+    },
+    {
+      "category": "精密爆破",
+      "id": "longCross",
+      "icon": "✳️",
+      "name": "ロングクロス",
+      "price": 55,
+      "desc": "タップ地点から上下左右2マスの十字を消す。",
+      "mode": "target"
+    },
+    {
+      "category": "精密爆破",
+      "id": "rowTriple",
+      "icon": "📶",
+      "name": "横3連レーザー",
+      "price": 88,
+      "desc": "タップ地点と上下の横3列を消す。",
+      "mode": "target",
+      "badge": "人気"
+    },
+    {
+      "category": "精密爆破",
+      "id": "colTriple",
+      "icon": "🛰️",
+      "name": "縦3連レーザー",
+      "price": 88,
+      "desc": "タップ地点と左右の縦3列を消す。",
+      "mode": "target"
+    },
+    {
+      "category": "精密爆破",
+      "id": "diamondBomb",
+      "icon": "💎",
+      "name": "ダイヤ爆弾",
+      "price": 48,
+      "desc": "中心からひし形の13マスを消す。",
+      "mode": "target"
+    },
+    {
+      "category": "精密爆破",
+      "id": "ringBomb",
+      "icon": "⭕",
+      "name": "リング爆弾",
+      "price": 66,
+      "desc": "中心の周囲7×7の外周だけ消す。",
+      "mode": "target"
+    },
+    {
+      "category": "精密爆破",
+      "id": "tLaser",
+      "icon": "🔱",
+      "name": "T字レーザー",
+      "price": 42,
+      "desc": "横1列とタップ地点より下の縦ラインを消す。",
+      "mode": "target"
+    },
+    {
+      "category": "精密爆破",
+      "id": "uLaser",
+      "icon": "🧲",
+      "name": "U字レーザー",
+      "price": 49,
+      "desc": "中心5×5の左右と下の3辺を消す。",
+      "mode": "target"
+    },
+    {
+      "category": "精密爆破",
+      "id": "rowDouble",
+      "icon": "🟰",
+      "name": "横2連レーザー",
+      "price": 54,
+      "desc": "タップ行とその下の2列を消す。",
+      "mode": "target"
+    },
+    {
+      "category": "精密爆破",
+      "id": "colDouble",
+      "icon": "║",
+      "name": "縦2連レーザー",
+      "price": 54,
+      "desc": "タップ列とその右の2列を消す。",
+      "mode": "target"
+    },
+    {
+      "category": "一斉消去",
+      "id": "random4",
+      "icon": "🎲",
+      "name": "ランダム4",
+      "price": 18,
+      "desc": "盤面からランダムに最大4個消す。",
+      "mode": "instant"
+    },
+    {
+      "category": "一斉消去",
+      "id": "random32",
+      "icon": "☄️",
+      "name": "ランダム32",
+      "price": 115,
+      "desc": "盤面からランダムに最大32個消す。",
+      "mode": "instant",
+      "badge": "レア"
+    },
+    {
+      "category": "一斉消去",
+      "id": "topHalf",
+      "icon": "☁️",
+      "name": "上半分クリア",
+      "price": 86,
+      "desc": "上4段にあるブロックを全部消す。",
+      "mode": "instant"
+    },
+    {
+      "category": "一斉消去",
+      "id": "bottomHalf",
+      "icon": "🌊",
+      "name": "下半分クリア",
+      "price": 86,
+      "desc": "下4段にあるブロックを全部消す。",
+      "mode": "instant"
+    },
+    {
+      "category": "一斉消去",
+      "id": "center4",
+      "icon": "🎯",
+      "name": "中央4×4クリア",
+      "price": 58,
+      "desc": "盤面中央の4×4を消す。",
+      "mode": "instant"
+    },
+    {
+      "category": "一斉消去",
+      "id": "fourCorners",
+      "icon": "📐",
+      "name": "4隅クリア",
+      "price": 41,
+      "desc": "盤面の四隅にある2×2ずつを消す。",
+      "mode": "instant"
+    },
+    {
+      "category": "一斉消去",
+      "id": "denseRows",
+      "icon": "🧹",
+      "name": "満員横2列クリア",
+      "price": 64,
+      "desc": "一番ブロックが多い横2列を消す。",
+      "mode": "instant"
+    },
+    {
+      "category": "一斉消去",
+      "id": "denseCols",
+      "icon": "🧽",
+      "name": "満員縦2列クリア",
+      "price": 64,
+      "desc": "一番ブロックが多い縦2列を消す。",
+      "mode": "instant"
+    },
+    {
+      "category": "一斉消去",
+      "id": "rainbowStorm",
+      "icon": "🌈",
+      "name": "レインボーストーム",
+      "price": 56,
+      "desc": "盤面に一番多い色を全消去する。",
+      "mode": "instant",
+      "badge": "人気"
+    },
+    {
+      "category": "一斉消去",
+      "id": "cleanHalf",
+      "icon": "🪄",
+      "name": "ハーフクリーナー",
+      "price": 83,
+      "desc": "盤面のブロックをランダムに半分消す。",
+      "mode": "instant"
+    },
+    {
+      "category": "ブロック操作",
+      "id": "pairSet",
+      "icon": "🧱",
+      "name": "2マスセット",
+      "price": 37,
+      "desc": "手元の未使用ブロックを2マス形に変える。",
+      "mode": "instant",
+      "badge": "NEW"
+    },
+    {
+      "category": "ブロック操作",
+      "id": "tripleSet",
+      "icon": "📏",
+      "name": "3マスラインセット",
+      "price": 42,
+      "desc": "手元の未使用ブロックを3マス直線に変える。",
+      "mode": "instant"
+    },
+    {
+      "category": "ブロック操作",
+      "id": "lineSet",
+      "icon": "📐",
+      "name": "4マスラインセット",
+      "price": 40,
+      "desc": "手元の未使用ブロックを4マス直線に変える。",
+      "mode": "instant"
+    },
+    {
+      "category": "ブロック操作",
+      "id": "rerollUnused",
+      "icon": "🎰",
+      "name": "未使用だけ再抽選",
+      "price": 21,
+      "desc": "置いていない手元のブロックだけ再抽選。",
+      "mode": "instant"
+    },
+    {
+      "category": "ブロック操作",
+      "id": "rotateHand",
+      "icon": "🔃",
+      "name": "全員90度回転",
+      "price": 16,
+      "desc": "手元の未使用ブロックを一斉に90度回転。",
+      "mode": "instant"
+    },
+    {
+      "category": "スーパー強化",
+      "id": "score4",
+      "icon": "🌠",
+      "name": "スコア×4",
+      "price": 124,
+      "desc": "次に置くブロックとラインの得点×4。",
+      "mode": "instant",
+      "badge": "レア"
+    },
+    {
+      "category": "スーパー強化",
+      "id": "coinBoost8",
+      "icon": "💰",
+      "name": "コイン×2 8手",
+      "price": 91,
+      "desc": "次の8手だけ獲得コインが2倍。",
+      "mode": "instant"
+    },
+    {
+      "category": "スーパー強化",
+      "id": "scoreGift100",
+      "icon": "💯",
+      "name": "スコア+100",
+      "price": 75,
+      "desc": "すぐにスコア100点を追加。",
+      "mode": "instant"
+    },
+    {
+      "category": "スーパー強化",
+      "id": "comboPlus",
+      "icon": "🔥",
+      "name": "コンボ+2",
+      "price": 96,
+      "desc": "現在のコンボ数を2増やす。",
+      "mode": "instant"
+    },
+    {
+      "category": "スーパー強化",
+      "id": "bombGift",
+      "icon": "🎁",
+      "name": "爆弾おまけ+2",
+      "price": 50,
+      "desc": "無料5×5爆弾を2個追加する。",
+      "mode": "instant"
+    },
+    {
+      "category": "お得パック",
+      "id": "starterKit",
+      "icon": "🧰",
+      "name": "スターターBOX",
+      "price": 75,
+      "desc": "ハンマー×2・2×2爆弾×2・再抽選×1。",
+      "mode": "pack",
+      "badge": "お得"
+    },
+    {
+      "category": "お得パック",
+      "id": "rainbowKit",
+      "icon": "🌈",
+      "name": "虹の宝箱",
+      "price": 120,
+      "desc": "カラークリーナー・虹ストーム・ダイヤ爆弾を各1個。",
+      "mode": "pack"
+    },
+    {
+      "category": "お得パック",
+      "id": "tripleKit",
+      "icon": "📡",
+      "name": "3連兵器セット",
+      "price": 178,
+      "desc": "横3連・縦3連・ロングクロスを各1個。",
+      "mode": "pack"
+    },
+    {
+      "category": "お得パック",
+      "id": "boostKit",
+      "icon": "🚀",
+      "name": "ブースト全部盛り",
+      "price": 189,
+      "desc": "スコア×4・コイン×2 8手・コンボキープ。",
+      "mode": "pack"
+    },
+    {
+      "category": "お得パック",
+      "id": "emergencyKit",
+      "icon": "🚑",
+      "name": "緊急救助BOX",
+      "price": 210,
+      "desc": "復活チケット・ハーフクリーナー・ランダム32。",
+      "mode": "pack",
+      "badge": "レア"
     }
   ]
 }

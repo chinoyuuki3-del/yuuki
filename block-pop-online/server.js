@@ -1,6 +1,6 @@
 'use strict';
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),zlib=require('node:zlib');
-const PORT=Number(process.env.PORT||3000),VERSION='1.2.3',ROUND_MS=120000;
+const PORT=Number(process.env.PORT||3000),VERSION='1.2.4',ROUND_MS=120000;
 // Serve the game as one compressed, cached HTML resource (no external assets).
 const PAGE=fs.readFileSync(path.join(__dirname,'index.html'));
 if(PAGE.length>5*1024*1024)throw Error('Game HTML must stay under 5 MiB');
@@ -10,7 +10,7 @@ const PAGE_ETAG='W/"'+crypto.createHash('sha256').update(PAGE).digest('hex')+'"'
 const SHOP_JSON=fs.readFileSync(path.join(__dirname,'shop-catalog.json'));
 if(SHOP_JSON.length>30000)throw Error('Shop catalog exceeds 30 KB');
 const SHOP_DATA=JSON.parse(SHOP_JSON.toString('utf8'));
-if(!Array.isArray(SHOP_DATA.items)||SHOP_DATA.items.length!==27)throw Error('Invalid shop catalog');
+if(!Array.isArray(SHOP_DATA.items)||SHOP_DATA.items.length!==62)throw Error('Invalid shop catalog');
 const SHOP_GZIP=zlib.gzipSync(SHOP_JSON,{level:9});
 const SHOP_ETAG='W/"'+crypto.createHash('sha256').update(SHOP_JSON).digest('hex')+'"';
 const rooms=new Map(),ABC='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -129,7 +129,7 @@ const server=http.createServer((req,res)=>{
     });
     return res.end(PAGE);
   }
-  if(url==='/api/version'){res.setHeader('Access-Control-Allow-Origin','*');res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({version:VERSION,release:'Block Pop! ONLINE SHOP v1.2.3',notes:'27種類のショップカタログをオンライン配信。省通信キャッシュとオフライン利用に対応。',url:'/',downloadUrl:'/download/latest'}));}
+  if(url==='/api/version'){res.setHeader('Access-Control-Allow-Origin','*');res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({version:VERSION,release:'Block Pop! MEGA SHOP v1.2.4',notes:'ショップ62種類！新しいレーザー・爆弾・一斉消去・ブースト・パックと商品検索を追加。',url:'/',downloadUrl:'/download/latest'}));}
   if(url!=='/'&&url!=='/index.html'){res.writeHead(404);return res.end('Not found');}
   res.setHeader('Cache-Control','private, no-cache');
   res.setHeader('ETag',PAGE_ETAG);
