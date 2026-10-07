@@ -1,6 +1,6 @@
 'use strict';
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
-const PORT=Number(process.env.PORT||3000),VERSION='1.2.0',ROUND_MS=120000;
+const PORT=Number(process.env.PORT||3000),VERSION='1.2.1',ROUND_MS=120000;
 const rooms=new Map(),ABC='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const stamp=()=>Date.now();
 function code(){let s;do{s=Array.from({length:6},()=>ABC[crypto.randomInt(ABC.length)]).join('')}while(rooms.has(s));return s;}
@@ -106,7 +106,7 @@ const server=http.createServer((req,res)=>{
     });
     return;
   }
-  if(url==='/api/version'){res.setHeader('Access-Control-Allow-Origin','*');res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({version:VERSION,release:'Block Pop! SEASONS v1.2',notes:'HTMLから最新版を確認・ダウンロード。オンライン対戦と季節テーマも継続。',url:'/',downloadUrl:'/download/latest'}));}
+  if(url==='/api/version'){res.setHeader('Access-Control-Allow-Origin','*');res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({version:VERSION,release:'Block Pop! テストアップデート v1.2.1',notes:'アップデート受信機能の公開テスト。画面に TEST v1.2.1 を追加しました。',url:'/',downloadUrl:'/download/latest'}));}
   if(url!=='/'&&url!=='/index.html'){res.writeHead(404);return res.end('Not found');}
   fs.readFile(path.join(__dirname,'index.html'),(e,data)=>{
     if(e){res.writeHead(503);return res.end('Game unavailable');}
