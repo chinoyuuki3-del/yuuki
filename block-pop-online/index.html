@@ -237,7 +237,7 @@ body[data-season] .musicBar{border:1px solid var(--season-grid)}
 
 <div class="app">
   <div class="top">
-    <div><div class="title">BLOCK POP!</div><div class="sub">MEGA SHOP</div></div>
+    <div><div class="title">BLOCK POP!</div><div class="sub">MEGA SHOP 🧪 TEST v1.2.1</div></div>
     <div class="scores">
       <div class="scoreBox"><small>SCORE</small><b id="score">0</b></div>
       <div class="scoreBox"><small>BEST</small><b id="best">0</b></div>
@@ -1368,7 +1368,7 @@ seasonModal.querySelectorAll('[data-season-choice]').forEach(b=>b.addEventListen
 }));
 setInterval(()=>{if(seasonChoice==='auto')applySeasonTheme()},15*60*1000);
 
-const CLIENT_VERSION='1.2.0';
+const CLIENT_VERSION='1.2.1';
 const ONLINE_ORIGIN=location.protocol==='file:'?'https://block-pop-online.onrender.com':location.origin;
 const ONLINE_SOCKET=ONLINE_ORIGIN.replace(/^http/,'ws')+'/ws';
 const onlineModal=document.getElementById('onlineModal');
