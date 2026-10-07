@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Block Pop! ONLINE 🌐</title>
+<style>
+:root{--panel:rgba(255,255,255,.94);--text:#24324a;--shadow:0 14px 34px rgba(44,72,125,.17);--blue:#4d79ff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;min-height:100%;overflow:hidden;background:radial-gradient(circle at 18% 10%,#fff 0 9%,transparent 10%),linear-gradient(155deg,#dfeaff,#f9fbff 55%,#e7edff);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic",sans-serif;color:var(--text);overscroll-behavior:none}
+body{display:flex;justify-content:center;align-items:center}
+.app{width:min(95vw,540px);height:min(98vh,900px);display:flex;flex-direction:column;gap:9px;position:relative}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px}.title{font-size:clamp(24px,6.6vw,38px);line-height:1;font-weight:1000;letter-spacing:-1.8px;color:#2d55a4;text-shadow:0 3px 0 #fff,0 7px 16px rgba(35,72,145,.18);white-space:nowrap}.sub{font-size:9px;font-weight:900;letter-spacing:2px;opacity:.45;margin-top:4px}.scores{display:flex;gap:5px}.scoreBox{min-width:64px;padding:6px 7px;background:var(--panel);border-radius:14px;box-shadow:var(--shadow);text-align:center}.scoreBox small{display:block;font-size:9px;font-weight:900;opacity:.55}.scoreBox b{display:block;font-size:17px;margin-top:1px}.coinBox b{color:#c68700}
+.boardWrap{flex:0 0 auto;width:100%;aspect-ratio:1;padding:10px;border-radius:25px;background:var(--panel);box-shadow:var(--shadow);position:relative;overflow:hidden}#board{width:100%;height:100%;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);gap:5px;padding:6px;border-radius:19px;background:linear-gradient(145deg,#c9d7ec,#d8e3f3);box-shadow:inset 0 3px 9px rgba(65,88,130,.12);touch-action:none}
+.cell{position:relative;border-radius:8px;background:linear-gradient(145deg,rgba(255,255,255,.75),rgba(228,236,248,.95));box-shadow:inset 0 1px 2px rgba(255,255,255,.95);transition:transform .12s ease,opacity .12s ease,filter .12s ease,background .12s ease;overflow:hidden}.cell.filled,.block{box-shadow:inset 0 -4px 0 rgba(0,0,0,.10),inset 0 2px 0 rgba(255,255,255,.38),0 2px 4px rgba(42,64,100,.15)}.cell.filled::before,.block::before{content:"";position:absolute;inset:10% 13% auto 13%;height:30%;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.52),rgba(255,255,255,0));pointer-events:none}.cell.preview{outline:3px solid rgba(255,255,255,.92);outline-offset:-3px;transform:scale(.9);opacity:.72;filter:saturate(1.2) brightness(1.05)}.cell.bad{background:linear-gradient(145deg,#ff9ca7,#ff6677)!important;animation:shake .16s linear 1}.cell.placePop{animation:placePop .22s cubic-bezier(.3,1.6,.5,1) both}.cell.clearFlash{animation:clearFlash .34s ease forwards;z-index:2}.cell.toolPreview{outline:3px solid #ffd63c;outline-offset:-3px;filter:brightness(1.08) saturate(1.25);transform:scale(.94)}
+@keyframes placePop{0%{transform:scale(.35) rotate(-5deg)}70%{transform:scale(1.12) rotate(2deg)}100%{transform:scale(1)}}@keyframes clearFlash{0%{transform:scale(1);filter:brightness(1)}45%{transform:scale(1.2);filter:brightness(1.9);opacity:1}100%{transform:scale(.25);filter:brightness(2.4);opacity:0}}@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+.piecesPanel{flex:1;min-height:152px;padding:11px;background:var(--panel);border-radius:24px;box-shadow:var(--shadow);display:flex;flex-direction:column;justify-content:center}.pieceSlot{min-height:104px;display:flex;align-items:center;justify-content:center;border-radius:18px;background:linear-gradient(180deg,#fff,#ebf2ff);border:2px dashed #d4e0f3;position:relative;overflow:hidden}.pieceSlot.used{opacity:.2}.rotatePieceBtn{position:absolute;right:6px;bottom:6px;z-index:8;width:30px;height:30px;padding:0;border-radius:999px;color:#fff;font-size:18px;font-weight:1000;line-height:30px;background:linear-gradient(180deg,#67d8b2,#32ad83);box-shadow:0 3px 0 #258565,0 5px 10px rgba(33,120,91,.2);touch-action:manipulation}.rotatePieceBtn:active{transform:translateY(2px);box-shadow:0 1px 0 #258565}.piece{display:grid;gap:4px;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;position:relative;z-index:2}.piece:active{cursor:grabbing}.block{width:22px;height:22px;border-radius:6px;position:relative}.ghost{position:fixed;z-index:1000;pointer-events:none;opacity:.92;transform:translate(-50%,-78%) scale(1.12);filter:drop-shadow(0 13px 12px rgba(0,0,0,.26))}.hint{text-align:center;font-size:10px;font-weight:800;opacity:.5;margin-top:8px}
+.musicBar{display:flex;align-items:center;gap:9px;padding:8px 10px;background:rgba(255,255,255,.9);border-radius:15px;box-shadow:var(--shadow)}
+.musicBar button{flex:0 0 92px;padding:8px 7px;font-size:11px;box-shadow:0 4px 0 #455574,0 7px 13px rgba(55,70,100,.18)}
+.musicBar .musicLabel{font-size:10px;font-weight:1000;opacity:.58;white-space:nowrap}
+#bgmVolume{width:100%;accent-color:#5b7cff}
+.footer{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}button{border:0;border-radius:14px;padding:10px 8px;color:#fff;font-size:12px;font-weight:1000;background:linear-gradient(180deg,#6493ff,#4775f0);box-shadow:0 5px 0 #315aca,0 8px 15px rgba(50,90,180,.22);touch-action:manipulation}button.secondary{background:linear-gradient(180deg,#7a8cae,#5b6d91);box-shadow:0 5px 0 #455574,0 8px 15px rgba(55,70,100,.2)}button.bombButton{background:linear-gradient(180deg,#ffb33f,#ef7b25);box-shadow:0 5px 0 #c85a18,0 8px 15px rgba(211,100,30,.25)}button.shopButton{background:linear-gradient(180deg,#7d62ec,#6144cf);box-shadow:0 5px 0 #4931a8,0 8px 15px rgba(80,55,170,.22)}button.dailyButton{background:linear-gradient(180deg,#ffcf56,#f09a28);box-shadow:0 5px 0 #c86e18,0 8px 15px rgba(215,125,25,.22);color:#553400}button.active{outline:4px solid rgba(255,199,54,.32);transform:translateY(-2px)}button:active{transform:translateY(3px)}button:disabled{opacity:.45;filter:grayscale(.35);box-shadow:none;transform:none}
+.overlay{position:absolute;inset:0;border-radius:25px;background:rgba(18,30,55,.75);display:none;align-items:center;justify-content:center;padding:20px;z-index:50;backdrop-filter:blur(4px)}.overlay.show{display:flex}.card{width:min(90%,330px);text-align:center;background:#fff;padding:24px;border-radius:25px;box-shadow:0 25px 60px rgba(0,0,0,.28);animation:cardIn .28s cubic-bezier(.3,1.4,.5,1) both}.card h2{margin:0 0 8px;font-size:29px}.card p{margin:5px 0 18px;font-weight:800;opacity:.7}@keyframes cardIn{from{transform:scale(.75);opacity:0}to{transform:scale(1);opacity:1}}
+
+
+button.stageButton{background:linear-gradient(180deg,#58cf9b,#32a979);box-shadow:0 5px 0 #237d59,0 8px 15px rgba(35,135,90,.22)}
+#stageHud{display:none;align-items:center;gap:8px;padding:8px 10px;border-radius:16px;background:linear-gradient(145deg,#effff7,#e7f4ff);box-shadow:var(--shadow);border:1px solid rgba(101,202,157,.25)}
+#stageHud.show{display:flex}
+.stageHudNo{flex:0 0 auto;min-width:64px;text-align:center;font-size:11px;font-weight:1000;color:#237b59;background:#dff8ec;padding:7px 8px;border-radius:12px}
+.stageHudGoals{min-width:0;flex:1;font-size:9px;font-weight:900;line-height:1.45;color:#50627a}
+.stageHudMoves{flex:0 0 auto;text-align:center;background:#fff2c7;border-radius:12px;padding:6px 9px;color:#845e08}
+.stageHudMoves b{display:block;font-size:15px;line-height:1}.stageHudMoves small{font-size:8px;font-weight:1000}
+.stageHudExit{flex:0 0 auto;width:34px;height:34px;padding:0;border-radius:11px;font-size:15px;background:linear-gradient(#8795ad,#66748d);box-shadow:0 3px 0 #4d586c}
+
+
+.cardBookBtn{background:linear-gradient(180deg,#a986ff,#7657d7)!important;box-shadow:0 5px 0 #5a43aa,0 8px 15px rgba(100,70,180,.2)!important}
+
+.cardAbility{margin-top:5px;padding:5px 6px;border-radius:10px;background:rgba(255,255,255,.55);font-size:8px;font-weight:1000;line-height:1.35;text-align:center;color:#33415d}
+.cardAbilityBtn{margin-top:6px;width:100%;padding:7px 5px!important;font-size:9px!important;border-radius:10px!important;background:linear-gradient(180deg,#ffcf55,#e99b24)!important;box-shadow:0 3px 0 #b87416!important;color:#fff!important}
+.cardAbilityBtn.used{background:linear-gradient(180deg,#9ca6b8,#778397)!important;box-shadow:0 3px 0 #5d6779!important;opacity:.72}
+.cardAbilityBtn.locked{background:linear-gradient(180deg,#b8bec9,#939aa8)!important;box-shadow:0 3px 0 #737987!important;opacity:.6}
+.powerBanner{position:fixed;left:50%;top:26%;z-index:3900;transform:translate(-50%,-50%) scale(.5);pointer-events:none;opacity:0;padding:10px 18px;border-radius:18px;background:linear-gradient(145deg,#fff6b8,#ffd15a);color:#704900;font-size:clamp(20px,6vw,34px);font-weight:1000;box-shadow:0 10px 35px rgba(0,0,0,.25);text-align:center}
+.powerBanner.show{animation:powerPop .9s cubic-bezier(.2,1.4,.35,1) forwards}
+@keyframes powerPop{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.35) rotate(-4deg)}
+  20%{opacity:1;transform:translate(-50%,-50%) scale(1.12) rotate(2deg)}
+  65%{opacity:1;transform:translate(-50%,-58%) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-80%) scale(.9)}
+}
+.hardBadge{display:inline-block;margin-left:5px;padding:2px 5px;border-radius:999px;background:#ff6f61;color:white;font-size:7px;font-weight:1000;vertical-align:middle}
+
+#cardModal{position:fixed;inset:0;background:rgba(17,25,48,.82);z-index:3650;display:none;align-items:center;justify-content:center;padding:13px;backdrop-filter:blur(8px)}
+#cardModal.show{display:flex}
+.cardBookSheet{width:min(96vw,720px);max-height:94vh;background:linear-gradient(160deg,#fbf8ff,#eef4ff);border-radius:28px;box-shadow:0 30px 85px rgba(0,0,0,.36);overflow:hidden;display:flex;flex-direction:column}
+.cardBookHead{display:flex;align-items:center;gap:10px;padding:15px 16px 12px;background:linear-gradient(145deg,#eee3ff,#dfeaff);border-bottom:1px solid #d8d1eb}
+.cardBookTitle{font-size:24px;font-weight:1000;letter-spacing:-.7px}
+.cardCount{margin-left:auto;font-size:11px;font-weight:1000;background:#fff1b7;color:#795700;padding:7px 10px;border-radius:999px}
+.closeCards{flex:0 0 auto;width:38px;height:38px;padding:0;border-radius:12px;background:linear-gradient(#8997af,#66738d);box-shadow:0 4px 0 #4d586c;font-size:18px}
+.cardBookIntro{padding:9px 14px;background:#fff;font-size:10px;line-height:1.55;font-weight:800;color:#67758c}
+.cardGrid{padding:13px;overflow:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:11px}
+.collectCard{aspect-ratio:.72;border-radius:18px;padding:7px;position:relative;overflow:hidden;box-shadow:0 8px 18px rgba(45,45,85,.18),inset 0 1px 0 rgba(255,255,255,.7);border:2px solid rgba(255,255,255,.72);display:flex;flex-direction:column;justify-content:space-between}
+.collectCard::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 25% 15%,rgba(255,255,255,.58),transparent 28%),linear-gradient(145deg,hsla(var(--h),90%,84%,.95),hsla(calc(var(--h) + 55),72%,64%,.96));z-index:0}
+.collectCard>*{position:relative;z-index:1}
+.collectCard.locked{filter:grayscale(1);opacity:.5}
+.collectCard.locked::before{background:linear-gradient(145deg,#d5d9e3,#aeb5c3)}
+.collectCardTop{display:flex;justify-content:space-between;align-items:center;font-size:8px;font-weight:1000;color:rgba(31,36,62,.65)}
+.collectCardIcon{font-size:clamp(34px,7vw,56px);text-align:center;filter:drop-shadow(0 5px 5px rgba(0,0,0,.18));margin:4px 0}
+.collectCardName{font-size:10px;font-weight:1000;line-height:1.25;text-align:center;color:#283149}
+.collectCardRare{text-align:center;font-size:8px;font-weight:1000;color:#765000;background:rgba(255,248,201,.78);border-radius:999px;padding:3px 5px;margin-top:5px}
+.collectCardLock{font-size:31px;text-align:center;margin-top:16px}
+.cardReveal{display:none;margin:12px auto 2px;width:128px;aspect-ratio:.72;border-radius:20px;padding:9px;position:relative;overflow:hidden;box-shadow:0 13px 26px rgba(50,45,100,.24),0 0 0 4px rgba(255,219,94,.36);animation:cardReveal .65s cubic-bezier(.2,1.5,.35,1) both}
+.cardReveal.show{display:flex;flex-direction:column;justify-content:space-between}
+.cardReveal::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 25% 13%,rgba(255,255,255,.75),transparent 28%),linear-gradient(145deg,hsla(var(--h),95%,84%,1),hsla(calc(var(--h) + 55),80%,62%,1));z-index:0}
+.cardReveal>*{position:relative;z-index:1}
+.cardRevealIcon{font-size:50px;text-align:center;filter:drop-shadow(0 5px 5px rgba(0,0,0,.18))}
+.cardRevealName{text-align:center;font-size:11px;font-weight:1000;line-height:1.2}
+.cardRevealTag{text-align:center;font-size:8px;font-weight:1000;background:rgba(255,248,204,.85);color:#765100;border-radius:999px;padding:3px 4px}
+@keyframes cardReveal{
+  0%{transform:perspective(600px) rotateY(90deg) scale(.55);opacity:0}
+  55%{transform:perspective(600px) rotateY(-10deg) scale(1.1);opacity:1}
+  100%{transform:perspective(600px) rotateY(0) scale(1);opacity:1}
+}
+@media(max-width:520px){.cardGrid{grid-template-columns:repeat(3,1fr);gap:8px}.collectCard{padding:6px}}
+
+#stageModal,#stageResultModal{position:fixed;inset:0;background:rgba(17,29,50,.78);z-index:3500;display:none;align-items:center;justify-content:center;padding:13px;backdrop-filter:blur(7px)}
+#stageModal.show,#stageResultModal.show{display:flex}
+.stageSheet{width:min(96vw,650px);max-height:94vh;background:linear-gradient(160deg,#f8fffc,#f4f7ff);border-radius:27px;box-shadow:0 28px 80px rgba(0,0,0,.34);overflow:hidden;display:flex;flex-direction:column}
+.stageHead{display:flex;align-items:center;gap:10px;padding:15px 16px 11px;background:linear-gradient(145deg,#dff9eb,#dceaff);border-bottom:1px solid #cfe2df}
+.stageTitle{font-size:24px;font-weight:1000;letter-spacing:-.7px}
+.stageStarsTotal{margin-left:auto;font-size:11px;font-weight:1000;background:#fff3ba;color:#805a00;padding:7px 10px;border-radius:999px}
+.closeStage{flex:0 0 auto;width:38px;height:38px;padding:0;border-radius:12px;background:linear-gradient(#8997af,#66738d);box-shadow:0 4px 0 #4d586c;font-size:18px}
+.stageIntro{padding:9px 14px;font-size:10px;font-weight:800;line-height:1.55;color:#607086;background:#fff}
+.stageGrid{padding:11px;overflow:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stageCard{min-width:0;border:0;border-radius:17px;padding:10px 7px;background:linear-gradient(160deg,#fff,#eef5ff);box-shadow:0 5px 0 #c7d4e7,0 7px 14px rgba(60,90,130,.12);color:#263750;text-align:left;position:relative}
+.stageCard:active{transform:translateY(3px)}
+.stageCard.locked{filter:grayscale(.7);opacity:.52;box-shadow:none}
+.stageCard.cleared{background:linear-gradient(160deg,#fffdea,#effff6)}
+.stageCard .num{font-size:18px;font-weight:1000;color:#3b66c6}
+.stageCard .name{font-size:9px;font-weight:1000;margin:2px 0 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stageCard .goal{font-size:8px;font-weight:800;line-height:1.35;opacity:.66;min-height:31px}
+.stageCard .stars{font-size:11px;letter-spacing:1px;margin-top:6px}
+.stageCard .reward{font-size:8px;font-weight:1000;color:#9a6b00;margin-top:4px}
+.stageCard .lock{position:absolute;right:7px;top:7px;font-size:16px}
+.stageBottom{padding:10px 12px 13px;background:#eef5fb;border-top:1px solid #dae5ef;display:flex;gap:8px}
+.stageBottom button{flex:1}
+
+.stageResultCard{width:min(92vw,380px);background:linear-gradient(160deg,#fff,#eef8ff);border-radius:28px;padding:23px;text-align:center;box-shadow:0 28px 80px rgba(0,0,0,.34);animation:cardIn .28s cubic-bezier(.3,1.4,.5,1) both}
+.stageResultIcon{font-size:54px;line-height:1}
+.stageResultCard h2{font-size:28px;margin:8px 0 4px}
+.stageResultStars{font-size:37px;letter-spacing:5px;margin:8px 0;text-shadow:0 3px 7px rgba(164,112,0,.18)}
+.stageResultInfo{font-size:11px;font-weight:900;line-height:1.7;color:#617086;background:#f4f7fb;border-radius:14px;padding:10px;margin:11px 0}
+.stageResultReward{font-size:15px;font-weight:1000;color:#9b6900;margin:9px 0 13px}
+.stageResultActions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stageResultActions button{font-size:12px}
+.stageResultActions .wide{grid-column:1/-1}
+@media(max-width:460px){.stageGrid{grid-template-columns:repeat(3,1fr)}.stageCard{padding:8px 6px}.footer button{font-size:8px;padding-left:2px;padding-right:2px}}
+
+#dailyModal{position:fixed;inset:0;background:rgba(18,28,52,.76);z-index:3100;display:none;align-items:center;justify-content:center;padding:14px;backdrop-filter:blur(7px)}
+#dailyModal.show{display:flex}.dailySheet{width:min(94vw,560px);background:linear-gradient(160deg,#fffdf6,#f5f8ff);border-radius:27px;box-shadow:0 28px 80px rgba(0,0,0,.32);overflow:hidden}.dailyHead{padding:17px 18px 12px;background:linear-gradient(145deg,#fff8cf,#ffe5a2);display:flex;align-items:center;gap:10px;border-bottom:1px solid #f0d58a}.dailyTitle{font-size:24px;font-weight:1000;letter-spacing:-.7px}.closeDaily{margin-left:auto;flex:0 0 auto;width:38px;height:38px;padding:0;border-radius:12px;background:linear-gradient(#8b98b1,#68758f);box-shadow:0 4px 0 #505b70;font-size:18px}.dailyBody{padding:13px}.dailyStreak{text-align:center;font-size:13px;font-weight:1000;color:#8a6211;margin-bottom:10px}.dailyGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.dayCard{min-width:0;background:#fff;border:2px solid #e5ebf5;border-radius:14px;padding:8px 3px;text-align:center;position:relative;box-shadow:0 4px 10px rgba(55,80,120,.06)}.dayCard .d{font-size:9px;font-weight:1000;opacity:.55}.dayCard .i{font-size:23px;line-height:1.2;margin:4px 0}.dayCard .r{font-size:8px;font-weight:900;line-height:1.2;min-height:20px;display:flex;align-items:center;justify-content:center}.dayCard.done{opacity:.48;background:#eef3f8}.dayCard.current{border-color:#ffc444;background:#fff8d6;transform:translateY(-3px);box-shadow:0 7px 15px rgba(224,154,24,.18)}.dayCard.current::after{content:'TODAY';position:absolute;top:-7px;left:50%;transform:translateX(-50%);font-size:7px;font-weight:1000;background:#ffae2d;color:#fff;padding:2px 5px;border-radius:99px}.dailyInfo{text-align:center;font-size:10px;font-weight:800;opacity:.6;margin:12px 5px 10px;line-height:1.5}.dailyClaim{width:100%;padding:13px;font-size:15px;background:linear-gradient(180deg,#ffce50,#f29b28);box-shadow:0 5px 0 #c96e17,0 8px 16px rgba(210,125,30,.23);color:#593800}.dailyClaim:disabled{background:#9ba8bd;color:#fff;box-shadow:none}.dailyRewardPop{animation:dailyPop .45s cubic-bezier(.2,1.5,.35,1)}@keyframes dailyPop{0%{transform:scale(.65);opacity:.2}65%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+@media(max-width:430px){.dailyGrid{grid-template-columns:repeat(4,1fr)}.dayCard:nth-child(n+5){margin-top:3px}.footer button{font-size:9px;padding-left:3px;padding-right:3px}}
+
+#shopModal{position:fixed;inset:0;background:rgba(18,28,52,.76);z-index:3000;display:none;align-items:center;justify-content:center;padding:14px;backdrop-filter:blur(7px)}#shopModal.show{display:flex}.shopSheet{width:min(96vw,620px);max-height:92vh;background:#f7faff;border-radius:26px;box-shadow:0 28px 80px rgba(0,0,0,.32);overflow:hidden;display:flex;flex-direction:column}.shopHead{padding:15px 16px 11px;background:linear-gradient(145deg,#fff,#eaf1ff);display:flex;align-items:center;gap:10px;border-bottom:1px solid #dfe8f6}.shopTitle{font-size:24px;font-weight:1000;letter-spacing:-.6px}.shopHead .coinPill{margin-left:auto;background:#fff3bd;color:#855d00;padding:7px 11px;border-radius:999px;font-weight:1000;box-shadow:inset 0 0 0 1px #f1d675}.closeShop{flex:0 0 auto;width:38px;height:38px;padding:0;border-radius:12px;background:linear-gradient(#8b98b1,#68758f);box-shadow:0 4px 0 #505b70;font-size:18px}.shopInfo{padding:8px 16px;font-size:11px;font-weight:800;opacity:.64}.shopScroll{overflow:auto;padding:4px 12px 18px;-webkit-overflow-scrolling:touch}.categoryTitle{font-size:13px;font-weight:1000;margin:14px 4px 7px;color:#52698f;letter-spacing:.4px}.shopGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.shopItem{background:#fff;border:1px solid #dce7f6;border-radius:18px;padding:11px;box-shadow:0 5px 14px rgba(50,75,120,.08);display:flex;flex-direction:column;min-height:150px}.itemTop{display:flex;gap:8px;align-items:center}.itemIcon{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:25px;background:linear-gradient(145deg,#f6f9ff,#e6eeff);flex:0 0 auto}.itemName{font-size:14px;font-weight:1000;line-height:1.15}.itemDesc{font-size:10px;line-height:1.45;opacity:.65;font-weight:700;margin:8px 0;flex:1}.owned{font-size:10px;font-weight:1000;color:#55709b}.itemActions{display:flex;gap:6px;margin-top:7px}.itemActions button{flex:1;padding:7px 5px;border-radius:10px;font-size:10px;box-shadow:0 3px 0 #315aca}.itemActions .buy{background:linear-gradient(#f8c94f,#eaa62e);box-shadow:0 3px 0 #bf7f17;color:#533700}.itemActions .use{background:linear-gradient(#69cf96,#3fad76);box-shadow:0 3px 0 #2c8558}.itemActions .pack{background:linear-gradient(#ef8fff,#bf64dd);box-shadow:0 3px 0 #9345af}
+#toolBar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:2600;background:rgba(28,43,72,.9);color:white;padding:10px 14px;border-radius:999px;font-size:12px;font-weight:1000;display:none;gap:10px;align-items:center;box-shadow:0 8px 22px rgba(0,0,0,.24);backdrop-filter:blur(8px)}#toolBar.show{display:flex}#cancelTool{padding:5px 9px;background:#e65e69;box-shadow:none;border-radius:999px;font-size:10px}
+#fxLayer{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:2000}.bombBoom{position:fixed;z-index:2150;pointer-events:none;font-size:54px;transform:translate(-50%,-50%);animation:bombBoom .58s cubic-bezier(.2,1.3,.4,1) forwards;filter:drop-shadow(0 6px 10px rgba(0,0,0,.25))}.particle{position:fixed;width:9px;height:9px;border-radius:3px;pointer-events:none;animation:particleFly .68s cubic-bezier(.1,.7,.25,1) forwards}.scoreBurst{position:fixed;z-index:2100;pointer-events:none;font-weight:1000;font-size:22px;color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.16),0 5px 12px rgba(0,0,0,.28);animation:scoreRise .75s ease-out forwards}#comboBanner{position:fixed;left:50%;top:38%;z-index:2200;transform:translate(-50%,-50%);pointer-events:none;opacity:0;font-size:clamp(34px,10vw,62px);font-weight:1000;letter-spacing:-2px;color:#fff;text-shadow:0 4px 0 #ff7f32,0 8px 20px rgba(0,0,0,.28)}#comboBanner.show{animation:comboBoom .8s cubic-bezier(.2,1.3,.4,1) forwards}.boardShake{animation:boardShake .24s ease}#toast{position:fixed;left:50%;top:12%;z-index:5000;transform:translate(-50%,-20px);background:rgba(30,43,68,.92);color:#fff;border-radius:999px;padding:9px 15px;font-size:12px;font-weight:1000;opacity:0;pointer-events:none;transition:.22s;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis}#toast.show{opacity:1;transform:translate(-50%,0)}
+@keyframes bombBoom{0%{opacity:0;transform:translate(-50%,-50%) scale(.2) rotate(-20deg)}35%{opacity:1;transform:translate(-50%,-50%) scale(1.5) rotate(8deg)}100%{opacity:0;transform:translate(-50%,-50%) scale(2.2) rotate(22deg)}}@keyframes particleFly{0%{transform:translate(-50%,-50%) scale(1) rotate(0);opacity:1}100%{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(.15) rotate(var(--rot));opacity:0}}@keyframes scoreRise{0%{transform:translate(-50%,-50%) scale(.65);opacity:0}18%{transform:translate(-50%,-55%) scale(1.18);opacity:1}100%{transform:translate(-50%,-135%) scale(.95);opacity:0}}@keyframes comboBoom{0%{opacity:0;transform:translate(-50%,-50%) scale(.25) rotate(-8deg)}20%{opacity:1;transform:translate(-50%,-50%) scale(1.16) rotate(3deg)}45%{transform:translate(-50%,-50%) scale(.96) rotate(-1deg)}70%{opacity:1}100%{opacity:0;transform:translate(-50%,-78%) scale(.88)}}@keyframes boardShake{0%,100%{transform:translate(0)}20%{transform:translate(-4px,2px)}40%{transform:translate(4px,-2px)}60%{transform:translate(-3px,-1px)}80%{transform:translate(3px,1px)}}
+
+button.dataButton{background:linear-gradient(180deg,#5fc8de,#3297b3);box-shadow:0 5px 0 #25768d,0 8px 15px rgba(40,130,155,.22)}
+#dataModal{position:fixed;inset:0;background:rgba(18,28,52,.78);z-index:3300;display:none;align-items:center;justify-content:center;padding:14px;backdrop-filter:blur(7px)}
+#dataModal.show{display:flex}
+.dataSheet{width:min(94vw,520px);background:linear-gradient(155deg,#ffffff,#eef8ff);border-radius:26px;box-shadow:0 28px 80px rgba(0,0,0,.33);overflow:hidden}
+.dataHead{padding:16px 17px 12px;background:linear-gradient(145deg,#e8fbff,#cfeffc);display:flex;align-items:center;gap:10px;border-bottom:1px solid #c7e8f2}
+.dataTitle{font-size:23px;font-weight:1000;letter-spacing:-.6px}
+.closeData{margin-left:auto;flex:0 0 auto;width:38px;height:38px;padding:0;border-radius:12px;background:linear-gradient(#8b98b1,#68758f);box-shadow:0 4px 0 #505b70;font-size:18px}
+.dataBody{padding:15px}
+.dataInfo{font-size:11px;line-height:1.65;font-weight:800;opacity:.68;margin-bottom:12px}
+.dataBox{background:#fff;border:1px solid #d7e8f2;border-radius:16px;padding:12px;margin-bottom:11px;box-shadow:0 5px 14px rgba(50,90,120,.07)}
+.dataBox b{display:block;font-size:14px;margin-bottom:5px}
+.dataBox small{display:block;font-size:10px;line-height:1.5;opacity:.62;font-weight:700}
+.dataActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.dataActions button{font-size:12px;padding:11px 7px}
+.backupSave{background:linear-gradient(180deg,#68d49c,#3daf79);box-shadow:0 5px 0 #2d885d,0 8px 15px rgba(40,140,90,.18)}
+.backupLoad{background:linear-gradient(180deg,#6c9cff,#4b72e7);box-shadow:0 5px 0 #3657bd,0 8px 15px rgba(55,90,170,.18)}
+.backupDanger{margin-top:9px;width:100%;background:linear-gradient(180deg,#fb8e8e,#dc5f68);box-shadow:0 5px 0 #ad4650,0 8px 15px rgba(160,60,70,.18)}
+#backupFile{display:none}
+.backupStatus{margin-top:10px;text-align:center;font-size:10px;font-weight:900;color:#4c6a82;min-height:16px}
+
+@media(max-height:730px){.app{height:99vh;gap:6px}.boardWrap{width:min(100%,54vh);align-self:center}.piecesPanel{min-height:105px;padding:8px}.pieceSlot{min-height:78px}.block{width:18px;height:18px}.piece{gap:3px}.hint{display:none}.footer button{padding:8px 5px;font-size:10px}}
+@media(max-width:390px){.shopGrid{grid-template-columns:1fr}.scoreBox{min-width:57px;padding:5px}.scoreBox b{font-size:15px}.title{font-size:23px}}
+
+/* Online multiplayer interface */
+.footer{grid-template-columns:repeat(8,minmax(0,1fr))!important}
+.footer button{font-size:9px;min-width:0;padding:9px 2px}
+.onlineButton{background:linear-gradient(160deg,#48c5bc,#298fbb)!important;box-shadow:0 5px 0 #216d96!important}
+#onlineModal{position:fixed;inset:0;background:rgba(12,25,48,.80);z-index:4100;display:none;align-items:center;justify-content:center;padding:12px;backdrop-filter:blur(7px)}
+#onlineModal.show{display:flex}
+.onlineSheet{width:min(96vw,480px);max-height:92vh;overflow:auto;background:linear-gradient(140deg,#fff,#eaf7ff);border-radius:24px;padding:18px;box-shadow:0 30px 70px rgba(0,0,0,.30)}
+.onlineHead{display:flex;align-items:center;justify-content:space-between;gap:9px}.onlineHead h2{margin:0;font-size:23px;color:#265486}.onlineHead button{flex:0 0 38px;max-width:38px;padding:6px;font-size:20px}
+.onlineDesc{font-size:12px;font-weight:750;color:#536781;margin:10px 0 14px;line-height:1.6}
+.onlineActions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.onlineActions button{font-size:12px}
+.onlineJoin{display:flex;gap:8px;margin-top:9px}.onlineJoin input{flex:1;min-width:0;padding:11px;border-radius:12px;border:2px solid #c5d8ee;text-transform:uppercase;letter-spacing:3px;font-size:18px;font-weight:1000;text-align:center;background:white}
+.onlineJoin button{flex:0 0 43%;font-size:12px}
+.onlineStatus{background:#f2f8ff;border:1px solid #d6e8f5;border-radius:14px;padding:12px;margin-top:12px;font-size:12px;font-weight:850;line-height:1.55;min-height:66px}
+.onlineRoomCode{display:inline-block;font-size:25px;letter-spacing:4px;color:#2968c0;user-select:all;-webkit-user-select:all}
+.onlineTiny{font-size:10px;color:#718199;margin-top:8px;line-height:1.6}
+#onlineStart{margin-top:9px;width:100%;font-size:14px}#onlineStart:disabled{opacity:.4}
+#onlineLeave{background:linear-gradient(#a1aabd,#77859d);box-shadow:0 4px 0 #5c6981}
+#battleHud{display:none;gap:8px;align-items:center;padding:8px 10px;background:linear-gradient(130deg,#e4faff,#eaf0ff);border-radius:15px;box-shadow:var(--shadow);font-size:12px;font-weight:1000}
+#battleHud.show{display:flex}#battleHud .battleLive{flex:1;text-align:center}#battleTimer{font-size:20px;color:#d45c44}#battleScore{color:#2666c5}
+#onlineResult{font-size:22px;color:#265487;font-weight:1000;text-align:center;padding:10px}
+#oppBoard{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;width:94px;height:94px;background:#bed0e9;padding:4px;border-radius:10px;margin:7px auto}
+#oppBoard>i{border-radius:2px;background:#e8eff9;display:block}
+#updateBanner{display:none;position:fixed;z-index:5000;top:6px;left:50%;transform:translateX(-50%);width:min(94vw,460px);border-radius:14px;padding:10px;background:#fff6c9;box-shadow:0 12px 35px rgba(0,0,0,.24);font-size:12px;text-align:center;font-weight:900}
+#updateBanner.show{display:block}#updateBanner button{margin-left:8px;font-size:11px;padding:8px 12px;max-width:135px}
+@media(max-width:390px){.footer{grid-template-columns:repeat(4,minmax(0,1fr))!important}.footer button{padding:7px 3px}.app{gap:5px}.boardWrap{width:min(100%,50vh)!important;align-self:center}}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div><div class="title">BLOCK POP!</div><div class="sub">MEGA SHOP</div></div>
+    <div class="scores">
+      <div class="scoreBox"><small>SCORE</small><b id="score">0</b></div>
+      <div class="scoreBox"><small>BEST</small><b id="best">0</b></div>
+      <div class="scoreBox coinBox"><small>COINS</small><b id="coins">0</b></div>
+    </div>
+  </div>
+
+  <div id="stageHud">
+    <div class="stageHudNo" id="stageHudNo">STAGE 1</div>
+    <div class="stageHudGoals" id="stageHudGoals">目標</div>
+    <div class="stageHudMoves"><b id="stageHudMoves">0</b><small>のこり手数</small></div>
+    <button id="stageHudExit" class="stageHudExit" aria-label="ステージを終了">×</button>
+  </div>
+
+  <div id="battleHud"><span>🌐 BATTLE</span><span class="battleLive">🔵 <b id="battleScore">0</b> : <b id="opponentScore">0</b> 🔴</span><b id="battleTimer">2:00</b></div>
+  <div class="boardWrap" id="boardWrap">
+    <div id="board"></div>
+    <div class="overlay" id="overlay">
+      <div class="card"><h2>ゲームオーバー！</h2><p>スコア <span id="finalScore">0</span></p><button id="againBtn">もう一回！</button></div>
+    </div>
+  </div>
+
+  <div class="piecesPanel">
+    <div id="pieces" style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;align-items:center"></div>
+    <div class="hint">ブロックを置いてコインGET！ショップのアイテムで盤面を救おう。</div>
+  </div>
+
+  <div class="musicBar">
+    <button id="bgmBtn" class="secondary">🎵 BGM ON</button>
+    <span class="musicLabel">音量</span>
+    <input id="bgmVolume" type="range" min="0" max="100" value="35" aria-label="BGM音量">
+  </div>
+
+  <div class="footer">
+    <button id="restartBtn">↻ リスタート</button>
+    <button id="bombBtn" class="bombButton">💣 ×5</button>
+    <button id="shopBtn" class="shopButton">🛒 SHOP</button>
+    <button id="stageBtn" class="stageButton">🗺 STAGE</button>
+    <button id="dailyBtn" class="dailyButton">🎁 DAILY</button>
+    <button id="dataBtn" class="dataButton">💾 DATA</button>
+    <button id="soundBtn" class="secondary">🔊 ON</button>
+    <button id="onlineBtn" class="onlineButton">🌐 ONLINE</button>
+  </div>
+</div>
+
+
+
+<div id="onlineModal">
+  <div class="onlineSheet">
+    <div class="onlineHead"><h2>🌐 Block Pop! ONLINE</h2><button id="closeOnline" class="secondary">×</button></div>
+    <div class="onlineDesc">2人で同時に2分間のスコア勝負！ 同じブロックが出る公平ルール。チャット・アカウント登録なし。ルームコードを友だちに教えよう。🎮</div>
+    <div class="onlineActions"><button id="createOnlineRoom">🏠 部屋を作る</button><button id="onlineLeave">🚪 退出</button></div>
+    <div class="onlineJoin"><input id="joinCode" placeholder="6文字のコード" maxlength="6" autocapitalize="characters" aria-label="ルームコード"><button id="joinOnlineRoom">🔑 部屋に参加</button></div>
+    <div class="onlineStatus" id="onlineStatus">🔌 サーバーに接続できます。</div>
+    <button id="onlineStart" disabled>▶ 2人そろったら対戦開始！</button>
+    <div id="onlineResult"></div>
+    <div id="oppBoard"></div>
+    <div class="onlineTiny">⚡ 対戦はアイテム・カード能力禁止のフェアマッチ。サーバー再起動や回線切断でルームが消えることがあるよ。対戦スコアは友だち同士のカジュアル勝負として扱います。</div>
+  </div>
+</div>
+<div id="updateBanner">🆕 Block Pop! のアップデートがあります！<button id="openLatest">更新版を開く</button></div>
+<div id="stageModal">
+  <div class="stageSheet">
+    <div class="stageHead">
+      <div class="stageTitle">🗺️ ステージモード</div>
+      <div class="stageStarsTotal" id="stageStarsTotal">★ 0 / 60</div>
+      <button id="closeStage" class="closeStage">✕</button>
+    </div>
+    <div class="stageIntro">ステージごとの目標を、決められた手数以内に達成しよう！ クリアで次のステージ解放。少ない手数ほど★が増えるよ。</div>
+    <div class="stageGrid" id="stageGrid"></div>
+    <div class="stageBottom">
+      <button id="normalModeBtn" class="secondary">🎮 通常モード</button>
+      <button id="cardBookBtn" class="cardBookBtn">🃏 カード図鑑</button>
+      <button id="continueStageBtn">▶ 現在のステージへ</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="cardModal">
+  <div class="cardBookSheet">
+    <div class="cardBookHead">
+      <div class="cardBookTitle">🃏 ステージカード図鑑</div>
+      <div class="cardCount" id="cardCount">0 / 20</div>
+      <button id="closeCards" class="closeCards">✕</button>
+    </div>
+    <div class="cardBookIntro">各ステージで★3を取ると、そのステージだけのカードをGET！ 全20枚コンプリートを目指そう。</div>
+    <div class="cardGrid" id="cardGrid"></div>
+  </div>
+</div>
+
+<div id="stageResultModal">
+  <div class="stageResultCard">
+    <div class="stageResultIcon" id="stageResultIcon">🏆</div>
+    <h2 id="stageResultTitle">ステージクリア！</h2>
+    <div class="stageResultStars" id="stageResultStars">★★★</div>
+    <div class="stageResultInfo" id="stageResultInfo"></div>
+    <div class="stageResultReward" id="stageResultReward"></div>
+    <div class="cardReveal" id="cardReveal">
+      <div class="cardRevealTag">★3 STAGE CARD + 1 POWER</div>
+      <div class="cardRevealIcon" id="cardRevealIcon">🧱</div>
+      <div class="cardRevealName" id="cardRevealName">CARD</div>
+    </div>
+    <div class="stageResultActions">
+      <button id="stageRetryBtn" class="secondary">↻ もう一回</button>
+      <button id="stageNextBtn">次へ ▶</button>
+      <button id="stageListBtn" class="wide stageButton">🗺 ステージ一覧</button>
+    </div>
+  </div>
+</div>
+
+<div id="shopModal">
+  <div class="shopSheet">
+    <div class="shopHead">
+      <div class="shopTitle">🛒 メガショップ</div>
+      <div class="coinPill">🪙 <span id="shopCoins">0</span></div>
+      <button class="closeShop" id="closeShop">✕</button>
+    </div>
+    <div class="shopInfo">スコア5点ごとに🪙1枚。購入したアイテムとコインはブラウザに保存されるよ。</div>
+    <div class="shopScroll" id="shopList"></div>
+  </div>
+</div>
+
+
+<div id="dailyModal">
+  <div class="dailySheet">
+    <div class="dailyHead">
+      <div class="dailyTitle">🎁 デイリーボーナス</div>
+      <button class="closeDaily" id="closeDaily">✕</button>
+    </div>
+    <div class="dailyBody">
+      <div class="dailyStreak" id="dailyStreak">連続ログイン 1日目</div>
+      <div class="dailyGrid" id="dailyGrid"></div>
+      <div class="dailyInfo" id="dailyInfo">1日1回受け取れるよ。毎日来ると7日目が豪華！</div>
+      <button class="dailyClaim" id="dailyClaim">🎁 今日のボーナスを受け取る</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="dataModal">
+  <div class="dataSheet">
+    <div class="dataHead">
+      <div class="dataTitle">💾 セーブデータ</div>
+      <button id="closeData" class="closeData">×</button>
+    </div>
+    <div class="dataBody">
+      <div class="dataInfo">
+        今の盤面、手元の3ブロック、スコア、コイン、ショップ所持品、爆弾、デイリー進捗、ステージの★・解放状況・獲得カード・カード能力の使用済み状態、BGM設定までまとめて保存できるよ。
+      </div>
+      <div class="dataBox">
+        <b>📤 バックアップを書き出す</b>
+        <small>JSONファイルとして保存。あとでこのゲームを開いて読み込めば、保存した状態に戻せる。</small>
+      </div>
+      <div class="dataBox">
+        <b>📥 バックアップを読み込む</b>
+        <small>以前保存した Block Pop のバックアップファイルを選ぶと、その時の画面とデータを復元する。</small>
+      </div>
+      <div class="dataActions">
+        <button id="exportBackup" class="backupSave">📤 保存する</button>
+        <button id="importBackup" class="backupLoad">📥 読み込む</button>
+      </div>
+      <input id="backupFile" type="file" accept=".json,application/json">
+      <button id="clearAutoSave" class="backupDanger">🧹 今の自動セーブだけ消す</button>
+      <div class="backupStatus" id="backupStatus">自動セーブ：ON</div>
+    </div>
+  </div>
+</div>
+
+<div id="toolBar"><span id="toolText">アイテム選択中</span><button id="cancelTool">キャンセル</button></div>
+<div id="fxLayer"></div>
+<div id="powerBanner" class="powerBanner"></div>
+<div id="comboBanner"></div>
+<div id="toast"></div>
+
+<script>
+(()=>{
+const powerBanner=document.getElementById('powerBanner');
+const SIZE=8;
+const boardEl=document.getElementById('board'),boardWrap=document.getElementById('boardWrap'),piecesEl=document.getElementById('pieces'),scoreEl=document.getElementById('score'),bestEl=document.getElementById('best'),coinsEl=document.getElementById('coins'),overlay=document.getElementById('overlay'),finalScoreEl=document.getElementById('finalScore'),fxLayer=document.getElementById('fxLayer'),comboBanner=document.getElementById('comboBanner'),soundBtn=document.getElementById('soundBtn'),bgmBtn=document.getElementById('bgmBtn'),bgmVolumeEl=document.getElementById('bgmVolume'),bombBtn=document.getElementById('bombBtn'),shopBtn=document.getElementById('shopBtn'),stageBtn=document.getElementById('stageBtn'),stageModal=document.getElementById('stageModal'),stageGrid=document.getElementById('stageGrid'),stageStarsTotal=document.getElementById('stageStarsTotal'),stageHud=document.getElementById('stageHud'),stageHudNo=document.getElementById('stageHudNo'),stageHudGoals=document.getElementById('stageHudGoals'),stageHudMoves=document.getElementById('stageHudMoves'),stageResultModal=document.getElementById('stageResultModal'),stageResultIcon=document.getElementById('stageResultIcon'),stageResultTitle=document.getElementById('stageResultTitle'),stageResultStars=document.getElementById('stageResultStars'),stageResultInfo=document.getElementById('stageResultInfo'),stageResultReward=document.getElementById('stageResultReward'),cardModal=document.getElementById('cardModal'),cardGrid=document.getElementById('cardGrid'),cardCount=document.getElementById('cardCount'),cardReveal=document.getElementById('cardReveal'),cardRevealIcon=document.getElementById('cardRevealIcon'),cardRevealName=document.getElementById('cardRevealName'),dailyBtn=document.getElementById('dailyBtn'),dailyModal=document.getElementById('dailyModal'),dailyGrid=document.getElementById('dailyGrid'),dailyStreakEl=document.getElementById('dailyStreak'),dailyInfo=document.getElementById('dailyInfo'),dailyClaim=document.getElementById('dailyClaim'),dataBtn=document.getElementById('dataBtn'),dataModal=document.getElementById('dataModal'),backupFile=document.getElementById('backupFile'),backupStatus=document.getElementById('backupStatus'),shopModal=document.getElementById('shopModal'),shopList=document.getElementById('shopList'),shopCoins=document.getElementById('shopCoins'),toolBar=document.getElementById('toolBar'),toolText=document.getElementById('toolText'),toastEl=document.getElementById('toast');
+
+const COLORS=[['#6fa2ff','#3f72ec'],['#ff9a78','#f16855'],['#ffd35b','#f1aa2e'],['#75dfa9','#43bb80'],['#ad8cff','#825fe2'],['#61d1e9','#32a8cb'],['#ff7aa8','#e95087']];
+const SHAPES=[[[1]],[[1,1]],[[1,1,1]],[[1,1,1,1]],[[1],[1]],[[1],[1],[1]],[[1],[1],[1],[1]],[[1,1],[1,1]],[[1,1],[1,0]],[[1,1],[0,1]],[[1,0],[1,1]],[[0,1],[1,1]],[[1,1,1],[0,1,0]],[[0,1,0],[1,1,1]],[[1,0],[1,0],[1,1]],[[0,1],[0,1],[1,1]],[[1,1,1],[1,0,0]],[[1,1,1],[0,0,1]],[[1,1,1],[1,1,1]],[[1,1,1],[1,1,1],[1,1,1]]];
+const SMALL_SHAPES=SHAPES.filter(s=>s.flat().reduce((a,b)=>a+b,0)<=3);
+
+const STAGES=[
+ {id:1,name:'はじめの一歩',score:50,lines:1,removed:0,moves:15,start:1,bombs:2,reward:20},
+ {id:2,name:'ダブルライン',score:80,lines:2,removed:0,moves:17,start:3,bombs:2,reward:22},
+ {id:3,name:'おそうじ入門',score:105,lines:2,removed:14,moves:18,start:5,bombs:2,reward:24},
+ {id:4,name:'三本勝負',score:130,lines:3,removed:10,moves:19,start:6,bombs:1,reward:28},
+ {id:5,name:'ギュッと盤面',score:160,lines:4,removed:20,moves:20,start:8,bombs:1,reward:30},
+ {id:6,name:'ライン工場',score:190,lines:5,removed:18,moves:21,start:9,bombs:1,reward:34},
+ {id:7,name:'ブロック掃除隊',score:225,lines:4,removed:28,moves:22,start:11,bombs:1,reward:36},
+ {id:8,name:'五本ノック',score:260,lines:6,removed:22,moves:23,start:12,bombs:1,reward:40},
+ {id:9,name:'せまる壁',score:300,lines:6,removed:34,moves:24,start:14,bombs:0,reward:44},
+ {id:10,name:'100マス気分',score:350,lines:7,removed:32,moves:25,start:15,bombs:0,reward:48},
+
+ {id:11,name:'ブロックラッシュ',score:430,lines:8,removed:42,moves:24,start:18,bombs:0,reward:58},
+ {id:12,name:'七色ライン',score:500,lines:9,removed:45,moves:24,start:20,bombs:0,reward:64},
+ {id:13,name:'大掃除',score:580,lines:8,removed:55,moves:23,start:22,bombs:0,reward:72},
+ {id:14,name:'ラインマスター',score:660,lines:10,removed:52,moves:23,start:23,bombs:0,reward:80},
+ {id:15,name:'ぎっしり危機',score:760,lines:11,removed:62,moves:22,start:25,bombs:0,reward:90},
+ {id:16,name:'九本の試練',score:860,lines:12,removed:66,moves:22,start:27,bombs:0,reward:100},
+ {id:17,name:'消去王への道',score:980,lines:13,removed:72,moves:21,start:29,bombs:0,reward:115},
+ {id:18,name:'超ライン戦',score:1120,lines:14,removed:78,moves:21,start:31,bombs:0,reward:130},
+ {id:19,name:'最終関門',score:1280,lines:15,removed:86,moves:20,start:33,bombs:0,reward:150},
+ {id:20,name:'ブロック皇帝',score:1500,lines:17,removed:96,moves:20,start:36,bombs:0,reward:220}
+];
+
+
+const STAGE_CARDS=[
+ {icon:'🌱',title:'はじめの一歩'},
+ {icon:'✌️',title:'ダブルライン'},
+ {icon:'🧹',title:'おそうじ入門'},
+ {icon:'🎯',title:'三本勝負'},
+ {icon:'🧩',title:'ギュッと盤面'},
+ {icon:'🏭',title:'ライン工場'},
+ {icon:'🧼',title:'ブロック掃除隊'},
+ {icon:'⚡',title:'五本ノック'},
+ {icon:'🧱',title:'せまる壁'},
+ {icon:'💯',title:'100マス気分'},
+ {icon:'🚀',title:'ブロックラッシュ'},
+ {icon:'🌈',title:'七色ライン'},
+ {icon:'✨',title:'大掃除'},
+ {icon:'🏅',title:'ラインマスター'},
+ {icon:'🚨',title:'ぎっしり危機'},
+ {icon:'9️⃣',title:'九本の試練'},
+ {icon:'👑',title:'消去王への道'},
+ {icon:'🔥',title:'超ライン戦'},
+ {icon:'🚪',title:'最終関門'},
+ {icon:'🐉',title:'ブロック皇帝'}
+];
+
+
+const CARD_ABILITIES=[
+ {name:'小さな奇跡',desc:'手元の3ブロックを小型だけで再抽選',type:'smallReroll'},
+ {name:'ダブルスコア',desc:'次の3手だけスコア×2',type:'score2'},
+ {name:'一斉清掃',desc:'ランダム12マスを消去',type:'random12'},
+ {name:'トリプルショット',desc:'ランダム横3列を消去',type:'threeRows'},
+ {name:'スペースメーカー',desc:'盤面中央3×3を消去',type:'center3'},
+ {name:'工場フル稼働',desc:'次のライン消去ボーナス+100',type:'lineBonus'},
+ {name:'掃除隊出動',desc:'最も埋まっている行と列を消去',type:'bestCross'},
+ {name:'五本ノック',desc:'ランダム5列を強制クリア',type:'fiveLines'},
+ {name:'壁崩し',desc:'外周を全部消去',type:'edgeClear'},
+ {name:'100 POWER',desc:'スコア+100',type:'score100'},
+ {name:'ラッシュモード',desc:'次の5手スコア×2',type:'rush'},
+ {name:'レインボー消去',desc:'一番多い色を全部消す',type:'colorClear'},
+ {name:'大掃除',desc:'ランダム24マスを消去',type:'random24'},
+ {name:'マスターライン',desc:'一番埋まっている横2列+縦2列を消す',type:'masterLines'},
+ {name:'緊急脱出',desc:'盤面の約半分をランダム消去',type:'halfClear'},
+ {name:'九本の加護',desc:'次の9手、置くたび+15点',type:'nineBoost'},
+ {name:'消去王の命令',desc:'盤面の70%を消去',type:'kingClear'},
+ {name:'超ライン砲',desc:'横4列+縦4列を消去',type:'ultraLines'},
+ {name:'最終解放',desc:'盤面を全部消去',type:'allClear'},
+ {name:'皇帝の命令',desc:'盤面全消去+次の3手スコア×3',type:'emperor'}
+];
+
+let cardPowerState={
+  score2Turns:0,
+  lineBonusReady:false,
+  rushTurns:0,
+  nineBoostTurns:0,
+  emperorTurns:0
+};
+
+function ensureCardUsage(){
+  if(!stageProgress.cardUsed||typeof stageProgress.cardUsed!=='object')stageProgress.cardUsed={};
+}
+function cardAbility(id){return CARD_ABILITIES[id-1]||{name:'特殊能力',desc:'強い効果',type:'none'}}
+function showPowerBanner(text){
+  if(!powerBanner)return;
+  powerBanner.textContent=text;
+  powerBanner.classList.remove('show');
+  void powerBanner.offsetWidth;
+  powerBanner.classList.add('show');
+  setTimeout(()=>powerBanner.classList.remove('show'),950);
+}
+function occupiedIndexes(){
+  let a=[];
+  for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)if(board[r][c])a.push(r*SIZE+c);
+  return a;
+}
+function clearByIndexes(indexes,label='⚡ POWER!'){
+  let uniq=[...new Set(indexes)].filter(i=>i>=0&&i<SIZE*SIZE&&board[Math.floor(i/SIZE)][i%SIZE]);
+  if(!uniq.length){toast('消せるブロックがなかった！');return 0}
+  showPowerBanner(label);
+  animateRemove(uniq,()=>uniq.forEach(i=>board[Math.floor(i/SIZE)][i%SIZE]=null));
+  addScore(uniq.length*2,false);
+  return uniq.length;
+}
+function strongestRowIndexes(count=1){
+  let rows=[...Array(SIZE)].map((_,r)=>({r,n:board[r].filter(Boolean).length})).sort((a,b)=>b.n-a.n).slice(0,count).map(x=>x.r);
+  return rows.flatMap(r=>[...Array(SIZE)].map((_,c)=>r*SIZE+c));
+}
+function strongestColIndexes(count=1){
+  let cols=[...Array(SIZE)].map((_,c)=>({c,n:board.reduce((a,row)=>a+(row[c]?1:0),0)})).sort((a,b)=>b.n-a.n).slice(0,count).map(x=>x.c);
+  return cols.flatMap(c=>[...Array(SIZE)].map((_,r)=>r*SIZE+c));
+}
+function randomOccupied(count){
+  let arr=occupiedIndexes();
+  for(let i=arr.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}
+  return arr.slice(0,count);
+}
+function useCardPower(stageId){
+  ensureStageCards();ensureCardUsage();
+  let id=Number(stageId),owned=!!stageProgress.cards[id],used=!!stageProgress.cardUsed[id];
+  if(!owned){toast('★3でカードをGETしよう！');return}
+  if(used){toast('このカード能力は使用済み！');return}
+  let a=cardAbility(id),indexes=[],did=true;
+  ensureAudio();
+
+  switch(a.type){
+    case 'smallReroll':
+      currentPieces=[randomPiece(SMALL_SHAPES),randomPiece(SMALL_SHAPES),randomPiece(SMALL_SHAPES)];
+      renderPieces();showPowerBanner('🌱 小さな奇跡！');break;
+    case 'score2':
+      cardPowerState.score2Turns=3;showPowerBanner('✌️ 3手スコア×2！');break;
+    case 'random12':
+      clearByIndexes(randomOccupied(12),'🧹 一斉清掃！');break;
+    case 'threeRows':
+      indexes=strongestRowIndexes(3);clearByIndexes(indexes,'🎯 トリプルショット！');break;
+    case 'center3':
+      for(let r=2;r<=4;r++)for(let c=2;c<=4;c++)indexes.push(r*SIZE+c);
+      clearByIndexes(indexes,'🧩 スペースメーカー！');break;
+    case 'lineBonus':
+      cardPowerState.lineBonusReady=true;showPowerBanner('🏭 次のライン +100！');break;
+    case 'bestCross':
+      indexes=[...strongestRowIndexes(1),...strongestColIndexes(1)];clearByIndexes(indexes,'🧼 掃除隊出動！');break;
+    case 'fiveLines':
+      indexes=[...strongestRowIndexes(3),...strongestColIndexes(2)];clearByIndexes(indexes,'⚡ 五本ノック！');break;
+    case 'edgeClear':
+      for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)if(r===0||r===SIZE-1||c===0||c===SIZE-1)indexes.push(r*SIZE+c);
+      clearByIndexes(indexes,'🧱 壁崩し！');break;
+    case 'score100':
+      addScore(100,true);showPowerBanner('💯 +100 POWER！');break;
+    case 'rush':
+      cardPowerState.rushTurns=5;showPowerBanner('🚀 5手スコア×2！');break;
+    case 'colorClear':{
+      let counts=new Map();
+      for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)if(board[r][c]){
+        let k=JSON.stringify(board[r][c]);counts.set(k,(counts.get(k)||0)+1)
+      }
+      let best=[...counts.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0];
+      if(best){
+        for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)if(JSON.stringify(board[r][c])===best)indexes.push(r*SIZE+c);
+        clearByIndexes(indexes,'🌈 レインボー消去！');
+      } else did=false;
+      break;
+    }
+    case 'random24':
+      clearByIndexes(randomOccupied(24),'✨ 大掃除！');break;
+    case 'masterLines':
+      indexes=[...strongestRowIndexes(2),...strongestColIndexes(2)];clearByIndexes(indexes,'🏅 マスターライン！');break;
+    case 'halfClear':
+      clearByIndexes(randomOccupied(Math.ceil(occupiedIndexes().length/2)),'🚨 緊急脱出！');break;
+    case 'nineBoost':
+      cardPowerState.nineBoostTurns=9;showPowerBanner('9️⃣ 9手 +15点！');break;
+    case 'kingClear':
+      clearByIndexes(randomOccupied(Math.ceil(occupiedIndexes().length*.7)),'👑 消去王の命令！');break;
+    case 'ultraLines':
+      indexes=[...strongestRowIndexes(4),...strongestColIndexes(4)];clearByIndexes(indexes,'🔥 超ライン砲！');break;
+    case 'allClear':
+      clearByIndexes(occupiedIndexes(),'🚪 最終解放！');break;
+    case 'emperor':
+      clearByIndexes(occupiedIndexes(),'🐉 皇帝の命令！');
+      cardPowerState.emperorTurns=3;
+      break;
+    default: did=false;
+  }
+
+  if(!did){toast('今はこの能力を使えないよ');return}
+  stageProgress.cardUsed[id]=true;
+  saveStageProgress();renderCardBook();saveSession();
+  beep(840,.11,'triangle',.05,1180);
+  setTimeout(()=>beep(1180,.13,'sine',.04,1450),75);
+}
+
+function ensureStageCards(){
+  if(!stageProgress.cards||typeof stageProgress.cards!=='object')stageProgress.cards={};
+  for(let s of STAGES){
+    if(Number(stageProgress.stars?.[s.id]||0)>=3)stageProgress.cards[s.id]=true;
+  }
+}
+function cardData(id){return STAGE_CARDS[id-1]||{icon:'🃏',title:`STAGE ${id}`}}
+function cardHue(id){return (id*37+188)%360}
+function renderCardBook(){
+  ensureStageCards();ensureCardUsage();
+  let got=STAGES.filter(s=>stageProgress.cards[s.id]).length;
+  cardCount.textContent=`${got} / ${STAGES.length}`;
+  cardGrid.innerHTML=STAGES.map(s=>{
+    let owned=!!stageProgress.cards[s.id],used=!!stageProgress.cardUsed[s.id],c=cardData(s.id),a=cardAbility(s.id);
+    return `<div class="collectCard ${owned?'':'locked'}" style="--h:${cardHue(s.id)}">
+      <div class="collectCardTop"><span>STAGE ${s.id}${s.id>=11?'<span class="hardBadge">HARD</span>':''}</span><span>${owned?'★3':'???'}</span></div>
+      ${owned
+        ? `<div class="collectCardIcon">${c.icon}</div>
+           <div>
+             <div class="collectCardName">${c.title}</div>
+             <div class="collectCardRare">STAGE CARD</div>
+             <div class="cardAbility">⚡ ${a.name}<br><small>${a.desc}</small></div>
+             <button class="cardAbilityBtn ${used?'used':''}" data-use-card="${s.id}" ${used?'disabled':''}>${used?'✓ USED':'⚡ 1回だけ使う'}</button>
+           </div>`
+        : `<div class="collectCardLock">🔒</div>
+           <div>
+             <div class="collectCardName">未獲得カード</div>
+             <div class="collectCardRare">★3で解放</div>
+             <div class="cardAbility">⚡ ???</div>
+             <button class="cardAbilityBtn locked" disabled>🔒 未解放</button>
+           </div>`
+      }
+    </div>`;
+  }).join('');
+}
+function showCardReveal(stageId){
+  let c=cardData(stageId);
+  cardReveal.style.setProperty('--h',cardHue(stageId));
+  cardRevealIcon.textContent=c.icon;
+  cardRevealName.textContent=`STAGE ${stageId} ${c.title}`;
+  cardReveal.classList.remove('show');
+  void cardReveal.offsetWidth;
+  cardReveal.classList.add('show');
+}
+function hideCardReveal(){cardReveal.classList.remove('show')}
+
+function loadStageProgress(){
+  try{return Object.assign({unlocked:1,stars:{},best:{},cards:{},cardUsed:{}},JSON.parse(localStorage.getItem('blockpop_stage_progress_v1')||'{}'))}
+  catch(e){return{unlocked:1,stars:{},best:{},cards:{},cardUsed:{}}}
+}
+function saveStageProgress(){
+  localStorage.setItem('blockpop_stage_progress_v1',JSON.stringify(stageProgress));
+}
+function currentStage(){return STAGES.find(s=>s.id===currentStageId)||null}
+function stageGoalText(s,compact=false){
+  let a=[];
+  if(s.score)a.push(`${compact?'点':'スコア'} ${s.score}`);
+  if(s.lines)a.push(`${compact?'列':'ライン'} ${s.lines}`);
+  if(s.removed)a.push(`${compact?'消':'消去'} ${s.removed}`);
+  return a.join(' / ');
+}
+function renderStageSelect(){
+  stageProgress.unlocked=Math.max(1,Math.min(STAGES.length,Number(stageProgress.unlocked)||1));
+  let total=Object.values(stageProgress.stars||{}).reduce((a,b)=>a+(Number(b)||0),0);
+  stageStarsTotal.textContent=`★ ${total} / ${STAGES.length*3}`;
+  stageGrid.innerHTML=STAGES.map(s=>{
+    let unlocked=s.id<=stageProgress.unlocked,stars=Number(stageProgress.stars[s.id]||0);
+    let starText='★'.repeat(stars)+'☆'.repeat(3-stars);
+    return `<button class="stageCard ${unlocked?'':'locked'} ${stars?'cleared':''}" data-stage="${s.id}" ${unlocked?'':'disabled'}>
+      ${unlocked?'':'<span class="lock">🔒</span>'}
+      <div class="num">STAGE ${s.id}</div>
+      <div class="name">${s.name}</div>
+      <div class="goal">${stageGoalText(s)}<br>手数 ${s.moves}</div>
+      <div class="stars">${starText}</div>
+      <div class="reward">🪙 初回 ${s.reward}+</div>
+    </button>`;
+  }).join('');
+  document.getElementById('continueStageBtn').disabled=gameMode!=='stage'||!currentStageId;
+  renderCardBook();
+}
+function updateStageHud(){
+  if(gameMode!=='stage'||!currentStage()){
+    stageHud.classList.remove('show');
+    return;
+  }
+  let s=currentStage(),left=Math.max(0,s.moves-stageStats.moves);
+  stageHud.classList.add('show');
+  stageHudNo.textContent=`STAGE ${s.id}`;
+  let parts=[];
+  if(s.score)parts.push(`🏆 ${score}/${s.score}`);
+  if(s.lines)parts.push(`✨ ${stageStats.lines}/${s.lines}列`);
+  if(s.removed)parts.push(`🧹 ${stageStats.removed}/${s.removed}`);
+  stageHudGoals.textContent=parts.join('  ');
+  stageHudMoves.textContent=left;
+}
+function seededRandom(seed){
+  let x=(seed*9301+49297)%233280;
+  return ()=>{x=(x*9301+49297)%233280;return x/233280}
+}
+function seedStageBoard(s){
+  board=Array.from({length:SIZE},()=>Array(SIZE).fill(null));
+  let rnd=seededRandom(s.id*137+17),chosen=new Set(),guard=0;
+  while(chosen.size<s.start&&guard<500){
+    guard++;
+    let r=Math.floor(rnd()*SIZE),c=Math.floor(rnd()*SIZE);
+    if((r===0&&c<2)||(r===7&&c>5))continue;
+    chosen.add(r*SIZE+c);
+  }
+  [...chosen].forEach((i,n)=>{
+    board[Math.floor(i/SIZE)][i%SIZE]=COLORS[(n+s.id)%COLORS.length];
+  });
+}
+function startStage(id){
+  let s=STAGES.find(x=>x.id===Number(id));
+  if(!s||s.id>stageProgress.unlocked)return;
+  cancelTool();
+  gameMode='stage';currentStageId=s.id;stageStats={moves:0,lines:0,removed:0};stageEnded=false;cardPowerState={score2Turns:0,lineBonusReady:false,rushTurns:0,nineBoostTurns:0,emperorTurns:0};
+  score=0;combo=0;freeBombs=s.bombs;scoreMultiplier=1;comboShield=false;coinBoostTurns=0;lastCoinScore=0;coinRemainder=0;
+  overlay.classList.remove('show');stageResultModal.classList.remove('show');stageModal.classList.remove('show');
+  seedStageBoard(s);makeBoardDOM();renderBoard();generatePieces();scoreEl.textContent='0';updateBombButton();updateToolBar();updateStageHud();
+  toast(`🗺 STAGE ${s.id} スタート！`);
+  saveSession();
+  if(bgmStarted)resumeBgmSoon();
+}
+function startNormalMode(){
+  gameMode='normal';currentStageId=null;stageStats={moves:0,lines:0,removed:0};stageEnded=false;
+  stageModal.classList.remove('show');stageResultModal.classList.remove('show');updateStageHud();reset();
+  toast('🎮 通常モード！');
+}
+function stageGoalsMet(){
+  let s=currentStage();if(!s)return false;
+  return score>=s.score&&stageStats.lines>=s.lines&&stageStats.removed>=s.removed;
+}
+function stageStarsFor(s){
+  let ratio=stageStats.moves/Math.max(1,s.moves);
+  return ratio<=.58?3:ratio<=.82?2:1;
+}
+function finishStage(){
+  if(stageEnded||gameMode!=='stage')return;
+  let s=currentStage();if(!s)return;
+  stageEnded=true;
+  ensureStageCards();
+  let stars=stageStarsFor(s),oldStars=Number(stageProgress.stars[s.id]||0),first=oldStars===0;
+  let newCard=stars===3&&!stageProgress.cards[s.id];
+  stageProgress.stars[s.id]=Math.max(oldStars,stars);
+  if(newCard)stageProgress.cards[s.id]=true;
+  stageProgress.best[s.id]=Math.max(Number(stageProgress.best[s.id]||0),score);
+  if(s.id<STAGES.length)stageProgress.unlocked=Math.max(stageProgress.unlocked,s.id+1);
+  let reward=first?s.reward+stars*5:5;
+  coins+=reward;saveCoins();saveStageProgress();
+  stageResultIcon.textContent='🏆';stageResultTitle.textContent=`STAGE ${s.id} クリア！`;
+  stageResultStars.textContent='★'.repeat(stars)+'☆'.repeat(3-stars);
+  stageResultInfo.innerHTML=`スコア <b>${score}</b> / ${s.score}<br>ライン <b>${stageStats.lines}</b> / ${s.lines}<br>消去 <b>${stageStats.removed}</b> / ${s.removed}<br>使用手数 <b>${stageStats.moves}</b> / ${s.moves}`;
+  stageResultReward.textContent=`🪙 ${reward}コイン GET！${first?'':'（再クリアボーナス）'}${newCard?'  🃏 NEW CARD!':''}`;
+  if(newCard){showCardReveal(s.id);setTimeout(()=>{beep(880,.1,'triangle',.04,1180);setTimeout(()=>beep(1180,.13,'sine',.035,1480),80)},180)}
+  else hideCardReveal();
+  renderCardBook();
+  document.getElementById('stageNextBtn').disabled=s.id>=STAGES.length;
+  stageResultModal.classList.add('show');stopBgm(false);
+  beep(660,.12,'triangle',.05,990);setTimeout(()=>beep(990,.15,'sine',.045,1320),90);
+  renderStageSelect();saveSession();
+}
+function failStage(reason='手数を使い切った！'){
+  if(stageEnded||gameMode!=='stage')return;
+  stageEnded=true;let s=currentStage();if(!s)return;
+  stageResultIcon.textContent='🧱';stageResultTitle.textContent=`STAGE ${s.id} 失敗`;
+  stageResultStars.textContent='☆☆☆';
+  stageResultInfo.innerHTML=`${reason}<br>スコア <b>${score}</b> / ${s.score}<br>ライン <b>${stageStats.lines}</b> / ${s.lines}<br>消去 <b>${stageStats.removed}</b> / ${s.removed}`;
+  stageResultReward.textContent='もう一度挑戦できるよ！';hideCardReveal();
+  document.getElementById('stageNextBtn').disabled=true;
+  stageResultModal.classList.add('show');stopBgm(false);soundGameOver();saveSession();
+}
+function evaluateStage(){
+  if(gameMode!=='stage'||stageEnded)return;
+  if(stageGoalsMet()){finishStage();return}
+  let s=currentStage();
+  if(s&&stageStats.moves>=s.moves)failStage('手数を使い切った！');
+}
+function stageRecordLines(n){
+  if(gameMode!=='stage'||stageEnded)return;
+  stageStats.lines+=Math.max(0,Number(n)||0);updateStageHud();
+}
+function stageRecordRemoved(n){
+  if(gameMode!=='stage'||stageEnded)return;
+  stageStats.removed+=Math.max(0,Number(n)||0);updateStageHud();
+}
+
+
+const ITEM_DEFS=[
+ {category:'消去アイテム',id:'hammer',icon:'🔨',name:'ハンマー',price:12,desc:'選んだ1マスのブロックを消す。',mode:'target'},
+ {category:'消去アイテム',id:'bomb3',icon:'🧨',name:'ミニ爆弾 3×3',price:18,desc:'選んだ場所を中心に3×3を消す。',mode:'target'},
+ {category:'消去アイテム',id:'bomb5',icon:'💣',name:'爆弾 5×5',price:30,desc:'いつもの爆弾。中心から最大5×5を消す。',mode:'target'},
+ {category:'消去アイテム',id:'bomb7',icon:'💥',name:'メガ爆弾 7×7',price:70,desc:'最大7×7を豪快に消す。',mode:'target'},
+ {category:'消去アイテム',id:'row',icon:'➡️',name:'横レーザー',price:28,desc:'選んだマスの横1列を全部消す。',mode:'target'},
+ {category:'消去アイテム',id:'col',icon:'⬇️',name:'縦レーザー',price:28,desc:'選んだマスの縦1列を全部消す。',mode:'target'},
+ {category:'消去アイテム',id:'cross',icon:'✚',name:'クロスレーザー',price:44,desc:'選んだマスの縦と横を同時に消す。',mode:'target'},
+ {category:'消去アイテム',id:'diag',icon:'✖️',name:'Xレーザー',price:38,desc:'選んだマスを通る2本の斜め線を消す。',mode:'target'},
+ {category:'消去アイテム',id:'color',icon:'🌈',name:'カラークリーナー',price:42,desc:'選んだ色と同じ色のブロックを全部消す。',mode:'target'},
+ {category:'消去アイテム',id:'checker',icon:'♟️',name:'チェッカーボム',price:36,desc:'中心5×5を市松模様に半分ほど消す。',mode:'target'},
+ {category:'消去アイテム',id:'frame',icon:'🖼️',name:'フレーム爆破',price:34,desc:'中心5×5の外周を四角く消す。',mode:'target'},
+ {category:'消去アイテム',id:'edge',icon:'🧹',name:'外周クリーナー',price:45,desc:'盤面の一番外側のブロックを全部消す。',mode:'instant'},
+ {category:'消去アイテム',id:'random8',icon:'🎯',name:'ランダム8',price:32,desc:'埋まっているマスをランダムに最大8個消す。',mode:'instant'},
+ {category:'消去アイテム',id:'random16',icon:'🎆',name:'ランダム16',price:58,desc:'埋まっているマスをランダムに最大16個消す。',mode:'instant'},
+ {category:'消去アイテム',id:'clearAll',icon:'🌪️',name:'オールクリア',price:140,desc:'盤面上のブロックを全部消す超レアアイテム。',mode:'instant'},
+
+ {category:'ブロック操作',id:'shuffle',icon:'🔄',name:'ブロック再抽選',price:22,desc:'手元の3個を新しいブロックに交換する。',mode:'instant'},
+ {category:'ブロック操作',id:'smallSet',icon:'🧩',name:'ちびブロックセット',price:28,desc:'手元を3マス以下の小さい形3個に交換。',mode:'instant'},
+ {category:'ブロック操作',id:'singleSet',icon:'▪️',name:'1マス祭り',price:45,desc:'手元の3個を全部1マスブロックにする。',mode:'instant'},
+
+ {category:'ブースト',id:'score2',icon:'⭐',name:'スコア×2',price:35,desc:'次に置くブロックとそのライン消し得点が2倍。',mode:'instant'},
+ {category:'ブースト',id:'score3',icon:'🌟',name:'スコア×3',price:70,desc:'次の1手の得点が3倍になる。',mode:'instant'},
+ {category:'ブースト',id:'comboShield',icon:'🔥',name:'コンボキープ',price:30,desc:'次にラインを消せなくてもコンボを1回だけ維持。',mode:'instant'},
+ {category:'ブースト',id:'coinBoost',icon:'🪙',name:'コイン×2 3手',price:40,desc:'次の3手だけ、得点からもらえるコインが2倍。',mode:'instant'},
+ {category:'ブースト',id:'continue',icon:'🎟️',name:'復活チケット',price:85,desc:'詰んだとき自動で最大12マス消して続行。',mode:'passive'},
+
+ {category:'お得パック',id:'hammerPack',icon:'🧰',name:'ハンマー5個パック',price:48,desc:'ハンマーを5個まとめて追加。',mode:'pack'},
+ {category:'お得パック',id:'bombPack',icon:'📦',name:'爆弾3個パック',price:75,desc:'5×5爆弾を3個まとめて追加。',mode:'pack'},
+ {category:'お得パック',id:'laserPack',icon:'⚡',name:'レーザー3種セット',price:82,desc:'横・縦・クロスレーザーを各1個追加。',mode:'pack'},
+ {category:'お得パック',id:'rescuePack',icon:'🚑',name:'レスキューセット',price:120,desc:'ミニ爆弾×2、ハンマー×3、再抽選×1、復活×1。',mode:'pack'}
+];
+
+
+const DAILY_REWARDS=[
+ {icon:'🪙',label:'30コイン',coins:30},
+ {icon:'🔨',label:'ハンマー×2',items:{hammer:2}},
+ {icon:'🧨',label:'ミニ爆弾×2',items:{bomb3:2}},
+ {icon:'🪙',label:'60コイン',coins:60},
+ {icon:'⭐',label:'スコア×2 + 再抽選',items:{score2:1,shuffle:1}},
+ {icon:'💣',label:'5×5爆弾×2',items:{bomb5:2}},
+ {icon:'👑',label:'120コイン + オールクリア',coins:120,items:{clearAll:1,continue:1}}
+];
+function localDayKey(d=new Date()){let y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`}
+function dayNumber(key){if(!key)return null;let [y,m,d]=key.split('-').map(Number);return Math.floor(new Date(y,m-1,d,12).getTime()/86400000)}
+function loadDaily(){try{return Object.assign({lastClaim:'',streak:0},JSON.parse(localStorage.getItem('blockpop_daily_v1')||'{}'))}catch(e){return{lastClaim:'',streak:0}}}
+function saveDaily(){localStorage.setItem('blockpop_daily_v1',JSON.stringify(dailyState));
+  localStorage.setItem('blockpop_stage_progress_v1',JSON.stringify(stageProgress));setTimeout(saveSession,0)}
+function dailyStatus(){let today=localDayKey(),last=dailyState.lastClaim;if(last===today)return{claimable:false,today,day:Math.max(1,((dailyState.streak-1)%7)+1),streak:dailyState.streak};let streak=1;if(last){let diff=dayNumber(today)-dayNumber(last);streak=diff===1?dailyState.streak+1:1}return{claimable:true,today,day:((streak-1)%7)+1,streak}}
+function renderDaily(){let st=dailyStatus();dailyStreakEl.textContent=`🔥 連続ログイン ${st.streak}日目`;dailyGrid.innerHTML=DAILY_REWARDS.map((r,i)=>{let day=i+1,done=!st.claimable&&day===st.day,passed=st.streak>day&&st.day>=day;return `<div class="dayCard ${day===st.day?'current':''} ${passed||done?'done':''}"><div class="d">DAY ${day}</div><div class="i">${r.icon}</div><div class="r">${r.label}</div></div>`}).join('');dailyClaim.disabled=!st.claimable;dailyClaim.textContent=st.claimable?'🎁 今日のボーナスを受け取る':'✅ 今日は受け取り済み';dailyInfo.textContent=st.claimable?`DAY ${st.day} のごほうびを受け取れるよ！ 7日目の次はDAY 1に戻って続くよ。`:'次のボーナスは明日！ 毎日受け取ると連続日数が伸びるよ。';dailyBtn.textContent=st.claimable?'🎁 DAILY!':'✅ DAILY'}
+function claimDaily(){let st=dailyStatus();if(!st.claimable){toast('今日はもう受け取ったよ！');renderDaily();return}let reward=DAILY_REWARDS[st.day-1];if(reward.coins){coins+=reward.coins;saveCoins()}if(reward.items)Object.entries(reward.items).forEach(([id,n])=>addInv(id,n));dailyState.lastClaim=st.today;dailyState.streak=st.streak;saveDaily();renderDaily();renderShop();updateBombButton();dailyClaim.classList.remove('dailyRewardPop');void dailyClaim.offsetWidth;dailyClaim.classList.add('dailyRewardPop');beep(660,.1,'triangle',.045,990);setTimeout(()=>beep(990,.14,'sine',.04,1320),70);toast(`${reward.icon} ${reward.label} GET！`)}
+
+let board=[],score=0,best=Number(localStorage.getItem('blockpop_deluxe_best')||0),currentPieces=[],dragState=null,combo=0,freeBombs=5,activeTool=null,soundOn=localStorage.getItem('blockpop_sound')!=='off',audioCtx=null;
+let bgmOn=localStorage.getItem('blockpop_bgm')!=='off',bgmVolume=Math.max(0,Math.min(1,Number(localStorage.getItem('blockpop_bgm_volume')||0.35))),bgmTimer=null,bgmStep=0,bgmGain=null,bgmStarted=false;
+let coins=Number(localStorage.getItem('blockpop_coins_v2')); if(!Number.isFinite(coins)) coins=150;
+let inventory=loadInventory();
+let dailyState=loadDaily();
+let scoreMultiplier=1,comboShield=false,coinBoostTurns=0,lastCoinScore=0,coinRemainder=0;
+let stageProgress=loadStageProgress(),gameMode='normal',currentStageId=null,stageStats={moves:0,lines:0,removed:0},stageEnded=false;
+bestEl.textContent=best;updateSoundButton();updateBgmUI();updateCoinUI();renderDaily();renderStageSelect();
+
+const SESSION_KEY='blockpop_session_v2';
+const BACKUP_FORMAT='blockpop-full-backup-v1';
+
+function safeClone(v){return JSON.parse(JSON.stringify(v))}
+function validBoard(v){return Array.isArray(v)&&v.length===SIZE&&v.every(r=>Array.isArray(r)&&r.length===SIZE)}
+function validPieces(v){return Array.isArray(v)&&v.length===3&&v.every(p=>p&&Array.isArray(p.shape)&&Array.isArray(p.color))}
+
+function gameSnapshot(){
+  return {
+    board:safeClone(board),
+    score,
+    currentPieces:safeClone(currentPieces),
+    combo,
+    freeBombs,
+    activeTool,
+    scoreMultiplier,
+    comboShield,
+    coinBoostTurns,
+    lastCoinScore,
+    coinRemainder,
+    gameMode,
+    currentStageId,
+    stageStats:safeClone(stageStats),
+    stageEnded,
+    cardPowerState:safeClone(cardPowerState),
+    gameOver:overlay.classList.contains('show')
+  };
+}
+
+function saveSession(){
+  if(gameMode==='battle')return;
+  try{
+    if(!validBoard(board)||!validPieces(currentPieces))return;
+    localStorage.setItem(SESSION_KEY,JSON.stringify(gameSnapshot()));
+    if(backupStatus)backupStatus.textContent='自動セーブ：ON ✓';
+  }catch(e){
+    if(backupStatus)backupStatus.textContent='自動セーブに失敗';
+  }
+}
+
+function applySession(s){
+  if(!s||!validBoard(s.board)||!validPieces(s.currentPieces))return false;
+  board=safeClone(s.board);
+  score=Math.max(0,Number(s.score)||0);
+  currentPieces=safeClone(s.currentPieces);
+  combo=Math.max(0,Number(s.combo)||0);
+  freeBombs=Math.max(0,Number(s.freeBombs)||0);
+  activeTool=typeof s.activeTool==='string'?s.activeTool:null;
+  scoreMultiplier=[1,2,3].includes(Number(s.scoreMultiplier))?Number(s.scoreMultiplier):1;
+  comboShield=!!s.comboShield;
+  coinBoostTurns=Math.max(0,Number(s.coinBoostTurns)||0);
+  lastCoinScore=Math.max(0,Number(s.lastCoinScore)||score);
+  coinRemainder=Math.max(0,Number(s.coinRemainder)||0);
+  gameMode=s.gameMode==='stage'?'stage':'normal';
+  currentStageId=gameMode==='stage'?Number(s.currentStageId)||1:null;
+  stageStats=Object.assign({moves:0,lines:0,removed:0},s.stageStats||{});
+  stageEnded=!!s.stageEnded;
+  cardPowerState=Object.assign({score2Turns:0,lineBonusReady:false,rushTurns:0,nineBoostTurns:0,emperorTurns:0},s.cardPowerState||{});
+
+  makeBoardDOM();
+  renderBoard();
+  renderPieces();
+  scoreEl.textContent=score;
+  updateBombButton();
+  updateToolBar();
+  renderShop();
+  renderDaily();
+  renderStageSelect();updateStageHud();
+  updateStageHud();renderStageSelect();
+
+  if(gameMode==='stage'&&stageEnded){
+    stageEnded=false;
+    setTimeout(()=>startStage(currentStageId),50);
+  }
+
+  if(s.gameOver){
+    finalScoreEl.textContent=score;
+    overlay.classList.add('show');
+    stopBgm(false);
+  }else{
+    overlay.classList.remove('show');
+  }
+  return true;
+}
+
+function restoreSession(){
+  try{
+    let raw=localStorage.getItem(SESSION_KEY);
+    if(!raw)return false;
+    return applySession(JSON.parse(raw));
+  }catch(e){return false}
+}
+
+function makeBackupObject(){
+  saveSession();
+  return {
+    format:BACKUP_FORMAT,
+    version:1,
+    createdAt:new Date().toISOString(),
+    persistent:{
+      best,
+      coins,
+      inventory:safeClone(inventory),
+      dailyState:safeClone(dailyState),
+      stageProgress:safeClone(stageProgress),
+      soundOn,
+      bgmOn,
+      bgmVolume
+    },
+    session:gameSnapshot()
+  };
+}
+
+function downloadBackup(){
+  let data=makeBackupObject();
+  let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  let a=document.createElement('a');
+  let d=new Date(),stamp=`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`;
+  a.href=URL.createObjectURL(blob);
+  a.download=`block_pop_backup_${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),500);
+  backupStatus.textContent='✅ バックアップを書き出したよ';
+  toast('💾 バックアップ保存！');
+  beep(700,.08,'triangle',.035,980);
+}
+
+function importBackupObject(data){
+  if(!data||data.format!==BACKUP_FORMAT||!data.persistent||!data.session)throw new Error('format');
+  let p=data.persistent;
+
+  best=Math.max(0,Number(p.best)||0);
+  coins=Math.max(0,Number(p.coins)||0);
+  inventory=(p.inventory&&typeof p.inventory==='object')?safeClone(p.inventory):{};
+  dailyState=(p.dailyState&&typeof p.dailyState==='object')?Object.assign({lastClaim:'',streak:0},safeClone(p.dailyState)):{lastClaim:'',streak:0};
+  stageProgress=(p.stageProgress&&typeof p.stageProgress==='object')?Object.assign({unlocked:1,stars:{},best:{},cards:{},cardUsed:{}},safeClone(p.stageProgress)):stageProgress;
+  soundOn=p.soundOn!==false;
+  bgmOn=p.bgmOn!==false;
+  bgmVolume=Math.max(0,Math.min(1,Number(p.bgmVolume)));
+  if(!Number.isFinite(bgmVolume))bgmVolume=.35;
+
+  localStorage.setItem('blockpop_deluxe_best',String(best));
+  localStorage.setItem('blockpop_coins_v2',String(coins));
+  localStorage.setItem('blockpop_inventory_v2',JSON.stringify(inventory));
+  localStorage.setItem('blockpop_daily_v1',JSON.stringify(dailyState));
+  localStorage.setItem('blockpop_stage_progress_v1',JSON.stringify(stageProgress));
+  localStorage.setItem('blockpop_sound',soundOn?'on':'off');
+  localStorage.setItem('blockpop_bgm',bgmOn?'on':'off');
+  localStorage.setItem('blockpop_bgm_volume',String(bgmVolume));
+
+  bestEl.textContent=best;
+  updateCoinUI();
+  updateSoundButton();
+  updateBgmUI();
+
+  if(!applySession(data.session))throw new Error('session');
+  saveSession();
+  renderShop();
+  renderDaily();
+  renderStageSelect();updateStageHud();
+  dataModal.classList.remove('show');
+  shopModal.classList.remove('show');
+  dailyModal.classList.remove('show');
+  backupStatus.textContent='✅ 復元完了';
+  toast('📥 セーブデータを復元！');
+  beep(560,.09,'triangle',.04,850);
+  setTimeout(()=>beep(850,.12,'sine',.035,1100),70);
+}
+
+async function readBackupFile(file){
+  let text=await file.text();
+  let data=JSON.parse(text);
+  importBackupObject(data);
+}
+
+function loadInventory(){try{return Object.assign({},JSON.parse(localStorage.getItem('blockpop_inventory_v2')||'{}'))}catch(e){return {}}}
+function saveInventory(){localStorage.setItem('blockpop_inventory_v2',JSON.stringify(inventory));setTimeout(saveSession,0)}
+function saveCoins(){localStorage.setItem('blockpop_coins_v2',String(coins));updateCoinUI();setTimeout(saveSession,0)}
+function inv(id){return Number(inventory[id]||0)}
+function addInv(id,n=1){inventory[id]=Math.max(0,inv(id)+n);saveInventory();renderShop();updateBombButton()}
+function consumeInv(id){if(inv(id)<=0)return false;inventory[id]=inv(id)-1;saveInventory();renderShop();updateBombButton();return true}
+function updateCoinUI(){coinsEl.textContent=coins;shopCoins.textContent=coins}
+function totalBombs(){return freeBombs+inv('bomb5')}
+function colorCSS(pair){return `linear-gradient(145deg,${pair[0]},${pair[1]})`}
+function colorKey(pair){return pair?pair.join('|'):''}
+
+function toast(msg){toastEl.textContent=msg;toastEl.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>toastEl.classList.remove('show'),1500)}
+function ensureAudio(){if(!soundOn)return null;if(!audioCtx){try{audioCtx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){return null}}if(audioCtx.state==='suspended')audioCtx.resume();return audioCtx}
+function beep(freq=440,duration=.08,type='sine',volume=.06,slideTo=null){if(!soundOn)return;let ctx=ensureAudio();if(!ctx)return;let o=ctx.createOscillator(),g=ctx.createGain(),now=ctx.currentTime;o.type=type;o.frequency.setValueAtTime(freq,now);if(slideTo)o.frequency.exponentialRampToValueAtTime(slideTo,now+duration);g.gain.setValueAtTime(.0001,now);g.gain.exponentialRampToValueAtTime(volume,now+.012);g.gain.exponentialRampToValueAtTime(.0001,now+duration);o.connect(g);g.connect(ctx.destination);o.start(now);o.stop(now+duration+.02)}
+function soundPlace(){beep(240,.055,'triangle',.045,330)}function soundClear(lines){beep(520,.11,'sine',.06,760);setTimeout(()=>beep(760,.12,'triangle',.055,980),45);if(lines>=2)setTimeout(()=>beep(980,.15,'sine',.05,1250),95)}function soundCombo(level){let b=Math.min(1100,680+level*70);beep(b,.12,'square',.035,b*1.25)}function soundGameOver(){beep(300,.18,'triangle',.05,170);setTimeout(()=>beep(180,.24,'sine',.045,105),120)}function toolSound(){beep(150,.14,'sawtooth',.05,85);setTimeout(()=>beep(590,.1,'triangle',.04,880),50)}
+function updateSoundButton(){soundBtn.textContent=soundOn?'🔊 ON':'🔇 OFF'}
+
+function updateBgmUI(){
+  bgmBtn.textContent=bgmOn?'🎵 BGM ON':'🎵 BGM OFF';
+  bgmVolumeEl.value=Math.round(bgmVolume*100);
+  if(bgmGain&&audioCtx)bgmGain.gain.setTargetAtTime(bgmOn?bgmVolume:0.0001,audioCtx.currentTime,.05);
+}
+
+function bgmNote(freq,dur=.18,vol=.05,type='triangle',delay=0){
+  if(!bgmOn)return;
+  let ctx=ensureAudio();if(!ctx)return;
+  if(!bgmGain){bgmGain=ctx.createGain();bgmGain.gain.value=bgmVolume;bgmGain.connect(ctx.destination)}
+  let o=ctx.createOscillator(),g=ctx.createGain(),t=ctx.currentTime+delay;
+  o.type=type;o.frequency.setValueAtTime(freq,t);
+  g.gain.setValueAtTime(.0001,t);
+  g.gain.exponentialRampToValueAtTime(Math.max(.0002,vol),t+.015);
+  g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(g);g.connect(bgmGain);o.start(t);o.stop(t+dur+.03)
+}
+
+const BGM_MELODY=[
+  659.25,783.99,880.00,783.99,659.25,587.33,523.25,587.33,
+  659.25,783.99,987.77,880.00,783.99,659.25,587.33,659.25,
+  523.25,659.25,783.99,659.25,587.33,523.25,493.88,523.25,
+  587.33,659.25,783.99,880.00,783.99,659.25,587.33,523.25
+];
+const BGM_BASS=[130.81,130.81,146.83,146.83,174.61,174.61,196.00,196.00];
+
+function playBgmStep(){
+  if(!bgmOn||overlay.classList.contains('show'))return;
+  let note=BGM_MELODY[bgmStep%BGM_MELODY.length];
+  bgmNote(note,.17,.034,'triangle');
+  if(bgmStep%2===0)bgmNote(note/2,.11,.012,'sine',.02);
+  if(bgmStep%4===0){
+    let bass=BGM_BASS[Math.floor(bgmStep/4)%BGM_BASS.length];
+    bgmNote(bass,.32,.035,'square');
+    bgmNote(bass*1.5,.27,.012,'triangle',.015);
+  }
+  if(bgmStep%8===6)bgmNote(note*2,.08,.012,'sine',.05);
+  bgmStep=(bgmStep+1)%BGM_MELODY.length;
+}
+
+function startBgm(){
+  if(!bgmOn)return;
+  let ctx=ensureAudio();if(!ctx)return;
+  if(!bgmGain){bgmGain=ctx.createGain();bgmGain.gain.value=bgmVolume;bgmGain.connect(ctx.destination)}
+  if(bgmTimer)return;
+  bgmStarted=true;
+  playBgmStep();
+  bgmTimer=setInterval(playBgmStep,210);
+}
+
+function stopBgm(resetStep=false){
+  if(bgmTimer){clearInterval(bgmTimer);bgmTimer=null}
+  if(resetStep)bgmStep=0;
+}
+
+function resumeBgmSoon(){
+  if(!bgmOn)return;
+  setTimeout(()=>startBgm(),80);
+}
+
+function updateBombButton(){let n=totalBombs();bombBtn.textContent='💣 ×'+n;bombBtn.disabled=n<=0;bombBtn.classList.toggle('active',activeTool==='bomb5')}
+
+function makeBoardDOM(){boardEl.innerHTML='';for(let i=0;i<SIZE*SIZE;i++){let c=document.createElement('div');c.className='cell';c.dataset.index=i;boardEl.appendChild(c)}}
+function reset(){gameMode='normal';currentStageId=null;stageEnded=false;stageStats={moves:0,lines:0,removed:0};cardPowerState={score2Turns:0,lineBonusReady:false,rushTurns:0,nineBoostTurns:0,emperorTurns:0};updateStageHud();board=Array.from({length:SIZE},()=>Array(SIZE).fill(null));score=0;combo=0;freeBombs=5;activeTool=null;scoreMultiplier=1;comboShield=false;coinBoostTurns=0;lastCoinScore=0;coinRemainder=0;scoreEl.textContent='0';overlay.classList.remove('show');makeBoardDOM();updateBombButton();updateToolBar();generatePieces();renderBoard();toast('💣 爆弾5個を支給！');saveSession();if(bgmStarted)resumeBgmSoon()}
+function randomPiece(pool=SHAPES){let rnd=gameMode==='battle'?battleRandom:Math.random;return{shape:pool[Math.floor(rnd()*pool.length)].map(r=>r.slice()),color:COLORS[Math.floor(rnd()*COLORS.length)],used:false}}
+function generatePieces(pool=SHAPES){currentPieces=[randomPiece(pool),randomPiece(pool),randomPiece(pool)];renderPieces();saveSession();setTimeout(checkGameOver,60)}
+function rotateShape(shape){return shape[0].map((_,c)=>shape.map(row=>row[c]).reverse())}
+function rotatePiece(index){let p=currentPieces[index];if(!p||p.used)return;p.shape=rotateShape(p.shape);ensureAudio();beep(470,.055,'triangle',.03,650);renderPieces();saveSession();setTimeout(checkGameOver,0)}
+function renderPieces(){piecesEl.innerHTML='';currentPieces.forEach((p,index)=>{let slot=document.createElement('div');slot.className='pieceSlot'+(p.used?' used':'');if(!p.used){let piece=document.createElement('div');piece.className='piece';piece.style.gridTemplateColumns=`repeat(${p.shape[0].length},22px)`;piece.style.gridTemplateRows=`repeat(${p.shape.length},22px)`;for(let r=0;r<p.shape.length;r++)for(let c=0;c<p.shape[r].length;c++){let d=document.createElement('div');if(p.shape[r][c]){d.className='block';d.style.background=colorCSS(p.color)}else{d.style.width='22px';d.style.height='22px';d.style.visibility='hidden'}piece.appendChild(d)}piece.addEventListener('pointerdown',e=>startDrag(e,index,piece));slot.appendChild(piece);let rot=document.createElement('button');rot.className='rotatePieceBtn';rot.type='button';rot.textContent='↻';rot.title='90°回転';rot.setAttribute('aria-label','このブロックを90度回転');rot.addEventListener('pointerdown',e=>e.stopPropagation());rot.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();rotatePiece(index)});slot.appendChild(rot)}piecesEl.appendChild(slot)})}
+function renderBoard(){[...boardEl.children].forEach((cell,i)=>{let r=Math.floor(i/SIZE),c=i%SIZE,val=board[r][c];cell.className='cell'+(val?' filled':'');cell.style.background=val?colorCSS(val):''})}
+function startDrag(e,index,source){if(gameMode==='battle'&&!battleRunning)return;if(activeTool)return;let p=currentPieces[index];if(!p||p.used)return;e.preventDefault();ensureAudio();source.setPointerCapture?.(e.pointerId);let ghost=source.cloneNode(true);ghost.classList.add('ghost');ghost.style.gridTemplateColumns=`repeat(${p.shape[0].length},22px)`;ghost.style.gridTemplateRows=`repeat(${p.shape.length},22px)`;document.body.appendChild(ghost);dragState={index,piece:p,ghost};moveGhost(e.clientX,e.clientY);source.addEventListener('pointermove',onDragMove);source.addEventListener('pointerup',onDragEnd,{once:true});source.addEventListener('pointercancel',onDragEnd,{once:true})}
+function moveGhost(x,y){if(dragState){dragState.ghost.style.left=x+'px';dragState.ghost.style.top=y+'px'}}
+function onDragMove(e){if(!dragState)return;e.preventDefault();moveGhost(e.clientX,e.clientY);showPreview(getBoardTarget(e.clientX,e.clientY,dragState.piece.shape),dragState.piece)}
+function onDragEnd(e){if(!dragState)return;let s=dragState,pos=getBoardTarget(e.clientX,e.clientY,s.piece.shape);clearPreview();if(pos&&canPlace(s.piece.shape,pos.row,pos.col))placePiece(s.index,pos.row,pos.col);else beep(130,.07,'square',.025,105);s.ghost.remove();dragState=null}
+function getBoardTarget(x,y,shape){let rect=boardEl.getBoundingClientRect(),cw=rect.width/SIZE,ch=rect.height/SIZE,margin=Math.min(90,ch*1.8);if(x<rect.left-cw*.35||x>rect.right+cw*.35||y<rect.top-margin||y>rect.bottom+margin)return null;let px=Math.max(rect.left,Math.min(rect.right-1,x)),py=Math.max(rect.top,Math.min(rect.bottom-1,y)),col=Math.floor((px-rect.left)/cw-(shape[0].length-1)/2),row=Math.floor((py-rect.top)/ch-(shape.length-1)/2);return{row:Math.max(0,Math.min(SIZE-shape.length,row)),col:Math.max(0,Math.min(SIZE-shape[0].length,col))}}
+function canPlace(shape,row,col){for(let r=0;r<shape.length;r++)for(let c=0;c<shape[r].length;c++)if(shape[r][c]){let rr=row+r,cc=col+c;if(rr<0||rr>=SIZE||cc<0||cc>=SIZE||board[rr][cc])return false}return true}
+function clearPreview(){[...boardEl.children].forEach(c=>c.classList.remove('preview','bad'));renderBoard()}
+function showPreview(pos,piece){clearPreview();if(!pos)return;let ok=canPlace(piece.shape,pos.row,pos.col);for(let r=0;r<piece.shape.length;r++)for(let c=0;c<piece.shape[r].length;c++)if(piece.shape[r][c]){let rr=pos.row+r,cc=pos.col+c;if(rr>=0&&rr<SIZE&&cc>=0&&cc<SIZE){let cell=boardEl.children[rr*SIZE+cc];if(ok){cell.classList.add('preview');cell.style.background=colorCSS(piece.color)}else cell.classList.add('bad')}}}
+
+function addScore(points,center=true){
+  points=Math.max(0,Math.floor(points));if(points<=0)return;
+  let mult=1;
+  if(cardPowerState.score2Turns>0)mult*=2;
+  if(cardPowerState.rushTurns>0)mult*=2;
+  if(cardPowerState.emperorTurns>0)mult*=3;
+  points*=mult;
+  score+=points;updateScore();updateStageHud();if(center)showScoreBurst(points)
+}
+function updateScore(){scoreEl.textContent=score;if(gameMode==='battle')return;let delta=Math.max(0,score-lastCoinScore);if(delta>0){coinRemainder+=delta;let gain=Math.floor(coinRemainder/5);coinRemainder%=5;if(gain>0){if(coinBoostTurns>0)gain*=2;coins+=gain;saveCoins()}lastCoinScore=score}if(score>best){best=score;bestEl.textContent=best;localStorage.setItem('blockpop_deluxe_best',String(best))}}
+function placePiece(index,row,col){let p=currentPieces[index],blocks=0,placed=[],mult=scoreMultiplier;
+if(gameMode==='stage'&&!stageEnded){stageStats.moves++;updateStageHud();}
+if(cardPowerState.nineBoostTurns>0){score+=15;cardPowerState.nineBoostTurns--;updateScore();updateStageHud();showScoreBurst(15)}
+if(cardPowerState.score2Turns>0)cardPowerState.score2Turns--;
+if(cardPowerState.rushTurns>0)cardPowerState.rushTurns--;
+if(cardPowerState.emperorTurns>0)cardPowerState.emperorTurns--;for(let r=0;r<p.shape.length;r++)for(let c=0;c<p.shape[r].length;c++)if(p.shape[r][c]){let rr=row+r,cc=col+c;board[rr][cc]=p.color;blocks++;placed.push(rr*SIZE+cc)}p.used=true;addScore(blocks*mult,false);renderBoard();placed.forEach((i,n)=>setTimeout(()=>{let cell=boardEl.children[i];cell.classList.add('placePop');setTimeout(()=>cell.classList.remove('placePop'),240)},n*18));soundPlace();let cl=detectFullLines();if(cl.rows.length||cl.cols.length){
+      stageRecordLines(cl.rows.length+cl.cols.length);
+      if(cardPowerState.lineBonusReady){score+=100;cardPowerState.lineBonusReady=false;updateScore();updateStageHud();showScoreBurst(100)}
+      combo++;let lc=cl.rows.length+cl.cols.length,gained=(lc*10+Math.max(0,lc-1)*10+Math.max(0,combo-1)*12)*mult;addScore(gained);showCombo(combo);animateClear(cl.rows,cl.cols);soundClear(lc);if(combo>=2)setTimeout(()=>soundCombo(combo),110)}else{if(comboShield){comboShield=false;toast('🔥 コンボをキープ！')}else combo=0}scoreMultiplier=1;if(coinBoostTurns>0)coinBoostTurns--;renderPieces();renderShop();saveSession();if(gameMode==='battle')setTimeout(sendBattleScore,380);setTimeout(evaluateStage,350);if(currentPieces.every(p=>p.used))setTimeout(generatePieces,320);else setTimeout(checkGameOver,360)}
+function detectFullLines(){let rows=[],cols=[];for(let r=0;r<SIZE;r++)if(board[r].every(Boolean))rows.push(r);for(let c=0;c<SIZE;c++){let full=true;for(let r=0;r<SIZE;r++)if(!board[r][c]){full=false;break}if(full)cols.push(c)}return{rows,cols}}
+function animateClear(rows,cols){let idx=new Set;rows.forEach(r=>{for(let c=0;c<SIZE;c++)idx.add(r*SIZE+c)});cols.forEach(c=>{for(let r=0;r<SIZE;r++)idx.add(r*SIZE+c)});animateRemove([...idx],()=>{rows.forEach(r=>{for(let c=0;c<SIZE;c++)board[r][c]=null});cols.forEach(c=>{for(let r=0;r<SIZE;r++)board[r][c]=null})})}
+
+function burstParticles(x,y,col){for(let i=0;i<5;i++){let p=document.createElement('div');p.className='particle';p.style.left=x+'px';p.style.top=y+'px';p.style.background=colorCSS(col||COLORS[0]);let a=Math.random()*Math.PI*2,d=24+Math.random()*46;p.style.setProperty('--dx',Math.cos(a)*d+'px');p.style.setProperty('--dy',Math.sin(a)*d+'px');p.style.setProperty('--rot',Math.floor(Math.random()*420-210)+'deg');fxLayer.appendChild(p);setTimeout(()=>p.remove(),720)}}
+function boomAt(index,emoji='💥'){let cr=boardEl.children[index].getBoundingClientRect(),e=document.createElement('div');e.className='bombBoom';e.textContent=emoji;e.style.left=cr.left+cr.width/2+'px';e.style.top=cr.top+cr.height/2+'px';fxLayer.appendChild(e);setTimeout(()=>e.remove(),620)}
+function showScoreBurst(points){let r=boardEl.getBoundingClientRect(),e=document.createElement('div');e.className='scoreBurst';e.textContent='+'+points;e.style.left=r.left+r.width/2+'px';e.style.top=r.top+r.height*.55+'px';fxLayer.appendChild(e);setTimeout(()=>e.remove(),800)}
+function showCombo(level){if(level<2)return;comboBanner.classList.remove('show');void comboBanner.offsetWidth;comboBanner.textContent=level===2?'COMBO ×2!':level===3?'SUPER ×3!':`MEGA ×${level}!`;comboBanner.classList.add('show');setTimeout(()=>comboBanner.classList.remove('show'),820)}
+function animateRemove(indexes,after){let uniq=[...new Set(indexes)].filter(i=>i>=0&&i<SIZE*SIZE&&board[Math.floor(i/SIZE)][i%SIZE]);boardWrap.classList.remove('boardShake');void boardWrap.offsetWidth;boardWrap.classList.add('boardShake');uniq.forEach((i,n)=>{let cell=boardEl.children[i],cr=cell.getBoundingClientRect(),rr=Math.floor(i/SIZE),cc=i%SIZE,col=board[rr][cc];setTimeout(()=>{cell.classList.add('clearFlash');burstParticles(cr.left+cr.width/2,cr.top+cr.height/2,col)},Math.min(120,n*6))});setTimeout(()=>{if(after)after();else uniq.forEach(i=>board[Math.floor(i/SIZE)][i%SIZE]=null);stageRecordRemoved(uniq.length);renderBoard();boardWrap.classList.remove('boardShake');saveSession();updateStageHud();evaluateStage();checkGameOver()},310);return uniq.length}
+
+function toolIndices(id,index){let row=Math.floor(index/SIZE),col=index%SIZE,out=[];if(id==='hammer')out=[index];
+ else if(id==='bomb3'||id==='bomb5'||id==='bomb7'){let rad=id==='bomb3'?1:id==='bomb5'?2:3;for(let r=row-rad;r<=row+rad;r++)for(let c=col-rad;c<=col+rad;c++)if(r>=0&&r<SIZE&&c>=0&&c<SIZE)out.push(r*SIZE+c)}
+ else if(id==='row'){for(let c=0;c<SIZE;c++)out.push(row*SIZE+c)}
+ else if(id==='col'){for(let r=0;r<SIZE;r++)out.push(r*SIZE+col)}
+ else if(id==='cross'){for(let c=0;c<SIZE;c++)out.push(row*SIZE+c);for(let r=0;r<SIZE;r++)out.push(r*SIZE+col)}
+ else if(id==='diag'){for(let d=-7;d<=7;d++){let r=row+d,c=col+d;if(r>=0&&r<SIZE&&c>=0&&c<SIZE)out.push(r*SIZE+c);r=row+d;c=col-d;if(r>=0&&r<SIZE&&c>=0&&c<SIZE)out.push(r*SIZE+c)}}
+ else if(id==='color'){let target=board[row][col];if(!target)return[];let key=colorKey(target);for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)if(colorKey(board[r][c])===key)out.push(r*SIZE+c)}
+ else if(id==='checker'){for(let dr=-2;dr<=2;dr++)for(let dc=-2;dc<=2;dc++){let r=row+dr,c=col+dc;if(r>=0&&r<SIZE&&c>=0&&c<SIZE&&(dr+dc)%2===0)out.push(r*SIZE+c)}}
+ else if(id==='frame'){for(let dr=-2;dr<=2;dr++)for(let dc=-2;dc<=2;dc++){let r=row+dr,c=col+dc;if(r>=0&&r<SIZE&&c>=0&&c<SIZE&&(Math.abs(dr)===2||Math.abs(dc)===2))out.push(r*SIZE+c)}}
+ return [...new Set(out)]}
+function clearToolPreview(){[...boardEl.children].forEach(c=>c.classList.remove('toolPreview'))}
+function showToolPreview(index){clearToolPreview();if(!activeTool)return;toolIndices(activeTool,index).forEach(i=>boardEl.children[i].classList.add('toolPreview'))}
+function updateToolBar(){if(!activeTool){toolBar.classList.remove('show');toolText.textContent='';return}let def=ITEM_DEFS.find(x=>x.id===activeTool);toolText.textContent=(def?def.icon+' '+def.name:'アイテム')+'：盤面をタップ';toolBar.classList.add('show')}
+function cancelTool(){activeTool=null;clearToolPreview();updateBombButton();updateToolBar();saveSession()}
+function activateTool(id){let count=id==='bomb5'?totalBombs():inv(id);if(count<=0){toast('そのアイテムを持ってないよ');return}activeTool=activeTool===id?null:id;shopModal.classList.remove('show');updateBombButton();updateToolBar();clearToolPreview();saveSession();if(activeTool)toast('盤面の好きなマスをタップ！')}
+function consumeTool(id){if(id==='bomb5'){if(freeBombs>0)freeBombs--;else return consumeInv('bomb5')}else return consumeInv(id);updateBombButton();return true}
+function useTargetTool(id,index){if(!activeTool||id!==activeTool)return;let indexes=toolIndices(id,index);if(id==='color'&&indexes.length===0){toast('色つきブロックをタップしてね');return}if(!consumeTool(id)){cancelTool();return}cancelTool();boomAt(index,id==='hammer'?'🔨':id==='color'?'🌈':'💥');toolSound();let removed=animateRemove(indexes,()=>{indexes.forEach(i=>board[Math.floor(i/SIZE)][i%SIZE]=null)});if(removed>0)addScore(removed);else toast('空っぽだった！');renderShop()}
+
+function filledIndexes(){let a=[];for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)if(board[r][c])a.push(r*SIZE+c);return a}
+function randomPick(arr,n){let a=arr.slice();for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a.slice(0,n)}
+function useInstant(id){if(inv(id)<=0){toast('そのアイテムを持ってないよ');return}if(!consumeInv(id))return;
+ if(id==='edge'){let idx=[];for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)if(r===0||c===0||r===SIZE-1||c===SIZE-1)idx.push(r*SIZE+c);let rem=animateRemove(idx,()=>idx.forEach(i=>board[Math.floor(i/SIZE)][i%SIZE]=null));if(rem)addScore(rem);toolSound()}
+ else if(id==='random8'||id==='random16'){let idx=randomPick(filledIndexes(),id==='random8'?8:16),rem=animateRemove(idx,()=>idx.forEach(i=>board[Math.floor(i/SIZE)][i%SIZE]=null));if(rem)addScore(rem);toolSound()}
+ else if(id==='clearAll'){let idx=filledIndexes(),rem=animateRemove(idx,()=>idx.forEach(i=>board[Math.floor(i/SIZE)][i%SIZE]=null));if(rem)addScore(rem);toolSound();toast('🌪️ オールクリア！')}
+ else if(id==='shuffle'){generatePieces();toast('🔄 ブロックを再抽選！')}
+ else if(id==='smallSet'){generatePieces(SMALL_SHAPES);toast('🧩 小さいブロックだけになった！')}
+ else if(id==='singleSet'){currentPieces=[randomPiece([[[1]]]),randomPiece([[[1]]]),randomPiece([[[1]]])];renderPieces();toast('▪️ 1マス祭り！')}
+ else if(id==='score2'){scoreMultiplier=2;toast('⭐ 次の1手はスコア×2！')}
+ else if(id==='score3'){scoreMultiplier=3;toast('🌟 次の1手はスコア×3！')}
+ else if(id==='comboShield'){comboShield=true;toast('🔥 コンボキープを装備！')}
+ else if(id==='coinBoost'){coinBoostTurns+=3;toast('🪙 3手だけコイン×2！')}
+ shopModal.classList.remove('show');renderShop();checkGameOver()}
+function usePassive(id){toast(id==='continue'?'🎟️ 復活チケットは詰んだ時に自動使用！':'持っているだけで発動するよ')}
+
+function buyItem(id){let def=ITEM_DEFS.find(x=>x.id===id);if(!def)return;if(coins<def.price){toast('🪙 コインが足りない！');beep(120,.08,'square',.025,95);return}coins-=def.price;saveCoins();beep(660,.06,'triangle',.035,880);
+ if(def.mode==='pack'){if(id==='hammerPack')addInv('hammer',5);if(id==='bombPack')addInv('bomb5',3);if(id==='laserPack'){addInv('row',1);addInv('col',1);addInv('cross',1)}if(id==='rescuePack'){addInv('bomb3',2);addInv('hammer',3);addInv('shuffle',1);addInv('continue',1)}toast('📦 パックを購入！')}
+ else{addInv(id,1);toast(def.icon+' '+def.name+' を購入！')}
+ renderShop();updateBombButton()}
+function renderShop(){if(!shopList)return;updateCoinUI();let html='',cats=[...new Set(ITEM_DEFS.map(x=>x.category))];cats.forEach(cat=>{html+=`<div class="categoryTitle">${cat}</div><div class="shopGrid">`;ITEM_DEFS.filter(x=>x.category===cat).forEach(def=>{let owned=def.id==='bomb5'?inv('bomb5'):inv(def.id),ownedText=def.mode==='pack'?'まとめ買い':`所持：${owned}`;let use='';if(def.mode==='target')use=`<button class="use" data-use="${def.id}" ${def.id==='bomb5'?(totalBombs()<=0?'disabled':''):(owned<=0?'disabled':'')}>使用</button>`;else if(def.mode==='instant')use=`<button class="use" data-use="${def.id}" ${owned<=0?'disabled':''}>使用</button>`;else if(def.mode==='passive')use=`<button class="use" data-use="${def.id}" ${owned<=0?'disabled':''}>説明</button>`;html+=`<div class="shopItem"><div class="itemTop"><div class="itemIcon">${def.icon}</div><div><div class="itemName">${def.name}</div><div class="owned">${ownedText}</div></div></div><div class="itemDesc">${def.desc}</div><div class="itemActions"><button class="${def.mode==='pack'?'pack':'buy'}" data-buy="${def.id}">🪙${def.price}</button>${use}</div></div>`});html+='</div>'});shopList.innerHTML=html}
+
+function pieceFitsAnywhere(piece){let shape=piece.shape.map(row=>row.slice());for(let turn=0;turn<4;turn++){for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)if(canPlace(shape,r,c))return true;shape=rotateShape(shape)}return false}
+function hasRescueItem(){return totalBombs()>0||['hammer','bomb3','bomb7','row','col','cross','diag','color','checker','frame','edge','random8','random16','clearAll','shuffle','smallSet','singleSet'].some(id=>inv(id)>0)}
+function autoContinue(){if(inv('continue')<=0)return false;consumeInv('continue');let idx=randomPick(filledIndexes(),12),rem=animateRemove(idx,()=>idx.forEach(i=>board[Math.floor(i/SIZE)][i%SIZE]=null));if(rem)addScore(rem);toast('🎟️ 復活チケット発動！');beep(470,.14,'triangle',.05,900);return true}
+function checkGameOver(){let active=currentPieces.filter(p=>!p.used);if(active.length===0)return;if(!active.some(pieceFitsAnywhere)){if(gameMode==='battle'){battleRunning=false;sendBattleScore();toast('🧱 置ける場所がない！ 対戦結果を待とう');return;}if(hasRescueItem())return;if(autoContinue())return;if(gameMode==='stage'){failStage('置ける場所がなくなった！');return}finalScoreEl.textContent=score;stopBgm(false);soundGameOver();overlay.classList.add('show');saveSession()}}
+
+bombBtn.addEventListener('click',()=>{if(totalBombs()<=0)return;activeTool=activeTool==='bomb5'?null:'bomb5';updateBombButton();updateToolBar();clearToolPreview();ensureAudio();beep(activeTool?420:260,.06,'triangle',.03,activeTool?620:210)});
+boardEl.addEventListener('pointermove',e=>{if(!activeTool)return;let cell=e.target.closest('.cell');if(cell&&boardEl.contains(cell))showToolPreview(Number(cell.dataset.index))});
+boardEl.addEventListener('pointerleave',()=>{if(activeTool)clearToolPreview()});
+boardEl.addEventListener('click',e=>{if(!activeTool)return;let cell=e.target.closest('.cell');if(!cell||!boardEl.contains(cell))return;e.preventDefault();e.stopPropagation();useTargetTool(activeTool,Number(cell.dataset.index))});
+shopBtn.addEventListener('click',()=>{cancelTool();renderShop();shopModal.classList.add('show');beep(540,.05,'triangle',.025,680)});
+
+stageBtn.addEventListener('click',()=>{cancelTool();renderStageSelect();stageModal.classList.add('show');beep(610,.06,'triangle',.03,820)});
+document.getElementById('closeStage').addEventListener('click',()=>stageModal.classList.remove('show'));
+stageModal.addEventListener('click',e=>{if(e.target===stageModal)stageModal.classList.remove('show')});
+stageGrid.addEventListener('click',e=>{
+  let card=e.target.closest('[data-stage]');if(!card||card.disabled)return;
+  startStage(Number(card.dataset.stage));
+});
+document.getElementById('cardBookBtn').addEventListener('click',()=>{
+  renderCardBook();stageModal.classList.remove('show');cardModal.classList.add('show');beep(720,.06,'triangle',.03,900);
+});
+document.getElementById('closeCards').addEventListener('click',()=>{cardModal.classList.remove('show');renderStageSelect();stageModal.classList.add('show')});
+cardModal.addEventListener('click',e=>{if(e.target===cardModal){cardModal.classList.remove('show');renderStageSelect();stageModal.classList.add('show')}});
+
+document.getElementById('normalModeBtn').addEventListener('click',startNormalMode);
+document.getElementById('continueStageBtn').addEventListener('click',()=>{if(gameMode==='stage'&&currentStageId)stageModal.classList.remove('show')});
+document.getElementById('stageHudExit').addEventListener('click',()=>{renderStageSelect();stageModal.classList.add('show')});
+document.getElementById('stageRetryBtn').addEventListener('click',()=>{if(currentStageId)startStage(currentStageId)});
+document.getElementById('stageNextBtn').addEventListener('click',()=>{if(currentStageId&&currentStageId<STAGES.length)startStage(currentStageId+1)});
+document.getElementById('stageListBtn').addEventListener('click',()=>{stageResultModal.classList.remove('show');renderStageSelect();stageModal.classList.add('show')});
+dailyBtn.addEventListener('click',()=>{cancelTool();renderDaily();dailyModal.classList.add('show');beep(620,.06,'triangle',.03,820)});
+document.getElementById('closeDaily').addEventListener('click',()=>dailyModal.classList.remove('show'));
+dailyModal.addEventListener('click',e=>{if(e.target===dailyModal)dailyModal.classList.remove('show')});
+dailyClaim.addEventListener('click',claimDaily);
+document.getElementById('closeShop').addEventListener('click',()=>shopModal.classList.remove('show'));
+shopModal.addEventListener('click',e=>{if(e.target===shopModal)shopModal.classList.remove('show');let b=e.target.closest('[data-buy]');if(b)buyItem(b.dataset.buy);let u=e.target.closest('[data-use]');if(u){let id=u.dataset.use,def=ITEM_DEFS.find(x=>x.id===id);if(!def)return;if(def.mode==='target')activateTool(id);else if(def.mode==='instant')useInstant(id);else usePassive(id)}});
+document.getElementById('cancelTool').addEventListener('click',cancelTool);
+
+dataBtn.addEventListener('click',()=>{
+  saveSession();
+  backupStatus.textContent='自動セーブ：ON ✓';
+  dataModal.classList.add('show');
+  beep(590,.05,'triangle',.025,760);
+});
+document.getElementById('closeData').addEventListener('click',()=>dataModal.classList.remove('show'));
+dataModal.addEventListener('click',e=>{if(e.target===dataModal)dataModal.classList.remove('show')});
+document.getElementById('exportBackup').addEventListener('click',downloadBackup);
+document.getElementById('importBackup').addEventListener('click',()=>backupFile.click());
+backupFile.addEventListener('change',async()=>{
+  let file=backupFile.files&&backupFile.files[0];
+  if(!file)return;
+  try{
+    backupStatus.textContent='読み込み中…';
+    await readBackupFile(file);
+  }catch(e){
+    backupStatus.textContent='❌ このファイルは読み込めなかった';
+    toast('⚠️ バックアップファイルを確認してね');
+    beep(130,.09,'square',.025,95);
+  }finally{
+    backupFile.value='';
+  }
+});
+document.getElementById('clearAutoSave').addEventListener('click',()=>{
+  localStorage.removeItem(SESSION_KEY);
+  backupStatus.textContent='自動セーブを消したよ。今の画面はそのまま。';
+  toast('🧹 自動セーブを削除');
+});
+window.addEventListener('beforeunload',saveSession);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveSession()});
+soundBtn.addEventListener('click',()=>{soundOn=!soundOn;localStorage.setItem('blockpop_sound',soundOn?'on':'off');updateSoundButton();saveSession();if(soundOn){ensureAudio();beep(660,.08,'sine',.04,880)}});
+
+bgmBtn.addEventListener('click',()=>{
+  bgmOn=!bgmOn;
+  localStorage.setItem('blockpop_bgm',bgmOn?'on':'off');
+  updateBgmUI();
+  saveSession();
+  if(bgmOn){ensureAudio();startBgm();toast('🎵 BGM ON！')}
+  else{stopBgm(false);toast('🔇 BGM OFF')}
+});
+bgmVolumeEl.addEventListener('input',()=>{
+  bgmVolume=Number(bgmVolumeEl.value)/100;
+  localStorage.setItem('blockpop_bgm_volume',String(bgmVolume));
+  updateBgmUI();
+  saveSession();
+  if(bgmOn&&!bgmTimer)startBgm();
+});
+document.addEventListener('pointerdown',()=>{
+  if(bgmOn&&!bgmStarted){ensureAudio();startBgm()}
+},{once:true});
+
+document.getElementById('restartBtn').addEventListener('click',()=>{beep(380,.07,'triangle',.035,520);if(gameMode==='stage'&&currentStageId)startStage(currentStageId);else reset()});
+document.getElementById('againBtn').addEventListener('click',()=>{beep(520,.08,'triangle',.04,720);if(gameMode==='stage'&&currentStageId)startStage(currentStageId);else reset()});
+
+
+// --- Block Pop! ONLINE client ---
+const CLIENT_VERSION='1.0.0';
+const ONLINE_ORIGIN=location.protocol==='file:'?'__BLOCK_POP_SERVER_URL__':location.origin;
+const ONLINE_SOCKET=ONLINE_ORIGIN.replace(/^http/,'ws')+'/ws';
+const onlineModal=document.getElementById('onlineModal');
+const onlineStatus=document.getElementById('onlineStatus');
+const onlineStart=document.getElementById('onlineStart');
+const battleHud=document.getElementById('battleHud');
+const battleTimer=document.getElementById('battleTimer');
+const oppBoard=document.getElementById('oppBoard');
+let onlineWs=null, onlineSlot=-1,onlineRoom='',onlinePlayers=[],onlineEndsAt=0,battleRunning=false,battleSeed=1,returnSnapshot=null,localBattleScore=0,onlineTimer=null;
+function battleRandom(){battleSeed^=(battleSeed<<13);battleSeed^=battleSeed>>>17;battleSeed^=(battleSeed<<5);return ((battleSeed>>>0)%4294967296)/4294967296;}
+function setOnlineStatus(text){onlineStatus.textContent=text;}
+function onlineSend(x){if(onlineWs&&onlineWs.readyState===WebSocket.OPEN)onlineWs.send(JSON.stringify(x));}
+function opponentBoard(snapshot){
+  if(!Array.isArray(snapshot)||snapshot.length!==64)return;
+  oppBoard.innerHTML=snapshot.map(i=>`<i style="background:${i?COLORS[i-1]?.[1]||'#617aff':'#e8eff9'}"></i>`).join('');
+}
+function matchTimer(){
+  if(gameMode!=='battle')return;
+  let s=Math.max(0,Math.ceil((onlineEndsAt-Date.now())/1000));
+  battleTimer.textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+  if(s===0)battleRunning=false;
+}
+function leaveBattle(){
+  battleRunning=false;gameMode='normal';battleHud.classList.remove('show');onlineEndsAt=0;
+  if(onlineTimer){clearInterval(onlineTimer);onlineTimer=null;}
+  if(returnSnapshot){applySession(returnSnapshot);returnSnapshot=null;saveSession();}
+  else reset();
+}
+function onlineResetSocket(){
+  if(onlineWs){try{onlineWs.close()}catch(e){}}
+  onlineWs=null;onlineRoom='';onlineSlot=-1;onlinePlayers=[];
+  onlineStart.disabled=true;
+}
+function connectOnline(callback){
+  if(onlineWs&&onlineWs.readyState===WebSocket.OPEN){callback();return;}
+  onlineResetSocket();setOnlineStatus('🔌 サーバーに接続中…');
+  let ws;
+  try{ws=new WebSocket(ONLINE_SOCKET)}catch(e){setOnlineStatus('接続できません。通信環境を確認してね');return;}
+  onlineWs=ws;
+  ws.onopen=()=>{if(onlineWs===ws){setOnlineStatus('✅ 接続成功！');callback();}};
+  ws.onerror=()=>{if(onlineWs===ws)setOnlineStatus('⚠️ サーバーに接続できません。しばらくして再接続してね');};
+  ws.onclose=()=>{if(onlineWs!==ws)return;onlineWs=null;onlineStart.disabled=true;
+    if(gameMode==='battle'){battleRunning=false;setOnlineStatus('⚠️ 通信が切れたよ。退出して通常モードに戻れます');onlineModal.classList.add('show');}
+    else setOnlineStatus('🔌 切断しました。部屋に再参加できます');};
+  ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch{return};if(onlineWs===ws)handleOnlineMessage(m);};
+}
+function handleOnlineMessage(m){
+  if(m.type==='error'){setOnlineStatus('⚠️ '+m.message);return;}
+  if(m.type==='joined'){onlineSlot=m.slot;onlineRoom=m.code;document.getElementById('onlineResult').textContent='';oppBoard.innerHTML='';}
+  if(m.type==='room'){
+    onlinePlayers=m.players||[];
+    onlineStart.disabled=!(onlineSlot===0&&m.status==='lobby'&&onlinePlayers.length===2);
+    const guest=onlinePlayers.length===2?'✅ 2人集合！':'⏳ 相手の参加を待っています';
+    setOnlineStatus(`ルームコード：${m.code}\n${guest} ｜ ${onlineSlot===0?'あなたがホスト':'ゲスト参加中'}\n${m.status==='lobby'?'ホストが開始ボタンを押すと対戦！':'対戦中'}`);
+    onlineStatus.innerHTML=`ルームコード：<span class="onlineRoomCode">${m.code}</span><div>${guest} ｜ ${onlineSlot===0?'ホスト':'ゲスト'}</div><div>${m.status==='lobby'?'2人そろったらホストが開始！':'対戦中'}</div>`;
+  }
+  if(m.type==='start'){
+    onlineEndsAt=m.endsAt;startBattleGame(m.seed);onlineModal.classList.remove('show');
+    setOnlineStatus('🔥 対戦スタート！');
+  }
+  if(m.type==='scores'){
+    const mine=(m.scores||[])[onlineSlot]||0,theirs=(m.scores||[])[1-onlineSlot]||0;
+    document.getElementById('battleScore').textContent=mine;
+    document.getElementById('opponentScore').textContent=theirs;
+    if(m.slot!==onlineSlot&&m.board)opponentBoard(m.board);
+  }
+  if(m.type==='result'){
+    battleRunning=false;
+    if(m.winner===null)document.getElementById('onlineResult').textContent='🤝 引き分け！';
+    else if(m.winner===onlineSlot)document.getElementById('onlineResult').textContent='🏆 勝利！';
+    else document.getElementById('onlineResult').textContent='🔥 おしい！ また挑戦しよう';
+    const scores=m.scores||[];
+    setOnlineStatus(`${m.cause==='disconnect'?'相手が退出しました':'⏱️ 2分間の対戦終了！'}　${scores[onlineSlot]||0} : ${scores[1-onlineSlot]||0}`);
+    onlineStart.disabled=true;onlineModal.classList.add('show');
+    beep(730,.1,'triangle',.05,990);
+  }
+  if(m.type==='left'){setOnlineStatus('部屋から退出しました');}
+}
+function startBattleGame(seed){
+  if(gameMode!=='battle'){saveSession();returnSnapshot=gameSnapshot();}
+  gameMode='battle';currentStageId=null;stageEnded=false;stageStats={moves:0,lines:0,removed:0};
+  cardPowerState={score2Turns:0,lineBonusReady:false,rushTurns:0,nineBoostTurns:0,emperorTurns:0};
+  board=Array.from({length:SIZE},()=>Array(SIZE).fill(null));
+  score=0;combo=0;freeBombs=0;activeTool=null;scoreMultiplier=1;coinBoostTurns=0;comboShield=false;
+  lastCoinScore=0;coinRemainder=0;battleSeed=seed|0||1;battleRunning=true;
+  overlay.classList.remove('show');stageResultModal.classList.remove('show');
+  makeBoardDOM();renderBoard();scoreEl.textContent='0';updateStageHud();updateBombButton();updateToolBar();
+  generatePieces();battleHud.classList.add('show');
+  document.getElementById('battleScore').textContent='0';document.getElementById('opponentScore').textContent='0';
+  if(onlineTimer)clearInterval(onlineTimer);onlineTimer=setInterval(matchTimer,300);matchTimer();
+  sendBattleScore();toast('🌐 2分間の対戦スタート！');
+}
+function sendBattleScore(){
+  if(gameMode!=='battle')return;
+  localBattleScore=score;
+  let compact=board.flat().map(c=>{if(!c)return 0;let n=COLORS.findIndex(p=>p[0]===c[0]&&p[1]===c[1]);return n<0?0:n+1;});
+  onlineSend({type:'score',score:Math.max(0,Math.floor(score)),board:compact});
+}
+document.getElementById('onlineBtn').addEventListener('click',()=>{onlineModal.classList.add('show');if(!onlineWs||onlineWs.readyState!==WebSocket.OPEN)setOnlineStatus('🏠 部屋を作るか、ルームコードを入力してね');});
+document.getElementById('closeOnline').addEventListener('click',()=>onlineModal.classList.remove('show'));
+document.getElementById('createOnlineRoom').addEventListener('click',()=>{
+  if(gameMode==='battle'){leaveBattle();onlineResetSocket();}
+  connectOnline(()=>onlineSend({type:'create'}));
+});
+document.getElementById('joinOnlineRoom').addEventListener('click',()=>{
+  const code=document.getElementById('joinCode').value.trim().toUpperCase();
+  if(!/^[A-HJ-NP-Z2-9]{6}$/.test(code)){setOnlineStatus('6文字のルームコードを入れてね');return;}
+  if(gameMode==='battle'){leaveBattle();onlineResetSocket();}
+  connectOnline(()=>onlineSend({type:'join',code}));
+});
+onlineStart.addEventListener('click',()=>onlineSend({type:'start'}));
+document.getElementById('onlineLeave').addEventListener('click',()=>{onlineSend({type:'leave'});onlineResetSocket();if(gameMode==='battle')leaveBattle();setOnlineStatus('通常モードに戻ったよ');document.getElementById('onlineResult').textContent='';oppBoard.innerHTML='';});
+for(const id of ['restartBtn','bombBtn','shopBtn','stageBtn','dailyBtn','dataBtn','cardBookBtn']){
+  const el=document.getElementById(id);if(!el)continue;
+  el.addEventListener('click',e=>{if(gameMode==='battle'){
+    e.stopImmediatePropagation();e.preventDefault();toast('🌐 対戦中はアイテム・ショップ・リスタートを使えないよ');
+  }},true);
+}
+let updateTimer=null;
+async function checkForOnlineUpdate(){
+  if(ONLINE_ORIGIN.includes('__BLOCK_POP_SERVER_URL__'))return;
+  try{
+    let res=await fetch(ONLINE_ORIGIN+'/api/version?ts='+Date.now(),{cache:'no-store'});
+    if(!res.ok)return;let data=await res.json();
+    if(data.version&&data.version!==CLIENT_VERSION)document.getElementById('updateBanner').classList.add('show');
+  }catch(e){}
+}
+document.getElementById('openLatest').addEventListener('click',()=>{location.href=ONLINE_ORIGIN+'/';});
+setTimeout(checkForOnlineUpdate,4500);
+updateTimer=setInterval(checkForOnlineUpdate,180000);
+// --- End ONLINE client ---
+
+ensureStageCards();ensureCardUsage();renderCardBook();renderShop();renderDaily();if(!restoreSession())reset();else toast('💾 前回の続きから復活！');setTimeout(()=>{if(dailyStatus().claimable){renderDaily();dailyModal.classList.add('show')}},280);
+})();
+</script>
+</body>
+</html>
