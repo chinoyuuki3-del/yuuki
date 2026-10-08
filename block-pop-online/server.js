@@ -1,6 +1,6 @@
 'use strict';
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),zlib=require('node:zlib');
-const PORT=Number(process.env.PORT||3000),VERSION='1.4.1',ROUND_MS=120000;
+const PORT=Number(process.env.PORT||3000),VERSION='1.5.0',ROUND_MS=120000;
 // Serve the game as one compressed, cached HTML resource (no external assets).
 const PAGE=fs.readFileSync(path.join(__dirname,'index.html'));
 const PATCHER_PAGE=fs.readFileSync(path.join(__dirname,'patcher.html'));
@@ -36,6 +36,7 @@ const LEGACY_SHOP_GZIP=zlib.gzipSync(LEGACY_SHOP_JSON,{level:9});
 const LEGACY_SHOP_ETAG='W/"'+crypto.createHash('sha256').update(LEGACY_SHOP_JSON).digest('hex')+'"';
 const LIVE_SHOP_ADMIN=require('./live-admin')({catalog:SHOP_DATA,legacyIds:LEGACY_IDS});
 const ACCOUNT=require('./account-service')();
+const EVENTS=require('./event-service')({isAdmin:req=>LIVE_SHOP_ADMIN.isAdmin(req)});
 const rooms=new Map(),ABC='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const stamp=()=>Date.now();
 function code(){let s;do{s=Array.from({length:6},()=>ABC[crypto.randomInt(ABC.length)]).join('')}while(rooms.has(s));return s;}
@@ -65,7 +66,7 @@ function leave(c,closing=false){
   if(room.status==='finished'||room.players.length===0)rooms.delete(room.code);
   if(!closing)send(c,{type:'left'});
 }
-const SHARED=require('./shared-match')({send,leaveLegacy:c=>leave(c)});
+const SHARED=require('./shared-match')({send,leaveLegacy:c=>leave(c),onFinish:match=>EVENTS.recordMatch(match)});
 function receive(c,m){
   const t=stamp();if(t-c.rateStart>=1000){c.rateStart=t;c.rate=0;}
   if(++c.rate>25){error(c,'送信が多すぎます');return;}
@@ -133,6 +134,10 @@ const server=http.createServer((req,res)=>{
   res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');
   const url=(req.url||'').split('?')[0];
   if(LIVE_SHOP_ADMIN.handle(req,res,url))return;
+  if(url==='/api/events'||url.startsWith('/api/events/')){
+    EVENTS.handle(req,res,url).catch(e=>{console.error('Event request:',e.message);if(!res.headersSent){res.writeHead(503,{'Content-Type':'application/json'});res.end(JSON.stringify({error:'イベントサーバーに接続できないよ'}));}});
+    return;
+  }
   if(url.startsWith('/api/account/')){
     ACCOUNT.handle(req,res,url).catch(()=>{if(!res.headersSent){res.writeHead(502,{'Content-Type':'application/json'});res.end(JSON.stringify({error:'アカウントの通信エラーだよ'}));}});
     return;
@@ -194,7 +199,7 @@ const server=http.createServer((req,res)=>{
     });
     return res.end(PAGE);
   }
-  if(url==='/api/version'){res.setHeader('Access-Control-Allow-Origin','*');res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({version:VERSION,release:'Block Pop! ユーザー名アカウント v1.4.1',notes:'メール不要のユーザー名ログインとクラウド保存。既存の共有対戦、ショップ、差分更新も継続。',url:'/',downloadUrl:'/download/latest'}));}
+  if(url==='/api/version'){res.setHeader('Access-Control-Allow-Origin','*');res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({version:VERSION,release:'Block Pop! イベント管理センター v1.5.0',notes:'コイン倍率・スコア大会・全員プレゼントを管理者が作成、編集、中止。参加状況と大会ランキングを永続保存。',url:'/',downloadUrl:'/download/latest'}));}
   if(url!=='/'&&url!=='/index.html'){res.writeHead(404);return res.end('Not found');}
   res.setHeader('Cache-Control','private, no-cache');
   res.setHeader('ETag',PAGE_ETAG);

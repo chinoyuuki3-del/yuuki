@@ -33,11 +33,11 @@ function anyFit(board,pieces){
 function niceName(v){return String(v||'ゲスト').trim().replace(/[<>\r\n\u0000-\u001f]/g,'').slice(0,16)||'ゲスト';}
 function newPieces(){return Array.from({length:3},()=>({shape:SHAPES[crypto.randomInt(SHAPES.length)],color:crypto.randomInt(1,8),used:false}));}
 function makeCode(rooms){let id;do{id='S'+Array.from({length:5},()=>ALPHABET[crypto.randomInt(ALPHABET.length)]).join('')}while(rooms.has(id));return id;}
-function createSharedMatch({send,leaveLegacy=()=>{}}){
+function createSharedMatch({send,leaveLegacy=()=>{},onFinish=()=>{}}){
  const rooms=new Map();const waiting=[];
- function slot(c,name){return{client:c,name:niceName(name),token:crypto.randomBytes(24).toString('hex'),score:0,disconnectedAt:0};}
- function roomNew(c,name){
-  const r={code:makeCode(rooms),players:[slot(c,name),null],board:Array(64).fill(0),pieces:newPieces(),turn:0,seq:0,status:'lobby',createdAt:Date.now(),endsAt:0,timer:null,clearTimer:null,grace:[],mode:'shared'};
+ function slot(c,name,playerId){return{client:c,name:niceName(name),playerId:/^[a-f0-9]{32}$/.test(String(playerId||''))?playerId:null,token:crypto.randomBytes(24).toString('hex'),score:0,disconnectedAt:0};}
+ function roomNew(c,name,playerId){
+  const r={code:makeCode(rooms),players:[slot(c,name,playerId),null],board:Array(64).fill(0),pieces:newPieces(),turn:0,seq:0,status:'lobby',createdAt:Date.now(),endsAt:0,timer:null,clearTimer:null,grace:[],mode:'shared'};
   rooms.set(r.code,r);assign(c,r,0);return r;
  }
  function assign(c,r,index){
@@ -51,18 +51,21 @@ function createSharedMatch({send,leaveLegacy=()=>{}}){
  function credentials(c,r,index){send(c,{type:'shared_joined',code:r.code,slot:index,reconnectToken:r.players[index].token});publish(r);}
  function finish(r,reason='time',winner=null){
   if(r.status==='finished')return;
-  r.status='finished';clearTimeout(r.timer);for(const id of r.grace)clearTimeout(id);r.grace=[];
+  const previouslyPlaying=r.status==='playing';r.status='finished';clearTimeout(r.timer);for(const id of r.grace)clearTimeout(id);r.grace=[];
   if(winner===null&&r.players[1]){const a=r.players[0].score,b=r.players[1].score;winner=a===b?null:(a>b?0:1);}
   r.endsAt=Date.now();broadcast(r,{type:'shared_finished',reason,winner,state:snapshot(r)});
+  if(previouslyPlaying&&(reason==='time'||reason==='no-moves')){
+   Promise.resolve().then(()=>onFinish({code:r.code,reason,players:r.players.map(p=>p?({name:p.name,playerId:p.playerId,score:p.score}):null)})).catch(err=>console.warn('Verified match event callback:',err.message));
+  }
   r.clearTimer=setTimeout(()=>rooms.delete(r.code),180000);r.clearTimer.unref?.();
  }
  function start(r){
   r.status='playing';r.endsAt=Date.now()+MAX_MS;
   r.timer=setTimeout(()=>finish(r),MAX_MS+50);r.timer.unref?.();publish(r);
  }
- function connectSecond(c,r,name){
+ function connectSecond(c,r,name,playerId){
   if(r.status!=='lobby'||r.players[1]||r.players[0].client===c)return send(c,{type:'shared_error',message:'部屋が見つからないか満員だよ'});
-  r.players[1]=slot(c,name);assign(c,r,1);credentials(c,r,1);start(r);
+  r.players[1]=slot(c,name,playerId);assign(c,r,1);credentials(c,r,1);start(r);
  }
  function dequeue(c){let i=waiting.indexOf(c);if(i!==-1)waiting.splice(i,1);}
  function leave(c,reason='leave'){
@@ -88,17 +91,17 @@ function createSharedMatch({send,leaveLegacy=()=>{}}){
    leaveLegacy(c);if(m.type!=='shared_resume'&&c.shared)leave(c);
   }
   if(m.type==='shared_create'){
-   dequeue(c);const r=roomNew(c,m.name);credentials(c,r,0);
+   dequeue(c);const r=roomNew(c,m.name,m.playerId);credentials(c,r,0);
   }else if(m.type==='shared_join'){
    dequeue(c);const id=String(m.code||'').trim().toUpperCase();const r=rooms.get(id);
    if(!/^S[A-HJ-NP-Z2-9]{5}$/.test(id)||!r)return send(c,{type:'shared_error',message:'正しい共有ルームコードを入力してね'}),true;
-   connectSecond(c,r,m.name);
+   connectSecond(c,r,m.name,m.playerId);
   }else if(m.type==='shared_queue'){
    dequeue(c);
    let peer;
    while(waiting.length&&!peer){const candidate=waiting.shift();if(candidate!==c&&!candidate.closed&&!candidate.shared)peer=candidate;}
-   if(peer){const r=roomNew(peer,peer.waitingName);credentials(peer,r,0);connectSecond(c,r,m.name);}
-   else{c.waitingName=niceName(m.name);waiting.push(c);send(c,{type:'shared_waiting',waiting:true});}
+   if(peer){const r=roomNew(peer,peer.waitingName,peer.waitingPlayerId);credentials(peer,r,0);connectSecond(c,r,m.name,m.playerId);}
+   else{c.waitingName=niceName(m.name);c.waitingPlayerId=m.playerId;waiting.push(c);send(c,{type:'shared_waiting',waiting:true});}
   }else if(m.type==='shared_resume'){
    const id=String(m.code||'').trim().toUpperCase(),token=String(m.token||'');const r=rooms.get(id);
    const index=r?.players.findIndex(p=>p&&p.token===token);

@@ -239,5 +239,5 @@ module.exports = function createLiveAdmin({catalog, legacyIds}) {
     }
     status(res,404,{error:'APIが見つかりません'});return true;
   }
-  return {handle, configured:adminReady};
+  return {handle, isAdmin:authenticated, configured:adminReady};
 };

@@ -1,7 +1,7 @@
 {
-  "version": "1.4.1",
-  "release": "Block Pop! ユーザー名ログイン・認証修正 v1.4.1",
-  "notes": "メールアドレスと確認メールを廃止。ユーザー名＋パスワードでアカウント登録・クラウド保存。共有盤面バトルと差分更新は継続。",
+  "version": "1.5.0",
+  "release": "Block Pop! イベント管理センター v1.5.0",
+  "notes": "管理者限定のイベント作成・編集・中止。コイン倍率、共有対戦スコア大会、全員プレゼント、参加数と報酬をサーバーに永続保存。",
   "publishedAt": "2026-10-09",
   "downloadUrl": "https://raw.githubusercontent.com/chinoyuuki3-del/yuuki/block-pop-online/block-pop-online/index.html",
   "patches": [
@@ -32,6 +32,12 @@
       "to": "1.4.1",
       "path": "patches/v1.4.0-to-v1.4.1.json",
       "bytes": 5345
+    },
+    {
+      "from": "1.4.1",
+      "to": "1.5.0",
+      "path": "patches/v1.4.1-to-v1.5.0.json",
+      "bytes": 21608
     }
   ]
 }

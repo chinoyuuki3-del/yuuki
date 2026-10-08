@@ -227,7 +227,7 @@ body[data-season] .musicBar{border:1px solid var(--season-grid)}
 #shopCatalogRefresh:disabled{opacity:.65}
 .shopBadge{font-size:9px;font-weight:950;border-radius:6px;color:#8b4900;background:#fff0b0;padding:3px 5px;display:inline-block;margin-top:4px}
 
-/* v1.3.3 online live shop, server gifts and code-protected admin controls. */
+/* v1.5.0 live shop, server gifts and events. */
 .footer{grid-template-columns:repeat(6,minmax(0,1fr))!important}
 #giftBtn{background:linear-gradient(#f9bd78,#e28b59);box-shadow:0 4px 0 #aa6747}
 #adminBtn{background:linear-gradient(#9f9ebd,#777393);box-shadow:0 4px 0 #514d6e}
@@ -268,6 +268,31 @@ body[data-season] .musicBar{border:1px solid var(--season-grid)}
 .bpVersus{font-size:14px;text-align:center;font-weight:1000;color:#2e5cb3;padding:5px}
 .bpTinyStatus{font-size:12px;text-align:center;color:#475f86;margin:6px 0;font-weight:800}
 @media(max-height:650px){#bpSharedBoard{width:min(72vw,270px);height:min(72vw,270px)}.bpScreen{padding:9px}}
+/* Persistent online events: public and admin screens */
+#bpEventBtn{background:linear-gradient(#ffbd63,#ef845b);box-shadow:0 4px 0 #b55b36}
+#bpEventModal{position:fixed;inset:0;z-index:5400;display:none;align-items:center;justify-content:center;padding:12px;background:rgba(14,25,55,.82);backdrop-filter:blur(5px)}
+#bpEventModal.show{display:flex}
+.bpEventSheet{width:min(96vw,570px);max-height:90vh;overflow:auto;padding:17px;background:linear-gradient(160deg,#fffefa,#edf5ff);border-radius:22px;box-shadow:0 24px 70px #0006;color:#263750}
+.bpEventSheet h2{font-size:21px;margin:2px 0}
+.bpEventCard{background:white;border-radius:14px;border:1px solid #d6e0f6;padding:12px;margin:9px 0;box-shadow:0 3px 10px #2342a111}
+.bpEventCard strong{font-size:15px;display:block}
+.bpEventCard p{font-size:12px;color:#526b88;line-height:1.6;margin:6px 0}
+.bpEventActions{display:flex;gap:8px;flex-wrap:wrap;margin:9px 0 0}
+.bpEventActions button{border:0;border-radius:9px;color:white;background:linear-gradient(#6ba6ef,#507ad5);box-shadow:0 3px 0 #365d9b;font-size:12px;padding:9px 11px}
+.bpEventActions button:disabled{opacity:.55}
+.bpEventRanking{font-size:12px;padding:7px 9px;border-radius:9px;background:#f0f5ff;display:grid;gap:3px}
+#bpEventStatus,#bpAdminEventStatus{background:#e8f2ff;border-radius:10px;padding:9px;font-size:12px;font-weight:750;line-height:1.5;margin:10px 0}
+#bpEventList{max-height:62vh;overflow:auto}
+#bpEventBonusLabel:empty{display:none}
+#bpEventBonusLabel{display:block;line-height:1.5;font-size:12px;font-weight:900;color:#af641e;padding:3px 8px;text-align:center}
+#bpEventForm{background:#fff8e9;border-radius:12px;padding:10px;border:1px solid #f8dda6}
+#bpEventForm [hidden]{display:none!important}
+#bpEventForm label{margin:7px 0;display:block;font-size:12px}
+#bpEventForm input,#bpEventForm select{min-width:0;width:100%;padding:9px 8px;font-size:13px}
+#bpEventForm .bpEventDateRow{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+#bpEventForm .bpEventActions{margin-top:12px}
+#bpEventForm button{font-size:12px}
+
 </style>
 </head>
 <body>
@@ -334,6 +359,7 @@ body[data-season] .musicBar{border:1px solid var(--season-grid)}
     <button id="stageBtn" class="stageButton">🗺 STAGE</button>
     <button id="dailyBtn" class="dailyButton">🎁 DAILY</button>
     <button id="giftBtn" type="button">📨 配布</button>
+    <button id="bpEventBtn" type="button">🎪 イベント</button>
     <button id="dataBtn" class="dataButton">💾 DATA</button>
     <button id="soundBtn" class="secondary">🔊 ON</button>
     <button id="onlineBtn" class="onlineButton">🌐 ONLINE</button>
@@ -478,6 +504,16 @@ body[data-season] .musicBar{border:1px solid var(--season-grid)}
 
 
 
+<div id="bpEventModal" role="dialog" aria-modal="true" aria-label="オンラインイベント">
+  <div class="bpEventSheet">
+    <div class="liveHead"><h2>🎪 オンラインイベント</h2><button id="bpEventClose" type="button">✕</button></div>
+    <p style="font-size:12px">コイン倍率・スコア大会・全員プレゼントのイベント情報をサーバーから取得！</p>
+    <div id="bpEventBonusLabel"></div>
+    <div id="bpEventStatus" aria-live="polite">📡 イベント情報を確認しよう</div>
+    <div id="bpEventList"></div>
+    <button id="bpEventRefresh" type="button" style="font-size:12px">🔄 イベント更新</button>
+  </div>
+</div>
 <div id="giftModal" role="dialog" aria-modal="true" aria-label="サーバープレゼント">
   <div class="liveSheet">
     <div class="liveHead"><h2>🎁 サーバープレゼント</h2><button type="button" id="giftClose">✕</button></div>
@@ -499,6 +535,20 @@ body[data-season] .musicBar{border:1px solid var(--season-grid)}
     </section>
     <section id="adminControls" hidden>
       <div class="liveTabs"><button type="button" id="adminReload">🔄 再読み込み</button><button type="button" id="adminLogout">🚪 ログアウト</button></div>
+      <h3>🎪 オンラインイベント管理センター</h3>
+      <p class="liveSmall">コイン倍率・スコア大会・全員プレゼントを作成・編集・中止。期間と参加者・報酬を永続保存。</p>
+      <div id="bpAdminEventStatus" aria-live="polite">管理者としてイベントを管理できるよ</div>
+      <div id="bpEventForm">
+        <input id="bpEventId" type="hidden">
+        <label>イベント名<input id="bpEventTitle" maxlength="48" placeholder="週末ボーナス祭り"></label>
+        <label>イベント種類<select id="bpEventType"><option value="coins">🪙 コイン倍率</option><option value="tournament">🏆 スコア大会</option><option value="gift">🎁 全員プレゼント</option></select></label>
+        <div class="bpEventDateRow"><label>開始日時<input id="bpEventStart" type="datetime-local"></label><label>終了日時<input id="bpEventEnd" type="datetime-local"></label></div>
+        <label id="bpEventCoinLine">コイン倍率<select id="bpEventMult"><option value="1.5">1.5倍</option><option value="2">2倍</option><option value="3">3倍</option></select></label>
+        <label id="bpEventRewardLine">報酬コイン（0～1000）<input id="bpEventReward" type="number" min="0" max="1000" value="100"></label>
+        <div class="bpEventActions"><button type="button" class="liveAccent" id="bpEventSave">💾 イベントを作成</button><button type="button" id="bpEventClear">＋ 新規作成</button></div>
+      </div>
+      <div class="bpEventActions"><button type="button" id="bpEventReloadAdmin">🔄 イベント一覧を更新</button></div>
+      <div id="bpAdminEventList"></div>
       <h3>🛒 ライブショップの価格とセール</h3>
       <label class="liveLabel" for="adminShopItem">商品を選択</label>
       <select id="adminShopItem"></select>
@@ -919,7 +969,7 @@ function finishStage(){
   stageProgress.best[s.id]=Math.max(Number(stageProgress.best[s.id]||0),score);
   if(s.id<STAGES.length)stageProgress.unlocked=Math.max(stageProgress.unlocked,s.id+1);
   let reward=first?s.reward+stars*5:5;
-  coins+=reward;saveCoins();saveStageProgress();
+  reward=Math.round(reward*bpCoinMultiplier());coins+=reward;saveCoins();saveStageProgress();
   stageResultIcon.textContent='🏆';stageResultTitle.textContent=`STAGE ${s.id} クリア！`;
   stageResultStars.textContent='★'.repeat(stars)+'☆'.repeat(3-stars);
   stageResultInfo.innerHTML=`スコア <b>${score}</b> / ${s.score}<br>ライン <b>${stageStats.lines}</b> / ${s.lines}<br>消去 <b>${stageStats.removed}</b> / ${s.removed}<br>使用手数 <b>${stageStats.moves}</b> / ${s.moves}`;
@@ -1405,7 +1455,7 @@ function addScore(points,center=true){
   points*=mult;
   score+=points;updateScore();updateStageHud();if(center)showScoreBurst(points)
 }
-function updateScore(){scoreEl.textContent=score;if(gameMode==='battle')return;let delta=Math.max(0,score-lastCoinScore);if(delta>0){coinRemainder+=delta;let gain=Math.floor(coinRemainder/5);coinRemainder%=5;if(gain>0){if(coinBoostTurns>0)gain*=2;coins+=gain;saveCoins()}lastCoinScore=score}if(score>best){best=score;bestEl.textContent=best;localStorage.setItem('blockpop_deluxe_best',String(best))}}
+function updateScore(){scoreEl.textContent=score;if(gameMode==='battle')return;let delta=Math.max(0,score-lastCoinScore);if(delta>0){coinRemainder+=delta;let gain=Math.floor(coinRemainder/5);coinRemainder%=5;if(gain>0){if(coinBoostTurns>0)gain*=2;gain=Math.round(gain*bpCoinMultiplier());coins+=gain;saveCoins()}lastCoinScore=score}if(score>best){best=score;bestEl.textContent=best;localStorage.setItem('blockpop_deluxe_best',String(best))}}
 function placePiece(index,row,col){let p=currentPieces[index],blocks=0,placed=[],mult=scoreMultiplier;
 if(gameMode==='stage'&&!stageEnded){stageStats.moves++;updateStageHud();}
 if(cardPowerState.nineBoostTurns>0){score+=15;cardPowerState.nineBoostTurns--;updateScore();updateStageHud();showScoreBurst(15)}
@@ -1672,7 +1722,7 @@ seasonModal.querySelectorAll('[data-season-choice]').forEach(b=>b.addEventListen
 }));
 setInterval(()=>{if(seasonChoice==='auto')applySeasonTheme()},15*60*1000);
 
-const CLIENT_VERSION='1.4.1';
+const CLIENT_VERSION='1.5.0';
 // Always use the official Render service for online play and management.
 // file://, preview browsers, and other standalone HTML viewers are supported.
 const ONLINE_ORIGIN=(location.hostname==='localhost'||location.hostname==='127.0.0.1')?location.origin:'https://block-pop-online.onrender.com';
@@ -2216,7 +2266,7 @@ async function adminAction(url,body,success){
   }catch(e){adminError(e);}
 }
 document.getElementById('adminBtn').addEventListener('click',()=>{liveAdminModal.classList.add('show');
-  if(adminBearer)reloadAdmin();});
+  if(adminBearer){reloadAdmin();bpRefreshAdminEvents();}});
 document.getElementById('adminClose').addEventListener('click',()=>liveAdminModal.classList.remove('show'));
 document.getElementById('adminLoginBtn').addEventListener('click',async()=>{
   const field=document.getElementById('adminCode'),code=field.value.trim();
@@ -2225,7 +2275,7 @@ document.getElementById('adminLoginBtn').addEventListener('click',async()=>{
   try{const data=await liveApi('/api/admin/login',{body:{code}});
     if(!data.token)throw new Error('認証データが不足しています');
     field.value='';adminBearer=data.token;document.getElementById('adminLogin').hidden=true;document.getElementById('adminControls').hidden=false;
-    populateLiveAdminInputs();clearAdminGiftForm();await reloadAdmin();}
+    populateLiveAdminInputs();clearAdminGiftForm();await reloadAdmin();await bpRefreshAdminEvents();}
   catch(e){adminError(e);}
 });
 document.getElementById('adminCode').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('adminLoginBtn').click()});
@@ -2251,7 +2301,167 @@ document.getElementById('adminLogout').addEventListener('click',()=>{
   document.getElementById('adminControls').hidden=true;liveMessage(adminStatus,'🔐 ログアウトしたよ');
 });
 
-// v1.4.1 USERNAME ACCOUNT + SERVER-AUTHORITATIVE SHARED BOARD
+// Block Pop! ONLINE v1.5.0: persistent server events, coins, tournament and gifts.
+const bpEventModal=document.getElementById('bpEventModal');
+const bpEventNotice=document.getElementById('bpEventStatus');
+const bpEventList=document.getElementById('bpEventList');
+const bpAdminEventList=document.getElementById('bpAdminEventList');
+const bpAdminEventStatus=document.getElementById('bpAdminEventStatus');
+let bpAllEvents=[],bpEventClockOffset=0,bpCoinRate=1,bpActiveCoinUntil=0,bpAdminEvents=[],bpEventBusy=false;
+const BP_EVENT_LEDGER='blockpop_event_claims_v1';
+function bpEventDate(d){try{return new Date(d).toLocaleString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}catch{return d}}
+function bpEventNow(){return Date.now()+bpEventClockOffset;}
+function bpCoinMultiplier(){return bpEventNow()<bpActiveCoinUntil?bpCoinRate:1;}
+function bpEventSetMsg(msg){bpEventNotice.textContent=msg;}
+function bpEventLoggedClaim(id){try{return !!JSON.parse(localStorage.getItem(BP_EVENT_LEDGER)||'{}')[id]}catch{return false}}
+function bpMarkEventClaim(id){try{const data=JSON.parse(localStorage.getItem(BP_EVENT_LEDGER)||'{}');data[id]=true;localStorage.setItem(BP_EVENT_LEDGER,JSON.stringify(data))}catch{}}
+async function bpEventRequest(route,body,admin=false){
+ const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),16000);
+ try{
+  const response=await fetch(ONLINE_ORIGIN+route,{method:body?'POST':'GET',cache:'no-store',mode:'cors',signal:ctl.signal,
+   headers:{...(body?{'Content-Type':'application/json'}:{}),...(admin&&adminBearer?{'Authorization':'Bearer '+adminBearer}:{})},
+   ...(body?{body:JSON.stringify(body)}:{})});
+  const raw=await response.text();let data;try{data=JSON.parse(raw)}catch{data={}}
+  if(!response.ok)throw Error(data.error||'HTTP '+response.status);
+  if(!data.ok)throw Error(data.error||'イベントの処理に失敗しました');return data;
+ }catch(e){if(e?.name==='AbortError')throw Error('イベントサーバーから返事がないよ');throw e}
+ finally{clearTimeout(tm)}
+}
+function bpEventTypeLabel(e){return e.type==='coins'?'🪙 コイン'+e.multiplier+'倍':e.type==='tournament'?'🏆 スコア大会':'🎁 全員プレゼント'}
+function bpEventStatusLabel(status){return {scheduled:'📅 開催予定',active:'🟢 開催中',ended:'🏁 終了',cancelled:'⛔ 中止'}[status]||status}
+function bpEventCard(e){
+ const card=document.createElement('article');card.className='bpEventCard';
+ const heading=document.createElement('strong');heading.textContent=bpEventStatusLabel(e.status)+' '+e.title;
+ const kind=document.createElement('p');kind.textContent=bpEventTypeLabel(e);
+ const dates=document.createElement('p');dates.textContent='📅 '+bpEventDate(e.startsAt)+' ～ '+bpEventDate(e.endsAt);
+ const stats=document.createElement('p');stats.textContent='👥 参加 '+e.participants+'人'+(e.type==='gift'?' / 受取 '+e.claims+'人':'')+(e.rewardCoins?' / 報酬 🪙'+e.rewardCoins:'');
+ card.append(heading,kind,dates,stats);
+ if(e.type==='tournament'){
+  const leaderboard=document.createElement('div');leaderboard.className='bpEventRanking';
+  if(!e.leaderboard?.length)leaderboard.textContent='🏆 まだスコアが登録されていないよ';
+  else e.leaderboard.forEach((p,i)=>{const div=document.createElement('div');div.textContent=(i+1)+'位 '+p.name+'：'+p.score+'点';leaderboard.appendChild(div)});
+  card.appendChild(leaderboard);
+  const tip=document.createElement('p');tip.textContent='※ 参加後に「🤝 共有対戦」で対戦すると、サーバーが計算した得点をランキングに登録するよ。';card.appendChild(tip);
+ }
+ const actions=document.createElement('div');actions.className='bpEventActions';
+ if(e.status==='active'){
+  const join=document.createElement('button');join.textContent='🙋 イベントに参加';join.addEventListener('click',()=>bpJoinEvent(e.id));actions.appendChild(join);
+ }
+ if((e.type==='gift'&&e.status==='active'||e.type==='tournament'&&e.status==='ended')&&e.rewardCoins>0){
+  const claim=document.createElement('button');claim.textContent=bpEventLoggedClaim(e.id)?'✅ この端末で受取済み':'🎁 報酬を受け取る';claim.disabled=bpEventLoggedClaim(e.id);claim.addEventListener('click',()=>bpClaimEvent(e.id));actions.appendChild(claim);
+ }
+ card.appendChild(actions);return card;
+}
+function bpRenderEvents(){
+ bpEventList.replaceChildren();
+ if(!bpAllEvents.length){bpEventList.textContent='📭 現在公開されているイベントはないよ';return}
+ for(const e of bpAllEvents)bpEventList.appendChild(bpEventCard(e));
+}
+function bpUpdateCoinBonus(){
+ const now=bpEventNow(),active=bpAllEvents.filter(x=>x.status==='active'&&x.type==='coins'&&Date.parse(x.startsAt)<=now&&now<Date.parse(x.endsAt));
+ active.sort((a,b)=>b.multiplier-a.multiplier);
+ const chosen=active[0];bpCoinRate=chosen?Number(chosen.multiplier):1;bpActiveCoinUntil=chosen?Date.parse(chosen.endsAt):0;
+ const label=document.getElementById('bpEventBonusLabel');if(label)label.textContent=chosen?'🎪 '+chosen.title+' 🪙'+bpCoinRate+'倍！':'';
+}
+async function bpFetchEvents(silent=false){
+ try{
+  const data=await bpEventRequest('/api/events');
+  bpAllEvents=data.events||[];if(data.serverTime)bpEventClockOffset=Date.parse(data.serverTime)-Date.now();
+  bpUpdateCoinBonus();bpRenderEvents();if(!silent)bpEventSetMsg('✅ イベント情報を更新したよ');
+  // Coin bonus is automatic for all active players; record a single participant.
+  const active=bpAllEvents.filter(e=>e.type==='coins'&&e.status==='active');
+  const id=playerRandomId();if(id)for(const event of active){
+   const key='blockpop_event_joined_'+event.id;
+   if(localStorage.getItem(key))continue;
+   bpEventRequest('/api/events/join',{id:event.id,playerId:id,nickname:bpEventPlayerName()}).then(()=>localStorage.setItem(key,'1')).catch(()=>{});
+  }
+ }catch(e){if(!silent)bpEventSetMsg('⚠️ '+e.message)}
+}
+function bpEventPlayerName(){return (typeof accountNickname==='string'&&accountSession?accountNickname:document.getElementById('bpGuestName')?.value||'ゲスト').slice(0,16)}
+async function bpJoinEvent(id){
+ if(bpEventBusy)return;const playerId=playerRandomId();if(!playerId){bpEventSetMsg('端末のプレイヤーIDを作れなかったよ');return}
+ bpEventBusy=true;bpEventSetMsg('📡 参加を登録中…');
+ try{await bpEventRequest('/api/events/join',{id,playerId,nickname:bpEventPlayerName()});
+  try{localStorage.setItem('blockpop_event_joined_'+id,'1')}catch{}
+  bpEventSetMsg('✅ 参加完了！ '+(bpAllEvents.find(e=>e.id===id)?.type==='tournament'?'共有盤面対戦で記録を作ろう！':'イベントを楽しんでね！'));
+  await bpFetchEvents(true);
+ }catch(e){bpEventSetMsg('⚠️ '+e.message)}finally{bpEventBusy=false}
+}
+async function bpClaimEvent(id){
+ if(bpEventBusy||bpEventLoggedClaim(id))return;const playerId=playerRandomId();if(!playerId)return;
+ bpEventBusy=true;bpEventSetMsg('🎁 サーバーで受取を確認中…');
+ try{const data=await bpEventRequest('/api/events/claim',{id,playerId,nickname:bpEventPlayerName()});
+  if(data.already){bpEventSetMsg('✅ このイベントの報酬は受取済みだよ');return}
+  if(data.coins>0&&!bpEventLoggedClaim(id)){bpMarkEventClaim(id);coins+=data.coins;saveCoins();renderShop();bpEventSetMsg('🎉 🪙'+data.coins+'コインを受け取ったよ！');}
+  await bpFetchEvents(true);
+ }catch(e){bpEventSetMsg('⚠️ '+e.message)}finally{bpEventBusy=false}
+}
+function bpTimeInput(d){const dt=new Date(d);if(!Number.isFinite(dt.getTime()))return '';const local=new Date(dt.getTime()-dt.getTimezoneOffset()*60000);return local.toISOString().slice(0,16)}
+function bpEventClearForm(){
+ document.getElementById('bpEventId').value='';document.getElementById('bpEventTitle').value='';
+ document.getElementById('bpEventType').value='coins';
+ document.getElementById('bpEventStart').value=bpTimeInput(Date.now()+3600000);
+ document.getElementById('bpEventEnd').value=bpTimeInput(Date.now()+25*3600000);
+ document.getElementById('bpEventMult').value='2';document.getElementById('bpEventReward').value='0';
+ document.getElementById('bpEventSave').textContent='💾 イベントを作成';bpEventSyncForm();
+}
+function bpEventSyncForm(){
+ const type=document.getElementById('bpEventType').value;
+ document.getElementById('bpEventCoinLine').hidden=type!=='coins';
+ document.getElementById('bpEventRewardLine').hidden=type==='coins';
+}
+function bpEventEditForm(e){
+ document.getElementById('bpEventId').value=e.id;document.getElementById('bpEventTitle').value=e.title;
+ document.getElementById('bpEventType').value=e.type;document.getElementById('bpEventStart').value=bpTimeInput(e.startsAt);
+ document.getElementById('bpEventEnd').value=bpTimeInput(e.endsAt);document.getElementById('bpEventMult').value=String(e.multiplier);
+ document.getElementById('bpEventReward').value=String(e.rewardCoins);
+ document.getElementById('bpEventSave').textContent='💾 イベントを編集';bpEventSyncForm();
+ document.getElementById('bpEventTitle').focus();
+}
+function bpRenderAdminEvents(){
+ bpAdminEventList.replaceChildren();if(!bpAdminEvents.length){bpAdminEventList.textContent='登録イベントがないよ';return;}
+ for(const e of bpAdminEvents){
+  const card=document.createElement('div');card.className='bpEventCard';
+  const h=document.createElement('strong');h.textContent=bpEventStatusLabel(e.status)+' '+e.title;
+  const info=document.createElement('p');info.textContent=bpEventTypeLabel(e)+' / 👥'+e.participants+'人 / 🎁'+e.claims+'人';
+  const actions=document.createElement('div');actions.className='bpEventActions';
+  const edit=document.createElement('button');edit.textContent='✏️ 編集';edit.disabled=e.status==='cancelled';edit.addEventListener('click',()=>bpEventEditForm(e));
+  const cancel=document.createElement('button');cancel.textContent='⛔ 中止';cancel.disabled=e.status==='cancelled';
+  cancel.addEventListener('click',async()=>{if(!confirm('「'+e.title+'」を中止する？参加記録は残るよ。'))return;
+   await bpEventAdminSave({action:'cancel',id:e.id},'中止したよ')});actions.append(edit,cancel);card.append(h,info,actions);bpAdminEventList.appendChild(card);
+ }
+}
+async function bpRefreshAdminEvents(){
+ if(!adminBearer)return;
+ try{const d=await bpEventRequest('/api/events/admin',null,true);bpAdminEvents=d.events||[];bpRenderAdminEvents();bpAdminEventStatus.textContent='✅ 登録イベント '+bpAdminEvents.length+'件（サーバー保存）'}
+ catch(e){bpAdminEventStatus.textContent='⚠️ '+e.message}
+}
+async function bpEventAdminSave(body,msg){
+ if(!adminBearer){bpAdminEventStatus.textContent='管理者ログインが必要だよ';return}
+ bpAdminEventStatus.textContent='📡 サーバーへ保存中…';
+ try{await bpEventRequest('/api/events/admin',body,true);bpAdminEventStatus.textContent='✅ '+msg;bpEventClearForm();await bpRefreshAdminEvents();await bpFetchEvents(true)}
+ catch(e){bpAdminEventStatus.textContent='⚠️ '+e.message}
+}
+document.getElementById('bpEventBtn').addEventListener('click',()=>{bpEventModal.classList.add('show');bpFetchEvents()});
+document.getElementById('bpEventClose').addEventListener('click',()=>bpEventModal.classList.remove('show'));
+document.getElementById('bpEventRefresh').addEventListener('click',()=>bpFetchEvents());
+document.getElementById('bpEventType').addEventListener('change',bpEventSyncForm);
+document.getElementById('bpEventClear').addEventListener('click',bpEventClearForm);
+document.getElementById('bpEventReloadAdmin').addEventListener('click',bpRefreshAdminEvents);
+document.getElementById('bpEventSave').addEventListener('click',()=>{
+ const start=document.getElementById('bpEventStart').value,end=document.getElementById('bpEventEnd').value;
+ if(!start||!end||Date.parse(start)>=Date.parse(end)){bpAdminEventStatus.textContent='⚠️ 開始より後に終了を設定してね';return}
+ const id=document.getElementById('bpEventId').value,type=document.getElementById('bpEventType').value;
+ const body={action:id?'edit':'create',id,title:document.getElementById('bpEventTitle').value.trim(),type,
+  startsAt:new Date(start).toISOString(),endsAt:new Date(end).toISOString(),multiplier:type==='coins'?Number(document.getElementById('bpEventMult').value):1,
+  rewardCoins:type==='coins'?0:Number(document.getElementById('bpEventReward').value)};
+ bpEventAdminSave(body,id?'イベントを編集したよ':'イベントを公開したよ');
+});
+bpEventClearForm();
+setTimeout(()=>bpFetchEvents(true),3600);
+setInterval(()=>{if(document.visibilityState!=='hidden')bpFetchEvents(true)},65000);
+
+// v1.5.0 USERNAME ACCOUNT + SERVER-AUTHORITATIVE SHARED BOARD
 const accountModal=document.getElementById('bpAccountModal');
 const accountStatus=document.getElementById('bpAccountStatus');
 const accountSigned=document.getElementById('bpAccountSigned');
@@ -2457,9 +2667,9 @@ function sharedPlace(row,col){
 document.getElementById('bpSharedBtn').addEventListener('click',showShared);
 document.getElementById('bpSharedFromOnline').addEventListener('click',showShared);
 document.getElementById('bpSharedClose').addEventListener('click',()=>sharedModal.classList.remove('show'));
-document.getElementById('bpSharedCreate').addEventListener('click',()=>{sharedSelected=0;sharedRotation=0;sharedConnect({type:'shared_create',name:sharedNick()});});
-document.getElementById('bpSharedJoin').addEventListener('click',()=>{const code=document.getElementById('bpSharedJoinCode').value.trim().toUpperCase();sharedConnect({type:'shared_join',code,name:sharedNick()});});
-document.getElementById('bpSharedQuick').addEventListener('click',()=>{sharedConnect({type:'shared_queue',name:sharedNick()});});
+document.getElementById('bpSharedCreate').addEventListener('click',()=>{sharedSelected=0;sharedRotation=0;sharedConnect({type:'shared_create',name:sharedNick(),playerId:playerRandomId()});});
+document.getElementById('bpSharedJoin').addEventListener('click',()=>{const code=document.getElementById('bpSharedJoinCode').value.trim().toUpperCase();sharedConnect({type:'shared_join',code,name:sharedNick(),playerId:playerRandomId()});});
+document.getElementById('bpSharedQuick').addEventListener('click',()=>{sharedConnect({type:'shared_queue',name:sharedNick(),playerId:playerRandomId()});});
 document.getElementById('bpSharedRotate').addEventListener('click',()=>{sharedRotation=(sharedRotation+1)%4;sharedDraw()});
 document.getElementById('bpSharedLeave').addEventListener('click',()=>{
  sharedManualStop=true;sendShared({type:'shared_leave'});sendShared({type:'shared_cancel'});
