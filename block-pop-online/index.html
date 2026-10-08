@@ -224,6 +224,24 @@ body[data-season] .musicBar{border:1px solid var(--season-grid)}
 #shopCatalogRefresh{font-size:10px;padding:6px 9px;border-radius:9px;background:linear-gradient(#72aaf3,#407bd2);box-shadow:0 3px 0 #27559a;color:white;white-space:nowrap}
 #shopCatalogRefresh:disabled{opacity:.65}
 .shopBadge{font-size:9px;font-weight:950;border-radius:6px;color:#8b4900;background:#fff0b0;padding:3px 5px;display:inline-block;margin-top:4px}
+
+/* v1.3.0 online live shop, server gifts and code-protected admin controls. */
+.footer{grid-template-columns:repeat(6,minmax(0,1fr))!important}
+#giftBtn{background:linear-gradient(#f9bd78,#e28b59);box-shadow:0 4px 0 #aa6747}
+#adminBtn{background:linear-gradient(#9f9ebd,#777393);box-shadow:0 4px 0 #514d6e}
+#giftModal,#adminModal{position:fixed;inset:0;z-index:5500;display:none;align-items:center;justify-content:center;background:rgba(16,27,55,.79);padding:12px;backdrop-filter:blur(5px)}
+#giftModal.show,#adminModal.show{display:flex}
+.liveSheet{width:min(96vw,560px);max-height:90vh;overflow:auto;background:#f6f9ff;padding:16px;border-radius:22px;box-shadow:0 24px 80px rgba(0,0,0,.33);color:#263750}
+.liveHead{display:flex;align-items:center;justify-content:space-between;gap:12px}.liveHead h2{font-size:21px;margin:0;color:#37598c}.liveHead button{flex:0 0 39px;background:#7d90ad;box-shadow:none}
+.liveSheet button{font-size:12px;padding:10px;border-radius:11px}.liveSheet input,.liveSheet select{min-width:0;max-width:100%;width:100%;padding:10px 9px;border-radius:10px;background:white;color:#253454;border:1px solid #b8cbe8;font-size:14px}
+.liveSheet label{font-size:12px;font-weight:850;display:block;flex:1}.liveSheet label input,.liveSheet label select{margin-top:5px}.liveLabel{margin-top:9px;margin-bottom:5px}
+.liveSub,.liveSmall{font-size:11px;color:#60718c;line-height:1.6}.liveStatus{margin:12px 0;padding:9px;border-radius:10px;background:#eaf2ff;color:#325f94;font-size:12px;font-weight:900}
+.liveInline{display:flex;gap:8px;align-items:end;margin-bottom:9px}.liveInline button{flex-shrink:0}.liveTabs{display:flex;gap:8px;flex-wrap:wrap;margin:11px 0}.liveSheet .liveAccent{background:linear-gradient(#5da7e8,#407dca);box-shadow:0 3px 0 #305c95;color:white}
+.liveSheet h3{margin:17px 0 9px;font-size:15px;border-bottom:1px solid #dbe4f2;padding-bottom:6px}
+.giftList{display:grid;gap:10px;padding:8px 0}.giftCard{background:white;border:1px solid #d8e5f9;border-radius:14px;padding:12px;box-shadow:0 4px 12px rgba(34,66,123,.06)}.giftCard strong{display:block;font-size:15px}.giftCard p{font-size:11px;line-height:1.5;color:#60718c;margin:6px 0}.giftCard .liveTabs{margin-bottom:0}.giftCard button:disabled{opacity:.6}
+#adminControls[hidden],#adminLogin[hidden]{display:none}
+@media(max-width:430px){.footer{grid-template-columns:repeat(4,minmax(0,1fr))!important}.liveSheet{padding:12px}.liveHead h2{font-size:18px}.liveSheet button{font-size:11px}.liveInline{gap:5px}}
+
 </style>
 </head>
 <body>
@@ -289,9 +307,11 @@ body[data-season] .musicBar{border:1px solid var(--season-grid)}
     <button id="shopBtn" class="shopButton">🛒 SHOP</button>
     <button id="stageBtn" class="stageButton">🗺 STAGE</button>
     <button id="dailyBtn" class="dailyButton">🎁 DAILY</button>
+    <button id="giftBtn" type="button">📨 配布</button>
     <button id="dataBtn" class="dataButton">💾 DATA</button>
     <button id="soundBtn" class="secondary">🔊 ON</button>
     <button id="onlineBtn" class="onlineButton">🌐 ONLINE</button>
+    <button id="adminBtn" type="button">🔐 管理</button>
   </div>
 </div>
 
@@ -375,7 +395,7 @@ body[data-season] .musicBar{border:1px solid var(--season-grid)}
       <div class="coinPill">🪙 <span id="shopCoins">0</span></div>
       <button class="closeShop" id="closeShop">✕</button>
     </div>
-    <div class="shopInfo">新旧HTMLに対応するオンラインショップ！ 全62種類、セーブは端末に保存。</div>
+    <div class="shopInfo">📡 ライブショップ！ 管理者のセール価格をオンライン取得。コイン・所持品は端末に保存。</div>
     <div class="shopCatalogLine"><span id="shopCatalogStatus" aria-live="polite">📦 内蔵カタログ</span><button id="shopCatalogRefresh" type="button">🔄 カタログ更新</button></div>
     <div class="shopSearchBar"><input id="shopSearch" placeholder="🔎 商品名・カテゴリ・効果で検索" maxlength="40" aria-label="商品を検索"></div>
     <div id="shopCount">62種類</div>
@@ -383,6 +403,46 @@ body[data-season] .musicBar{border:1px solid var(--season-grid)}
   </div>
 </div>
 
+
+
+<div id="giftModal" role="dialog" aria-modal="true" aria-label="サーバープレゼント">
+  <div class="liveSheet">
+    <div class="liveHead"><h2>🎁 サーバープレゼント</h2><button type="button" id="giftClose">✕</button></div>
+    <p class="liveSub">管理者から届いたプレゼントを無料で受け取ろう！ 端末ごとに1回ずつ。</p>
+    <div id="giftStatus" class="liveStatus" aria-live="polite">📡 プレゼントを確認できるよ</div>
+    <div id="giftList" class="giftList"></div>
+    <button type="button" id="giftRefresh" class="liveAccent">🔄 プレゼントを確認</button>
+  </div>
+</div>
+
+<div id="adminModal" role="dialog" aria-modal="true" aria-label="管理者パネル">
+  <div class="liveSheet">
+    <div class="liveHead"><h2>🔐 管理者センター</h2><button type="button" id="adminClose">✕</button></div>
+    <div id="adminStatus" class="liveStatus" aria-live="polite">管理者コードを入力してね</div>
+    <section id="adminLogin">
+      <label class="liveLabel" for="adminCode">管理者コード</label>
+      <div class="liveInline"><input type="password" id="adminCode" maxlength="100" autocomplete="off" spellcheck="false" placeholder="コードを入力"><button id="adminLoginBtn" type="button">🔓 ログイン</button></div>
+      <p class="liveSmall">コードはサーバーで検証。入力したコードは端末に保存しません。</p>
+    </section>
+    <section id="adminControls" hidden>
+      <div class="liveTabs"><button type="button" id="adminReload">🔄 再読み込み</button><button type="button" id="adminLogout">🚪 ログアウト</button></div>
+      <h3>🛒 ライブショップの価格とセール</h3>
+      <label class="liveLabel" for="adminShopItem">商品を選択</label>
+      <select id="adminShopItem"></select>
+      <div class="liveInline"><label>価格 🪙<input type="number" min="0" max="9999" id="adminShopPrice"></label><label>セール表示<input maxlength="18" id="adminShopBadge" placeholder="例：SALE"></label></div>
+      <div class="liveTabs"><button type="button" id="adminSaveShop" class="liveAccent">💾 価格を公開</button><button type="button" id="adminResetShop">↩ 元の価格に戻す</button></div>
+      <h3>🎁 プレゼントの新規作成・編集</h3>
+      <input type="hidden" id="adminGiftId">
+      <label class="liveLabel" for="adminGiftTitle">プレゼント名</label><input id="adminGiftTitle" maxlength="38" placeholder="例：週末プレゼント">
+      <label class="liveLabel" for="adminGiftDesc">説明文</label><input id="adminGiftDesc" maxlength="120" placeholder="例：みんなへありがとう！">
+      <div class="liveInline"><label>コイン🪙<input id="adminGiftCoins" type="number" min="0" max="1000" value="50"></label><label>商品<select id="adminGiftItem"><option value="">なし</option></select></label><label>個数<input id="adminGiftQty" type="number" min="0" max="10" value="0"></label></div>
+      <div class="liveTabs"><button type="button" id="adminSaveGift" class="liveAccent">📨 プレゼントを配布</button><button type="button" id="adminClearGift">＋ 新規作成に戻す</button></div>
+      <h3>📋 配布中のプレゼント</h3>
+      <div id="adminGiftList" class="giftList"></div>
+      <p class="liveSmall">⚠ 今の無料Render構成では変更データは一時保存です。サーバー再起動・再デプロイ時に初期状態へ戻る可能性があります。受取済み報酬の管理も端末単位で、アカウント認証ではありません。</p>
+    </section>
+  </div>
+</div>
 
 <div id="dailyModal">
   <div class="dailySheet">
@@ -901,8 +961,9 @@ const SHOP_CATALOG_TTL=30*60*1000;
 let shopCatalogCheckedAt=0,shopCatalogPending=null,shopCatalogMode='📦 内蔵カタログ';
 function escapeShopText(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function parseShopCatalog(data){
-  // Future and legacy catalogues: ignore unimplemented IDs; use local
-  // behaviour for missing items, never execute remote code.
+  // Forward and backward compatibility: ignore unknown IDs and preserve local
+  // implementations for items absent from the remote catalog. Never execute
+  // code or accept unimplemented product modes from a remote payload.
   if(!data||!Array.isArray(data.items)||data.items.length<1||data.items.length>250)return null;
   const defaults=new Map(SHOP_DEFAULT_ITEMS.map(x=>[x.id,x]));
   const overrides=new Map(),used=new Set();
@@ -1538,7 +1599,7 @@ seasonModal.querySelectorAll('[data-season-choice]').forEach(b=>b.addEventListen
 }));
 setInterval(()=>{if(seasonChoice==='auto')applySeasonTheme()},15*60*1000);
 
-const CLIENT_VERSION='1.2.5';
+const CLIENT_VERSION='1.3.0';
 const ONLINE_ORIGIN=location.protocol==='file:'?'https://block-pop-online.onrender.com':location.origin;
 const ONLINE_SOCKET=ONLINE_ORIGIN.replace(/^http/,'ws')+'/ws';
 const onlineModal=document.getElementById('onlineModal');
@@ -1723,6 +1784,187 @@ updateTimer=setInterval(()=>checkForOnlineUpdate(false),1800000);
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'&&Date.now()-lastUpdateCheckAt>1800000)checkForOnlineUpdate(false);
 });
+
+// v1.3.0 Live Shop & Server Gifts. All administrator changes require server auth.
+const liveGiftModal=document.getElementById('giftModal');
+const liveAdminModal=document.getElementById('adminModal');
+const giftStatus=document.getElementById('giftStatus');
+const giftList=document.getElementById('giftList');
+const adminStatus=document.getElementById('adminStatus');
+const GIFT_LEDGER_KEY='blockpop_server_gifts_received_v1';
+const GIFT_PLAYER_KEY='blockpop_player_random_id_v1';
+let adminBearer='',adminState=null,onlineGifts=[],giftBusy=false;
+function liveMessage(el,message){el.textContent=message;}
+function playerRandomId(){
+  try{
+    let id=localStorage.getItem(GIFT_PLAYER_KEY);
+    if(/^[0-9a-f]{32}$/.test(id||''))return id;
+    const bytes=new Uint8Array(16);
+    if(window.crypto&&window.crypto.getRandomValues)window.crypto.getRandomValues(bytes);
+    else for(let i=0;i<16;i++)bytes[i]=Math.floor(Math.random()*256);
+    id=Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
+    localStorage.setItem(GIFT_PLAYER_KEY,id);
+    return id;
+  }catch(e){return null;}
+}
+function giftLedger(){try{return JSON.parse(localStorage.getItem(GIFT_LEDGER_KEY)||'{}')||{}}catch{return {}}}
+async function liveApi(url,options={}){
+  const timeout=new AbortController(),timer=setTimeout(()=>timeout.abort(),7500);
+  try{
+    const response=await fetch(ONLINE_ORIGIN+url,{method:options.body?'POST':'GET',mode:'cors',cache:'no-store',signal:timeout.signal,
+      headers:{...(options.body?{'Content-Type':'application/json'}:{}),...(options.auth?{'Authorization':'Bearer '+adminBearer}:{})},
+      ...(options.body?{body:JSON.stringify(options.body)}:{})});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||'サーバーエラー '+response.status);
+    return data;
+  }finally{clearTimeout(timer);}
+}
+function renderServerGifts(){
+  const ledger=giftLedger();
+  giftList.innerHTML='';
+  if(!onlineGifts.length){giftList.textContent='📭 配布中のプレゼントはまだないよ';return;}
+  for(const g of onlineGifts){
+    const card=document.createElement('div');card.className='giftCard';
+    const title=document.createElement('strong');title.textContent=g.title;
+    const desc=document.createElement('p');desc.textContent=g.description||'管理者からのプレゼント！';
+    const reward=document.createElement('p');
+    const item=g.itemId?ITEM_DEFS.find(x=>x.id===g.itemId):null;
+    reward.textContent='🎁 '+[g.coins?'🪙'+g.coins+'枚':'',g.qty?(item?item.icon+' '+item.name:g.itemId)+' ×'+g.qty:''].filter(Boolean).join(' ＋ ');
+    const button=document.createElement('button');button.className='liveAccent';
+    button.textContent=ledger[g.id]?'✅ 受け取り済み':'🎁 受け取る';
+    button.disabled=!!ledger[g.id];
+    button.addEventListener('click',()=>claimServerGift(g.id));
+    card.append(title,desc,reward,button);giftList.appendChild(card);
+  }
+}
+async function loadServerGifts(){
+  liveMessage(giftStatus,'📡 サーバーのプレゼントを読み込み中…');
+  try{const data=await liveApi('/api/gifts');onlineGifts=Array.isArray(data.gifts)?data.gifts:[];
+    liveMessage(giftStatus,'✅ サーバー配布中：'+onlineGifts.length+'件');renderServerGifts();}
+  catch(e){liveMessage(giftStatus,'⚠️ '+e.message+'。接続を確認してね');}
+}
+async function claimServerGift(giftId){
+  if(giftBusy)return;
+  const id=playerRandomId(),ledger=giftLedger();
+  if(ledger[giftId]){renderServerGifts();return;}
+  if(!id){liveMessage(giftStatus,'端末への保存が無効なので受け取れません');return;}
+  giftBusy=true;liveMessage(giftStatus,'⏳ サーバーへ受け取りを確認中…');
+  try{
+    const result=await liveApi('/api/gifts/claim',{body:{playerId:id,giftId}});
+    const g=result.gift;
+    if(!g||g.id!==giftId)throw new Error('受け取りデータを確認できません');
+    // Confirmed by server. Apply once per browser installation, even on retry.
+    if(!giftLedger()[giftId]){
+      if(g.coins){coins+=g.coins;saveCoins();}
+      if(g.qty&&g.itemId&&ITEM_DEFS.some(x=>x.id===g.itemId))addInv(g.itemId,g.qty);
+      const updated=giftLedger();updated[giftId]=Date.now();
+      localStorage.setItem(GIFT_LEDGER_KEY,JSON.stringify(updated));saveSession();
+    }
+    liveMessage(giftStatus,'🎉 プレゼントを受け取ったよ！');renderServerGifts();
+  }catch(e){liveMessage(giftStatus,'⚠️ '+e.message);}
+  finally{giftBusy=false;}
+}
+document.getElementById('giftBtn').addEventListener('click',()=>{liveGiftModal.classList.add('show');loadServerGifts();});
+document.getElementById('giftClose').addEventListener('click',()=>liveGiftModal.classList.remove('show'));
+document.getElementById('giftRefresh').addEventListener('click',loadServerGifts);
+
+function populateLiveAdminInputs(){
+  const select=document.getElementById('adminShopItem');
+  const rewards=document.getElementById('adminGiftItem');
+  select.replaceChildren();rewards.innerHTML='<option value="">なし</option>';
+  for(const def of SHOP_DEFAULT_ITEMS){
+    const option=document.createElement('option');option.value=def.id;option.textContent=def.icon+' '+def.name;select.appendChild(option);
+    if(def.mode!=='pack'){const giftOption=option.cloneNode(true);rewards.appendChild(giftOption);}
+  }
+}
+function adminError(e){
+  liveMessage(adminStatus,'⚠️ '+e.message);
+  if(e.message.includes('ログインが必要')){adminBearer='';document.getElementById('adminLogin').hidden=false;document.getElementById('adminControls').hidden=true;}
+}
+function adminDisplayProduct(){
+  if(!adminState)return;
+  const item=adminState.shop.find(x=>x.id===document.getElementById('adminShopItem').value);
+  if(!item)return;
+  document.getElementById('adminShopPrice').value=String(item.price);
+  document.getElementById('adminShopBadge').value=item.badge||'';
+}
+function clearAdminGiftForm(){
+  for(const key of ['adminGiftId','adminGiftTitle','adminGiftDesc'])document.getElementById(key).value='';
+  document.getElementById('adminGiftCoins').value='50';
+  document.getElementById('adminGiftItem').value='';
+  document.getElementById('adminGiftQty').value='0';
+  document.getElementById('adminSaveGift').textContent='📨 プレゼントを配布';
+}
+function adminGiftForm(g){
+  document.getElementById('adminGiftId').value=g.id;
+  document.getElementById('adminGiftTitle').value=g.title;
+  document.getElementById('adminGiftDesc').value=g.description||'';
+  document.getElementById('adminGiftCoins').value=String(g.coins);
+  document.getElementById('adminGiftItem').value=g.itemId||'';
+  document.getElementById('adminGiftQty').value=String(g.qty);
+  document.getElementById('adminSaveGift').textContent='💾 内容を保存';
+}
+function renderAdminGifts(){
+  const list=document.getElementById('adminGiftList');list.replaceChildren();
+  if(!adminState?.gifts?.length){list.textContent='まだ配布登録がないよ';return;}
+  for(const g of adminState.gifts){
+    const card=document.createElement('div');card.className='giftCard';
+    const heading=document.createElement('strong');heading.textContent=(g.enabled?'🟢':'⚪')+' '+g.title;
+    const details=document.createElement('p');details.textContent='🪙 '+g.coins+' / '+(g.itemId||'アイテムなし')+' ×'+g.qty+' / 受取人数 '+g.claims;
+    const buttons=document.createElement('div');buttons.className='liveTabs';
+    const edit=document.createElement('button');edit.textContent='✏️ 編集';edit.disabled=g.claims>0;
+    edit.addEventListener('click',()=>adminGiftForm(g));
+    const toggle=document.createElement('button');toggle.textContent=g.enabled?'⏸️ 配布停止':'▶️ 再開';
+    toggle.addEventListener('click',()=>adminAction('/api/admin/gift',{action:'toggle',id:g.id,enabled:!g.enabled},'配布状態を更新したよ'));
+    buttons.append(edit,toggle);card.append(heading,details,buttons);list.appendChild(card);
+  }
+}
+async function reloadAdmin(){
+  if(!adminBearer)return;
+  try{adminState=await liveApi('/api/admin/state',{auth:true});adminDisplayProduct();renderAdminGifts();
+    liveMessage(adminStatus,'🔐 管理者ログイン中 / 商品'+adminState.shop.length+'種類 / 配布'+adminState.gifts.length+'件');}
+  catch(e){adminError(e);}
+}
+async function adminAction(url,body,success){
+  try{await liveApi(url,{auth:true,body});liveMessage(adminStatus,'✅ '+success);await reloadAdmin();
+    if(url==='/api/admin/shop')fetchShopCatalog(true);
+  }catch(e){adminError(e);}
+}
+document.getElementById('adminBtn').addEventListener('click',()=>{liveAdminModal.classList.add('show');
+  if(adminBearer)reloadAdmin();});
+document.getElementById('adminClose').addEventListener('click',()=>liveAdminModal.classList.remove('show'));
+document.getElementById('adminLoginBtn').addEventListener('click',async()=>{
+  const field=document.getElementById('adminCode'),code=field.value;field.value='';
+  if(!code){liveMessage(adminStatus,'管理者コードを入力してね');return;}
+  liveMessage(adminStatus,'🔐 コードを照合中…');
+  try{const data=await liveApi('/api/admin/login',{body:{code}});
+    adminBearer=data.token;document.getElementById('adminLogin').hidden=true;document.getElementById('adminControls').hidden=false;
+    populateLiveAdminInputs();clearAdminGiftForm();await reloadAdmin();}
+  catch(e){adminError(e);}
+});
+document.getElementById('adminCode').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('adminLoginBtn').click()});
+document.getElementById('adminShopItem').addEventListener('change',adminDisplayProduct);
+document.getElementById('adminSaveShop').addEventListener('click',()=>adminAction('/api/admin/shop',{
+  id:document.getElementById('adminShopItem').value,price:Number(document.getElementById('adminShopPrice').value),
+  badge:document.getElementById('adminShopBadge').value},'ライブ価格を公開したよ'));
+document.getElementById('adminResetShop').addEventListener('click',()=>adminAction('/api/admin/shop',{
+  id:document.getElementById('adminShopItem').value,reset:true},'元の価格に戻したよ'));
+document.getElementById('adminSaveGift').addEventListener('click',()=>{
+  const id=document.getElementById('adminGiftId').value;
+  const itemId=document.getElementById('adminGiftItem').value;
+  const request={action:id?'edit':'create',id,title:document.getElementById('adminGiftTitle').value,
+    description:document.getElementById('adminGiftDesc').value,coins:Number(document.getElementById('adminGiftCoins').value),
+    itemId,qty:Number(document.getElementById('adminGiftQty').value)};
+  adminAction('/api/admin/gift',request,id?'プレゼントを編集したよ':'プレゼントを配布したよ');
+  clearAdminGiftForm();
+});
+document.getElementById('adminClearGift').addEventListener('click',clearAdminGiftForm);
+document.getElementById('adminReload').addEventListener('click',reloadAdmin);
+document.getElementById('adminLogout').addEventListener('click',()=>{
+  adminBearer='';adminState=null;document.getElementById('adminLogin').hidden=false;
+  document.getElementById('adminControls').hidden=true;liveMessage(adminStatus,'🔐 ログアウトしたよ');
+});
+
 // --- End ONLINE client ---
 
 loadShopCatalogCache();applySeasonTheme();ensureStageCards();ensureCardUsage();renderCardBook();renderShop();renderDaily();if(!restoreSession())reset();else toast('💾 前回の続きから復活！');setTimeout(()=>{if(dailyStatus().claimable){renderDaily();dailyModal.classList.add('show')}},280);

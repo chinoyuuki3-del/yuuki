@@ -1,6 +1,6 @@
 'use strict';
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),zlib=require('node:zlib');
-const PORT=Number(process.env.PORT||3000),VERSION='1.2.5',ROUND_MS=120000;
+const PORT=Number(process.env.PORT||3000),VERSION='1.3.0',ROUND_MS=120000;
 // Serve the game as one compressed, cached HTML resource (no external assets).
 const PAGE=fs.readFileSync(path.join(__dirname,'index.html'));
 if(PAGE.length>5*1024*1024)throw Error('Game HTML must stay under 5 MiB');
@@ -30,6 +30,7 @@ const LEGACY_SHOP_DATA={
 const LEGACY_SHOP_JSON=Buffer.from(JSON.stringify(LEGACY_SHOP_DATA),'utf8');
 const LEGACY_SHOP_GZIP=zlib.gzipSync(LEGACY_SHOP_JSON,{level:9});
 const LEGACY_SHOP_ETAG='W/"'+crypto.createHash('sha256').update(LEGACY_SHOP_JSON).digest('hex')+'"';
+const LIVE_SHOP_ADMIN=require('./live-admin')({catalog:SHOP_DATA,legacyIds:LEGACY_IDS});
 const rooms=new Map(),ABC='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const stamp=()=>Date.now();
 function code(){let s;do{s=Array.from({length:6},()=>ABC[crypto.randomInt(ABC.length)]).join('')}while(rooms.has(s));return s;}
@@ -123,6 +124,7 @@ function connection(socket){
 const server=http.createServer((req,res)=>{
   res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');
   const url=(req.url||'').split('?')[0];
+  if(LIVE_SHOP_ADMIN.handle(req,res,url))return;
   if(url==='/health'){res.writeHead(200,{'Content-Type':'application/json'});return res.end(JSON.stringify({ok:true,version:VERSION,rooms:rooms.size}));}
   if(url==='/api/shop/catalog'){
     const params=new URL(req.url||'/', 'http://localhost').searchParams;
@@ -154,7 +156,7 @@ const server=http.createServer((req,res)=>{
     });
     return res.end(PAGE);
   }
-  if(url==='/api/version'){res.setHeader('Access-Control-Allow-Origin','*');res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({version:VERSION,release:'Block Pop! 互換カタログ v1.2.5',notes:'旧版v1.2.3には27品、最新版には62品を配信。新しいカタログにも安全に対応。',url:'/',downloadUrl:'/download/latest'}));}
+  if(url==='/api/version'){res.setHeader('Access-Control-Allow-Origin','*');res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({version:VERSION,release:'Block Pop! LIVE SHOP & GIFTS v1.3.0',notes:'管理者コードでライブ価格変更・プレゼントの配布と停止。旧版27品・新版62品にも対応。',url:'/',downloadUrl:'/download/latest'}));}
   if(url!=='/'&&url!=='/index.html'){res.writeHead(404);return res.end('Not found');}
   res.setHeader('Cache-Control','private, no-cache');
   res.setHeader('ETag',PAGE_ETAG);
