@@ -1,6 +1,6 @@
 'use strict';
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),zlib=require('node:zlib');
-const PORT=Number(process.env.PORT||3000),VERSION='1.3.3',ROUND_MS=120000;
+const PORT=Number(process.env.PORT||3000),VERSION='1.4.0',ROUND_MS=120000;
 // Serve the game as one compressed, cached HTML resource (no external assets).
 const PAGE=fs.readFileSync(path.join(__dirname,'index.html'));
 const PATCHER_PAGE=fs.readFileSync(path.join(__dirname,'patcher.html'));
@@ -35,6 +35,7 @@ const LEGACY_SHOP_JSON=Buffer.from(JSON.stringify(LEGACY_SHOP_DATA),'utf8');
 const LEGACY_SHOP_GZIP=zlib.gzipSync(LEGACY_SHOP_JSON,{level:9});
 const LEGACY_SHOP_ETAG='W/"'+crypto.createHash('sha256').update(LEGACY_SHOP_JSON).digest('hex')+'"';
 const LIVE_SHOP_ADMIN=require('./live-admin')({catalog:SHOP_DATA,legacyIds:LEGACY_IDS});
+const ACCOUNT=require('./account-service')();
 const rooms=new Map(),ABC='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const stamp=()=>Date.now();
 function code(){let s;do{s=Array.from({length:6},()=>ABC[crypto.randomInt(ABC.length)]).join('')}while(rooms.has(s));return s;}
@@ -64,10 +65,13 @@ function leave(c,closing=false){
   if(room.status==='finished'||room.players.length===0)rooms.delete(room.code);
   if(!closing)send(c,{type:'left'});
 }
+const SHARED=require('./shared-match')({send,leaveLegacy:c=>leave(c)});
 function receive(c,m){
   const t=stamp();if(t-c.rateStart>=1000){c.rateStart=t;c.rate=0;}
   if(++c.rate>25){error(c,'送信が多すぎます');return;}
   if(!m||typeof m!=='object'||typeof m.type!=='string')return;
+  if(SHARED.receive(c,m))return;
+  if(m.type==='create'||m.type==='join')SHARED.leave(c,'switch');
   if(m.type==='create'){
     if(c.room)leave(c);const room={code:code(),players:[c],status:'lobby',createdAt:t,endsAt:0,timer:null};
     rooms.set(room.code,room);c.room=room;c.slot=0;c.score=0;
@@ -104,7 +108,7 @@ function connection(socket){
     else{head=Buffer.alloc(4);head[0]=0x81;head[1]=126;head.writeUInt16BE(body.length,2);}
     socket.write(Buffer.concat([head,body]));
   };
-  const close=()=>{if(c.closed)return;c.closed=true;leave(c,true);};
+  const close=()=>{if(c.closed)return;c.closed=true;leave(c,true);SHARED.disconnect(c);};
   socket.on('close',close);socket.on('error',close);
   socket.on('data',part=>{
     c.buffer=Buffer.concat([c.buffer,part]);if(c.buffer.length>4096)return socket.destroy();
@@ -129,6 +133,10 @@ const server=http.createServer((req,res)=>{
   res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');
   const url=(req.url||'').split('?')[0];
   if(LIVE_SHOP_ADMIN.handle(req,res,url))return;
+  if(url.startsWith('/api/account/')){
+    ACCOUNT.handle(req,res,url).catch(()=>{if(!res.headersSent){res.writeHead(502,{'Content-Type':'application/json'});res.end(JSON.stringify({error:'アカウントの通信エラーだよ'}));}});
+    return;
+  }
   if(url==='/patcher'||url==='/patcher.html'){
     const gz=String(req.headers['accept-encoding']||'').includes('gzip');
     const body=gz?PATCHER_GZIP:PATCHER_PAGE;
@@ -150,11 +158,11 @@ const server=http.createServer((req,res)=>{
     });
     return;
   }
-  if(url==='/health'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({ok:true,version:VERSION,rooms:rooms.size,adminConfigured:LIVE_SHOP_ADMIN.configured}));}
+  if(url==='/health'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({ok:true,version:VERSION,rooms:rooms.size,adminConfigured:LIVE_SHOP_ADMIN.configured,accountConfigured:ACCOUNT.enabled,...SHARED.info()}));}
   if(url==='/api/live/status'){
     res.setHeader('Access-Control-Allow-Origin','*');
     res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});
-    return res.end(JSON.stringify({version:VERSION,adminConfigured:LIVE_SHOP_ADMIN.configured,shopCount:SHOP_DATA.items.length}));
+    return res.end(JSON.stringify({version:VERSION,adminConfigured:LIVE_SHOP_ADMIN.configured,shopCount:SHOP_DATA.items.length,accountConfigured:ACCOUNT.enabled,...SHARED.info()}));
   }
   if(url==='/api/shop/catalog'){
     const params=new URL(req.url||'/', 'http://localhost').searchParams;
@@ -186,7 +194,7 @@ const server=http.createServer((req,res)=>{
     });
     return res.end(PAGE);
   }
-  if(url==='/api/version'){res.setHeader('Access-Control-Allow-Origin','*');res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({version:VERSION,release:'Block Pop! 差分アップデート v1.3.3',notes:'変更部分だけを受信し、対応ブラウザでは元HTMLを直接書き換える差分更新を追加。',url:'/',downloadUrl:'/download/latest'}));}
+  if(url==='/api/version'){res.setHeader('Access-Control-Allow-Origin','*');res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({version:VERSION,release:'Block Pop! ACCOUNT + 共有盤面バトル v1.4.0',notes:'アカウント、クラウド保存、ランダムマッチ、サーバー管理の共有8×8盤面対戦、再接続と差分更新。',url:'/',downloadUrl:'/download/latest'}));}
   if(url!=='/'&&url!=='/index.html'){res.writeHead(404);return res.end('Not found');}
   res.setHeader('Cache-Control','private, no-cache');
   res.setHeader('ETag',PAGE_ETAG);
