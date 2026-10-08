@@ -364,14 +364,13 @@ body[data-season] .musicBar{border:1px solid var(--season-grid)}
 <div id="bpAccountModal" role="dialog" aria-modal="true" aria-label="Block Popアカウント">
   <div class="bpScreen">
     <div class="bpHead"><h2>👤 Block Pop! アカウント</h2><button id="bpAccountClose" type="button">✕</button></div>
-    <div class="bpText">☁️ 別の端末でもセーブを復元！ ゲストでも対戦できるよ。ユーザー名には本名を使わないでね。</div>
+    <div class="bpText">☁️ メールアドレスなしで登録！ ユーザー名とパスワードで別の端末でもセーブを復元。ゲストでも対戦できるよ。本名は使わないでね。</div>
     <div id="bpAccountStatus" class="bpStatus" aria-live="polite">ログインか新規登録を選んでね。</div>
     <section id="bpAccountLoginForm" class="bpForm">
-      <label>ニックネーム（新規登録時）<input id="bpAccountNickname" maxlength="20" placeholder="ブロック名人" autocomplete="nickname"></label>
-      <label>メールアドレス<input id="bpAccountEmail" type="email" maxlength="160" autocomplete="email" placeholder="example@email.com"></label>
+      <label>ユーザー名（2～20文字）<input id="bpAccountUsername" type="text" maxlength="20" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="例：ブロック名人"></label>
       <label>パスワード（8文字以上）<input id="bpAccountPassword" type="password" minlength="8" maxlength="128" autocomplete="current-password"></label>
       <div class="bpRow"><button id="bpAccountRegister" type="button">✨ 新規登録</button><button id="bpAccountLogin" type="button">🔓 ログイン</button></div>
-      <p class="bpHint">※ 新規登録後は確認メールが届く場合があるよ。パスワードはゲーム本体に保存しないよ。</p>
+      <p class="bpHint">📧 メール・確認メールは不要。パスワード自体は保存しないよ。⚠️ メールでのパスワード再発行はできないため、ユーザー名とパスワードを安全に控えてね。</p>
     </section>
     <section id="bpAccountSigned" class="bpAccountCard" hidden>
       <div id="bpAccountIdentity" style="font-weight:900">👤 ログイン中</div>
@@ -1673,7 +1672,7 @@ seasonModal.querySelectorAll('[data-season-choice]').forEach(b=>b.addEventListen
 }));
 setInterval(()=>{if(seasonChoice==='auto')applySeasonTheme()},15*60*1000);
 
-const CLIENT_VERSION='1.4.0';
+const CLIENT_VERSION='1.4.1';
 // Always use the official Render service for online play and management.
 // file://, preview browsers, and other standalone HTML viewers are supported.
 const ONLINE_ORIGIN=(location.hostname==='localhost'||location.hostname==='127.0.0.1')?location.origin:'https://block-pop-online.onrender.com';
@@ -2252,14 +2251,18 @@ document.getElementById('adminLogout').addEventListener('click',()=>{
   document.getElementById('adminControls').hidden=true;liveMessage(adminStatus,'🔐 ログアウトしたよ');
 });
 
-// v1.4.0 ACCOUNT + SERVER-AUTHORITATIVE SHARED BOARD
+// v1.4.1 USERNAME ACCOUNT + SERVER-AUTHORITATIVE SHARED BOARD
 const accountModal=document.getElementById('bpAccountModal');
 const accountStatus=document.getElementById('bpAccountStatus');
 const accountSigned=document.getElementById('bpAccountSigned');
 const accountLoginForm=document.getElementById('bpAccountLoginForm');
 const SHARED_RESUME_KEY='blockpop_shared_reconnect_v1',ACCOUNT_SESSION_KEY='blockpop_account_auth_v1';
 let accountSession=null,accountNickname='ゲスト',accountLastCloud='';
-try{const raw=JSON.parse(localStorage.getItem(ACCOUNT_SESSION_KEY)||'null');if(raw?.accessToken&&raw?.refreshToken)accountSession=raw}catch{}
+try{const raw=JSON.parse(localStorage.getItem(ACCOUNT_SESSION_KEY)||'null');
+ // v1.4.0 used email-based Supabase tokens. They cannot authenticate to username accounts.
+ if(/^[a-f0-9]{64}$/.test(raw?.accessToken||'')&&/^[a-f0-9]{64}$/.test(raw?.refreshToken||''))accountSession=raw;
+ else if(raw?.accessToken)localStorage.removeItem(ACCOUNT_SESSION_KEY);
+}catch{}
 function accountMessage(msg){accountStatus.textContent=msg;}
 function accountSaveSession(data){
  accountSession=data;try{if(data)localStorage.setItem(ACCOUNT_SESSION_KEY,JSON.stringify(data));else localStorage.removeItem(ACCOUNT_SESSION_KEY)}catch{}
@@ -2302,17 +2305,25 @@ document.getElementById('bpAccountClose').addEventListener('click',()=>accountMo
 document.getElementById('bpAccountRegister').addEventListener('click',()=>accountDoLogin(true));
 document.getElementById('bpAccountLogin').addEventListener('click',()=>accountDoLogin(false));
 async function accountDoLogin(register){
- const email=document.getElementById('bpAccountEmail').value.trim();const pw=document.getElementById('bpAccountPassword').value;
- const nickname=document.getElementById('bpAccountNickname').value.trim()||'Player';
- if(!email.includes('@')||pw.length<8){accountMessage('メールアドレスと8文字以上のパスワードを入力してね');return;}
- accountMessage(register?'🔐 アカウント作成中…':'🔓 ログイン中…');
- try{const d=await accountApi(register?'register':'login',{body:{email,password:pw,...(register?{nickname}:{})}});
+ const username=document.getElementById('bpAccountUsername').value.trim().normalize('NFKC');
+ const pw=document.getElementById('bpAccountPassword').value;
+ if(!/^[\p{L}\p{N}_]{2,20}$/u.test(username)){accountMessage('ユーザー名は2～20文字。日本語・英数字・_が使えるよ');return;}
+ if(pw.length<8||pw.length>128){accountMessage('パスワードは8～128文字で入力してね');return;}
+ accountMessage(register?'🔐 ユーザー名でアカウント作成中…':'🔓 ユーザー名を確認中…');
+ const registerButton=document.getElementById('bpAccountRegister'),loginButton=document.getElementById('bpAccountLogin');
+ registerButton.disabled=true;loginButton.disabled=true;
+ try{
+  const d=await accountApi(register?'register':'login',{body:{username,password:pw}});
+  if(!d.session?.accessToken)throw Error('認証に失敗したよ。もう一度試してね');
   document.getElementById('bpAccountPassword').value='';
-  if(d.session){accountSaveSession(d.session);await accountLoadProfile();accountMessage('✅ '+(register?'アカウントを作成したよ！':'ログインできたよ！')+' ☁️ 保存する場合は「クラウドへ保存」を押してね');}
-  else accountMessage('📨 '+(d.message||'確認メールのリンクを開いてからログインしてね'));
+  accountSaveSession(d.session);
+  await accountLoadProfile();
+  accountMessage('✅ '+(register?'メールなしでアカウント作成成功！':'ユーザー名でログイン成功！')+' ☁️ 続きを保存するなら「クラウドへ保存」を押してね');
  }catch(e){accountMessage('⚠️ '+e.message);}
+ finally{registerButton.disabled=false;loginButton.disabled=false;}
 }
-document.getElementById('bpAccountLogout').addEventListener('click',()=>{
+document.getElementById('bpAccountLogout').addEventListener('click',async()=>{
+ try{if(accountSession)await accountApi('logout',{body:{},auth:true,canRetry:false});}catch(e){}
  accountSaveSession(null);accountMessage('🚪 ログアウトしたよ。端末のセーブは残るよ。');
 });
 document.getElementById('bpCloudSave').addEventListener('click',()=>cloudSave(false));

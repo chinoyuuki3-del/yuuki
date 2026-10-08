@@ -1,6 +1,6 @@
 'use strict';
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),zlib=require('node:zlib');
-const PORT=Number(process.env.PORT||3000),VERSION='1.4.0',ROUND_MS=120000;
+const PORT=Number(process.env.PORT||3000),VERSION='1.4.1',ROUND_MS=120000;
 // Serve the game as one compressed, cached HTML resource (no external assets).
 const PAGE=fs.readFileSync(path.join(__dirname,'index.html'));
 const PATCHER_PAGE=fs.readFileSync(path.join(__dirname,'patcher.html'));
@@ -194,7 +194,7 @@ const server=http.createServer((req,res)=>{
     });
     return res.end(PAGE);
   }
-  if(url==='/api/version'){res.setHeader('Access-Control-Allow-Origin','*');res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({version:VERSION,release:'Block Pop! ACCOUNT + 共有盤面バトル v1.4.0',notes:'アカウント、クラウド保存、ランダムマッチ、サーバー管理の共有8×8盤面対戦、再接続と差分更新。',url:'/',downloadUrl:'/download/latest'}));}
+  if(url==='/api/version'){res.setHeader('Access-Control-Allow-Origin','*');res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({version:VERSION,release:'Block Pop! ユーザー名アカウント v1.4.1',notes:'メール不要のユーザー名ログインとクラウド保存。既存の共有対戦、ショップ、差分更新も継続。',url:'/',downloadUrl:'/download/latest'}));}
   if(url!=='/'&&url!=='/index.html'){res.writeHead(404);return res.end('Not found');}
   res.setHeader('Cache-Control','private, no-cache');
   res.setHeader('ETag',PAGE_ETAG);
