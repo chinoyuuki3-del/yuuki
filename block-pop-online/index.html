@@ -225,7 +225,7 @@ body[data-season] .musicBar{border:1px solid var(--season-grid)}
 #shopCatalogRefresh:disabled{opacity:.65}
 .shopBadge{font-size:9px;font-weight:950;border-radius:6px;color:#8b4900;background:#fff0b0;padding:3px 5px;display:inline-block;margin-top:4px}
 
-/* v1.3.1 online live shop, server gifts and code-protected admin controls. */
+/* v1.3.2 online live shop, server gifts and code-protected admin controls. */
 .footer{grid-template-columns:repeat(6,minmax(0,1fr))!important}
 #giftBtn{background:linear-gradient(#f9bd78,#e28b59);box-shadow:0 4px 0 #aa6747}
 #adminBtn{background:linear-gradient(#9f9ebd,#777393);box-shadow:0 4px 0 #514d6e}
@@ -1599,8 +1599,11 @@ seasonModal.querySelectorAll('[data-season-choice]').forEach(b=>b.addEventListen
 }));
 setInterval(()=>{if(seasonChoice==='auto')applySeasonTheme()},15*60*1000);
 
-const CLIENT_VERSION='1.3.1';
-const ONLINE_ORIGIN=location.protocol==='file:'?'https://block-pop-online.onrender.com':location.origin;
+const CLIENT_VERSION='1.3.2';
+// Always use the official Render service for online play and management.
+// file://, preview browsers, and other standalone HTML viewers are supported.
+const ONLINE_ORIGIN=(location.hostname==='localhost'||location.hostname==='127.0.0.1')?location.origin:'https://block-pop-online.onrender.com';
+const UPDATE_MIRROR_BASE='https://raw.githubusercontent.com/chinoyuuki3-del/yuuki/block-pop-online/block-pop-online/';
 const ONLINE_SOCKET=ONLINE_ORIGIN.replace(/^http/,'ws')+'/ws';
 const onlineModal=document.getElementById('onlineModal');
 const onlineStatus=document.getElementById('onlineStatus');
@@ -1721,12 +1724,14 @@ for(const id of ['restartBtn','bombBtn','shopBtn','stageBtn','dailyBtn','dataBtn
     e.stopImmediatePropagation();e.preventDefault();toast('🌐 対戦中はアイテム・ショップ・リスタートを使えないよ');
   }},true);
 }
+// HTML update channel v1.3.2: lightweight Render version API + public GitHub mirror.
 let updateTimer=null;
 const updateBanner=document.getElementById('updateBanner');
 const updateText=document.getElementById('updateText');
 const updateVersion=document.getElementById('updateVersion');
 const latestBtn=document.getElementById('openLatest');
-const isLocalHTML=location.protocol==='file:';
+const isLocalHTML=location.hostname!=='block-pop-online.onrender.com';
+let lastUpdateCheckAt=0,updateCheckRunning=false,updateSource='Render',updateAvailableVersion='';
 function compareVersions(a,b){
   const aa=String(a).split('.').map(x=>parseInt(x,10)||0),bb=String(b).split('.').map(x=>parseInt(x,10)||0);
   for(let i=0;i<Math.max(aa.length,bb.length);i++)if((aa[i]||0)!==(bb[i]||0))return (aa[i]||0)>(bb[i]||0)?1:-1;
@@ -1734,58 +1739,110 @@ function compareVersions(a,b){
 }
 function showUpdateNotice(message,version,available=false){
   updateText.textContent=message;
-  updateVersion.textContent=version?`このHTML：v${CLIENT_VERSION} / サーバー：v${version}`:`このHTML：v${CLIENT_VERSION}`;
+  updateVersion.textContent=version?`このHTML：v${CLIENT_VERSION} / ${updateSource}：v${version}`:`このHTML：v${CLIENT_VERSION}`;
   latestBtn.hidden=!available;
-  latestBtn.textContent=isLocalHTML?'⬇ 最新版HTMLを保存':'🔄 最新版に更新';
+  latestBtn.textContent=(isLocalHTML||updateSource==='GitHub')?'⬇ 最新版HTMLを保存':'🔄 最新版に更新';
   updateBanner.classList.add('show');
 }
-let lastUpdateCheckAt=0,updateCheckRunning=false;
+async function updateFetch(url,timeoutMs=10000){
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
+  try{
+    const response=await fetch(url,{cache:'no-store',mode:'cors',signal:controller.signal});
+    if(!response.ok)throw Error('HTTP '+response.status);
+    return response;
+  }finally{clearTimeout(timer);}
+}
+async function fetchUpdateVersion(){
+  // An old Render deployment can still return HTTP 200 with an outdated
+  // version. Compare both tiny metadata feeds and use the newest release.
+  const read=async(url,timeout)=>{
+    const res=await updateFetch(url,timeout);
+    const data=await res.json();
+    if(!/^\d+\.\d+\.\d+$/.test(String(data.version||'')))throw Error('bad version');
+    return data;
+  };
+  const [server,mirror]=await Promise.allSettled([
+    read(ONLINE_ORIGIN+'/api/version?ts='+Date.now(),5000),
+    read(UPDATE_MIRROR_BASE+'version.json?ts='+Date.now(),10000)
+  ]);
+  if(server.status==='fulfilled' &&
+      (mirror.status!=='fulfilled'||compareVersions(server.value.version,mirror.value.version)>=0)){
+    updateSource='Render';return server.value;
+  }
+  if(mirror.status==='fulfilled'){
+    updateSource='GitHub';return mirror.value;
+  }
+  throw new Error('No update metadata available');
+}
 async function checkForOnlineUpdate(manual=false){
   if(updateCheckRunning)return;
   if(!manual&&(document.visibilityState==='hidden'||navigator.onLine===false))return;
   updateCheckRunning=true;lastUpdateCheckAt=Date.now();
-  if(manual)showUpdateNotice('🔎 サーバーの更新を確認しているよ…',null,false);
+  if(manual)showUpdateNotice('🔎 更新情報を確認中…',null,false);
   try{
-    const res=await fetch(ONLINE_ORIGIN+'/api/version?ts='+Date.now(),{cache:'no-store',mode:'cors'});
-    if(!res.ok)throw new Error('HTTP '+res.status);
-    const data=await res.json();
-    if(!data.version)throw new Error('バージョン番号がありません');
+    const data=await fetchUpdateVersion();
+    updateAvailableVersion=data.version;
     const diff=compareVersions(data.version,CLIENT_VERSION);
     if(diff>0){
-      showUpdateNotice('🆕 新しいBlock Pop! があるよ！',data.version,true);
+      showUpdateNotice(updateSource==='GitHub'?'🆕 Renderに接続できないためGitHubで更新を発見したよ！':'🆕 新しいBlock Pop! があるよ！',data.version,true);
     }else if(manual){
-      showUpdateNotice(diff===0?'✅ 最新バージョンだよ！':'✅ このHTMLはサーバーより新しいよ',data.version,false);
+      const current=diff===0?'✅ このHTMLは最新版だよ！':'✅ このHTMLは配信版より新しいよ';
+      showUpdateNotice(current+(updateSource==='GitHub'?'（Renderは現在利用できない可能性があります）':''),data.version,false);
     }else{
       updateBanner.classList.remove('show');
     }
   }catch(e){
-    if(manual)showUpdateNotice('⚠️ サーバーを確認できなかったよ。ネット接続を確かめてね',null,false);
+    if(manual)showUpdateNotice('⚠️ Render・GitHubの両方で確認できなかったよ。インターネット接続を確認してね。',null,false);
   }finally{
     updateCheckRunning=false;
   }
 }
+async function downloadUpdatedHTML(){
+  // A browser cannot overwrite an existing file:// document; save a new copy.
+  const preferred=updateSource==='GitHub'?['GitHub','Render']:['Render','GitHub'];
+  const version=updateAvailableVersion||CLIENT_VERSION;
+  latestBtn.disabled=true;
+  showUpdateNotice('📥 最新版HTMLを取得中…',version,true);
+  let lastError;
+  try{
+    for(const source of preferred){
+      try{
+        const url=source==='GitHub'?UPDATE_MIRROR_BASE+'index.html?ts='+Date.now():ONLINE_ORIGIN+'/download/latest?ts='+Date.now();
+        const res=await updateFetch(url,source==='Render'?13000:18000);
+        const sizeHeader=Number(res.headers.get('content-length')||0);
+        if(sizeHeader>2*1024*1024)throw Error('file too large');
+        const page=await res.text();
+        if(new Blob([page]).size>2*1024*1024)throw Error('file too large');
+        const found=page.match(/const CLIENT_VERSION=['"](\d+\.\d+\.\d+)['"]/);
+        if(!found||!page.includes('<!DOCTYPE html>')||compareVersions(found[1],version)<0)throw Error('outdated or invalid HTML');
+        const href=URL.createObjectURL(new Blob([page],{type:'text/html;charset=utf-8'}));
+        const a=document.createElement('a');
+        a.href=href;a.download='BlockPop_ONLINE_v'+found[1]+'.html';a.rel='noopener';
+        document.body.appendChild(a);a.click();a.remove();
+        setTimeout(()=>URL.revokeObjectURL(href),30000);
+        showUpdateNotice('✅ '+source+'から最新版HTMLを取得したよ！保存したファイルを開いてね。',found[1],false);
+        return;
+      }catch(e){lastError=e;}
+    }
+    showUpdateNotice('⚠️ 最新版HTMLを取得できなかったよ。インターネット接続を確認してね。',version,true);
+  }finally{latestBtn.disabled=false;}
+}
 latestBtn.addEventListener('click',()=>{
-  // Browsers cannot overwrite a local HTML file. Download an updated copy instead.
-  if(isLocalHTML){
-    const a=document.createElement('a');
-    a.href=ONLINE_ORIGIN+'/download/latest?ts='+Date.now();
-    a.rel='noopener noreferrer';
-    document.body.appendChild(a);a.click();a.remove();
-    showUpdateNotice('📥 最新版HTMLを保存したら、新しいファイルを開いてね！',null,false);
-  }else{
+  if(!isLocalHTML&&updateSource==='Render'){
     location.replace(ONLINE_ORIGIN+'/?v='+Date.now());
+  }else{
+    downloadUpdatedHTML();
   }
 });
 document.getElementById('updateManual').addEventListener('click',()=>checkForOnlineUpdate(true));
 document.getElementById('closeUpdate').addEventListener('click',()=>updateBanner.classList.remove('show'));
 setTimeout(()=>checkForOnlineUpdate(false),1500);
-// Only check every 30 minutes while the game is in use.
 updateTimer=setInterval(()=>checkForOnlineUpdate(false),1800000);
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'&&Date.now()-lastUpdateCheckAt>1800000)checkForOnlineUpdate(false);
 });
 
-// v1.3.1 Live Shop & Server Gifts. All administrator changes require server auth.
+// v1.3.2 Live Shop & Server Gifts. All administrator changes require server auth.
 const liveGiftModal=document.getElementById('giftModal');
 const liveAdminModal=document.getElementById('adminModal');
 const giftStatus=document.getElementById('giftStatus');
@@ -1819,7 +1876,7 @@ async function liveApi(url,options={}){
         ...(options.body?{body:JSON.stringify(options.body)}:{})});
     }catch(e){
       if(e&&e.name==='AbortError')throw new Error('サーバーが応答しませんでした。しばらくしてから再試行してね');
-      throw new Error('サーバーに接続できません。通信環境とRenderの状態を確認してね');
+      throw new Error('ライブショップ・プレゼントのRenderサーバーに接続できません。HTMLの更新確認はGitHub経由でも利用できます。');
     }
     const raw=await response.text();
     let data;
