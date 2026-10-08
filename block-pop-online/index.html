@@ -211,6 +211,8 @@ body[data-season] .musicBar{border:1px solid var(--season-grid)}
 #updateBanner .update-actions{display:flex;gap:6px;justify-content:center;margin-top:9px;align-items:center}
 #updateBanner button{margin-left:0;max-width:none;width:auto;min-width:108px;font-size:11px}
 #updateBanner button[hidden]{display:none}
+#patchOriginalBtn{background:linear-gradient(#6fc4a5,#399778);box-shadow:0 3px 0 #2b755c;color:#fff;min-width:145px!important}
+#patchOriginalBtn:disabled{opacity:.5}
 #updateVersion{font-size:11px;opacity:.7;display:block;margin-top:3px}
 #updateManual{background:linear-gradient(180deg,#55c2d6,#328da8)!important;box-shadow:0 5px 0 #266e83,0 8px 14px rgba(43,110,140,.2)!important}
 #closeUpdate{background:linear-gradient(180deg,#9ba8c0,#75859e)!important;box-shadow:0 4px 0 #53637e!important}
@@ -225,7 +227,7 @@ body[data-season] .musicBar{border:1px solid var(--season-grid)}
 #shopCatalogRefresh:disabled{opacity:.65}
 .shopBadge{font-size:9px;font-weight:950;border-radius:6px;color:#8b4900;background:#fff0b0;padding:3px 5px;display:inline-block;margin-top:4px}
 
-/* v1.3.2 online live shop, server gifts and code-protected admin controls. */
+/* v1.3.3 online live shop, server gifts and code-protected admin controls. */
 .footer{grid-template-columns:repeat(6,minmax(0,1fr))!important}
 #giftBtn{background:linear-gradient(#f9bd78,#e28b59);box-shadow:0 4px 0 #aa6747}
 #adminBtn{background:linear-gradient(#9f9ebd,#777393);box-shadow:0 4px 0 #514d6e}
@@ -312,6 +314,7 @@ body[data-season] .musicBar{border:1px solid var(--season-grid)}
     <button id="soundBtn" class="secondary">🔊 ON</button>
     <button id="onlineBtn" class="onlineButton">🌐 ONLINE</button>
     <button id="adminBtn" type="button">🔐 管理</button>
+    <button id="patchFooterBtn" type="button">🩹 差分更新</button>
   </div>
 </div>
 
@@ -334,9 +337,11 @@ body[data-season] .musicBar{border:1px solid var(--season-grid)}
   <div id="updateText">🔄 アップデートを確認中…</div>
   <small id="updateVersion"></small>
   <div class="update-actions">
+    <button id="patchOriginalBtn" type="button">🩹 元HTMLを差分更新</button>
     <button id="openLatest" hidden>⬇ 最新版HTMLを保存</button>
     <button id="closeUpdate">とじる</button>
   </div>
+  <input type="file" id="patchSourceInput" accept=".html,.htm,text/html" hidden>
 </div>
 <div id="stageModal">
   <div class="stageSheet">
@@ -1599,7 +1604,7 @@ seasonModal.querySelectorAll('[data-season-choice]').forEach(b=>b.addEventListen
 }));
 setInterval(()=>{if(seasonChoice==='auto')applySeasonTheme()},15*60*1000);
 
-const CLIENT_VERSION='1.3.2';
+const CLIENT_VERSION='1.3.3';
 // Always use the official Render service for online play and management.
 // file://, preview browsers, and other standalone HTML viewers are supported.
 const ONLINE_ORIGIN=(location.hostname==='localhost'||location.hostname==='127.0.0.1')?location.origin:'https://block-pop-online.onrender.com';
@@ -1842,7 +1847,150 @@ document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'&&Date.now()-lastUpdateCheckAt>1800000)checkForOnlineUpdate(false);
 });
 
-// v1.3.2 Live Shop & Server Gifts. All administrator changes require server auth.
+// Block Pop! differential updater. Downloads only patch JSON, never uploads the game file.
+const BP_PATCH_MIRROR='https://raw.githubusercontent.com/chinoyuuki3-del/yuuki/block-pop-online/block-pop-online/';
+const BP_PATCH_RENDER='https://block-pop-online.onrender.com';
+function bpCanonical(text){return String(text).replace(/\r\n/g,'\n').replace(/\n+$/,'')}
+async function bpSHA256(text){
+  if(!self.crypto||!crypto.subtle||!self.TextEncoder)throw Error('このブラウザは安全な差分検証に対応していません');
+  const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(hash),b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function bpFetchJson(url){
+  const abort=new AbortController(),timeout=setTimeout(()=>abort.abort(),15000);
+  try{
+    const r=await fetch(url,{cache:'no-store',mode:'cors',signal:abort.signal});
+    if(!r.ok)throw Error('HTTP '+r.status);
+    const size=Number(r.headers.get('content-length')||0);
+    if(size>120000)throw Error('パッチデータが大きすぎます');
+    const txt=await r.text();
+    if(txt.length>120000)throw Error('パッチデータが大きすぎます');
+    return JSON.parse(txt);
+  }finally{clearTimeout(timeout)}
+}
+async function bpTryJson(urls){
+  let last;
+  for(const url of urls){try{return await bpFetchJson(url)}catch(e){last=e}}
+  throw Error('更新サーバーに接続できません。Render/GitHubを確認してね');
+}
+async function bpGetManifest(){
+  const m=await bpTryJson([
+    BP_PATCH_MIRROR+'version.json?now='+Date.now(),
+    BP_PATCH_RENDER+'/api/update/manifest?now='+Date.now()
+  ]);
+  if(!/^\d+\.\d+\.\d+$/.test(m.version)||!Array.isArray(m.patches)||m.patches.length>50)
+    throw Error('更新情報が正しくありません');
+  return m;
+}
+function bpFindChain(manifest,from){
+  const result=[],seen=new Set();let current=from;
+  for(let k=0;k<12&&current!==manifest.version;k++){
+    if(seen.has(current))break;seen.add(current);
+    const candidates=manifest.patches.filter(p=>p.from===current&&/^\d+\.\d+\.\d+$/.test(p.to||'')&&
+      /^patches\/v\d+\.\d+\.\d+-to-v\d+\.\d+\.\d+\.json$/.test(p.path||''));
+    const next=candidates.find(p=>p.to===manifest.version)||candidates[0];
+    if(!next)break;
+    result.push(next);current=next.to;
+  }
+  if(current!==manifest.version)throw Error('この版に対応する差分がないよ。最初の1回だけ通常更新が必要です');
+  return result;
+}
+async function bpPatchText(original,report){
+  let text=bpCanonical(original);
+  const match=text.match(/const CLIENT_VERSION='(\d+\.\d+\.\d+)';/);
+  if(!match)throw Error('Block Pop! の公式HTMLではないみたいです');
+  const manifest=await bpGetManifest();
+  const chain=bpFindChain(manifest,match[1]);
+  if(!chain.length)return {text,version:match[1],unchanged:true,bytes:0};
+  let bytes=0;
+  for(const entry of chain){
+    report('📡 '+entry.from+' → '+entry.to+' の差分を取得中…');
+    const file=entry.path.replace('patches/','');
+    const patch=await bpTryJson([
+      BP_PATCH_MIRROR+entry.path+'?now='+Date.now(),
+      BP_PATCH_RENDER+'/api/update/patch/'+file+'?now='+Date.now()
+    ]);
+    if(patch.from!==entry.from||patch.to!==entry.to||!Array.isArray(patch.ops)||patch.ops.length>80)
+      throw Error('差分データが不正です');
+    if(!/^[0-9a-f]{64}$/.test(patch.fromSha256||'')||
+       !/^[0-9a-f]{64}$/.test(patch.toSha256||''))throw Error('差分の署名情報が不正です');
+    if(await bpSHA256(text)!==patch.fromSha256)throw Error('元のHTMLが公式版と異なるため、破損防止で中止しました');
+    for(const op of patch.ops){
+      if(typeof op.before!=='string'||!op.before||typeof op.after!=='string'||op.after.length>75000)
+        throw Error('差分の形式が不正です');
+      const first=text.indexOf(op.before);
+      if(first<0||text.indexOf(op.before,first+op.before.length)!==-1)
+        throw Error('変更場所が一致しないため、安全のため中止しました');
+      text=text.slice(0,first)+op.after+text.slice(first+op.before.length);
+    }
+    if(await bpSHA256(text)!==patch.toSha256)throw Error('差分適用後の検証に失敗しました');
+    bytes+=patch.bytes||JSON.stringify(patch).length;
+  }
+  return {text,version:manifest.version,unchanged:false,bytes};
+}
+function bpSaveLocal(text,version){
+  const blob=new Blob([text],{type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='BlockPop_ONLINE_v'+version+'_patch.html';
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),30000);
+}
+
+// Original-file patching is only possible after choosing the file and granting permission.
+const bpPatchButton=document.getElementById('patchOriginalBtn');
+const bpFooterButton=document.getElementById('patchFooterBtn');
+const bpFileInput=document.getElementById('patchSourceInput');
+let bpPatchBusy=false;
+function bpPatchStatus(message){
+  updateSource='差分更新';
+  showUpdateNotice(message,null,false);
+  bpPatchButton.disabled=bpPatchBusy;
+  bpFooterButton.disabled=bpPatchBusy;
+}
+async function bpApplySelectedFile(file,handle){
+  try{
+    bpPatchStatus('🔍 元ファイルを検証しています…');
+    if(file.size>2*1024*1024)throw Error('ファイルが大きすぎます');
+    const applied=await bpPatchText(await file.text(),bpPatchStatus);
+    if(applied.unchanged){bpPatchStatus('✅ 選んだHTMLはすでに最新版だよ！');return}
+    if(handle){
+      // Verify all changes BEFORE requesting a write stream.
+      const writable=await handle.createWritable();
+      try{await writable.write(applied.text);await writable.close()}
+      catch(e){try{await writable.abort()}catch(_){}throw e}
+      bpPatchStatus('✅ 元HTMLを直接書き換えたよ！一度閉じて元ファイルを開き直してね。');
+    }else{
+      // Safari/iOS cannot overwrite file:// HTML. Generate a new local copy,
+      // but the network transfer still consists only of tiny patch JSON.
+      bpSaveLocal(applied.text,applied.version);
+      bpPatchStatus('✅ 差分だけダウンロードして端末内で更新したよ！新しいHTMLを開いてね。');
+    }
+  }catch(e){bpPatchStatus('⚠️ '+(e?.message||'差分更新に失敗しました'))}
+  finally{bpPatchBusy=false;bpPatchButton.disabled=false;bpFooterButton.disabled=false}
+}
+async function bpAskForFile(){
+  if(bpPatchBusy)return;
+  if(typeof window.showOpenFilePicker!=='function'){
+    bpPatchStatus('📁 HTMLを選んでね。対応端末では元ファイルを書き換え、非対応端末では端末内で新HTMLを作るよ。');
+    bpFileInput.click();return;
+  }
+  bpPatchBusy=true;
+  try{
+    const handles=await window.showOpenFilePicker({multiple:false,types:[{description:'Block Pop! HTML',accept:{'text/html':['.html','.htm']}}]});
+    if(handles&&handles[0])await bpApplySelectedFile(await handles[0].getFile(),handles[0]);
+  }catch(e){
+    if(e?.name!=='AbortError')bpPatchStatus('⚠️ ファイルを開けませんでした：'+(e?.message||'アクセスできません'));
+  }finally{bpPatchBusy=false;bpPatchButton.disabled=false;bpFooterButton.disabled=false}
+}
+bpPatchButton.addEventListener('click',bpAskForFile);
+bpFooterButton.addEventListener('click',bpAskForFile);
+bpFileInput.addEventListener('change',async()=>{
+  const file=bpFileInput.files&&bpFileInput.files[0];bpFileInput.value='';
+  if(!file)return;
+  bpPatchBusy=true;await bpApplySelectedFile(file,null);
+});
+
+// v1.3.3 Live Shop & Server Gifts. All administrator changes require server auth.
 const liveGiftModal=document.getElementById('giftModal');
 const liveAdminModal=document.getElementById('adminModal');
 const giftStatus=document.getElementById('giftStatus');

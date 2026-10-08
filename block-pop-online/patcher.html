@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Block Pop! 差分アップデーター</title><style>body{font:16px system-ui,sans-serif;max-width:550px;margin:32px auto;padding:0 20px;color:#263147;background:linear-gradient(140deg,#e8f4ff,#fff7e7)}main{background:white;border-radius:20px;padding:24px;box-shadow:0 12px 35px #0001}button{border:none;border-radius:12px;background:#3e9d84;color:white;padding:14px 18px;font-weight:bold;font-size:16px;cursor:pointer;width:100%;margin-top:12px}#status{padding:12px;border-radius:10px;background:#f0f5ff;margin-top:15px;white-space:pre-wrap;line-height:1.6}small{color:#666;line-height:1.6}h1{font-size:23px}</style></head><body><main><h1>🩹 Block Pop! 差分アップデーター</h1><p>ゲーム本体はダウンロードせず、<strong>変更部分だけ</strong>オンラインから取得して手元のHTMLを更新します。</p><button id="chooseBtn" type="button">📁 元のBlock Pop! HTMLを選んで更新</button><input type="file" id="chooseFile" accept=".html,.htm,text/html" hidden><div role="status" id="status">現在の対応版：v1.3.2 → v1.3.3。新しい差分はサーバーから自動確認します。</div><p><small>Chrome/Edgeの対応環境では、ファイルを選んで許可すると元HTMLを直接書き換えます。Safari/iPhone/iPadではファイルの上書きができないため、元ファイルを端末内で編集したコピーを保存します。セーブデータは変更しません。元HTMLはサーバーへ送信しません。</small></p></main><script>
+// Block Pop! differential updater. Downloads only patch JSON, never uploads the game file.
+const BP_PATCH_MIRROR='https://raw.githubusercontent.com/chinoyuuki3-del/yuuki/block-pop-online/block-pop-online/';
+const BP_PATCH_RENDER='https://block-pop-online.onrender.com';
+function bpCanonical(text){return String(text).replace(/\r\n/g,'\n').replace(/\n+$/,'')}
+async function bpSHA256(text){
+  if(!self.crypto||!crypto.subtle||!self.TextEncoder)throw Error('このブラウザは安全な差分検証に対応していません');
+  const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(hash),b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function bpFetchJson(url){
+  const abort=new AbortController(),timeout=setTimeout(()=>abort.abort(),15000);
+  try{
+    const r=await fetch(url,{cache:'no-store',mode:'cors',signal:abort.signal});
+    if(!r.ok)throw Error('HTTP '+r.status);
+    const size=Number(r.headers.get('content-length')||0);
+    if(size>120000)throw Error('パッチデータが大きすぎます');
+    const txt=await r.text();
+    if(txt.length>120000)throw Error('パッチデータが大きすぎます');
+    return JSON.parse(txt);
+  }finally{clearTimeout(timeout)}
+}
+async function bpTryJson(urls){
+  let last;
+  for(const url of urls){try{return await bpFetchJson(url)}catch(e){last=e}}
+  throw Error('更新サーバーに接続できません。Render/GitHubを確認してね');
+}
+async function bpGetManifest(){
+  const m=await bpTryJson([
+    BP_PATCH_MIRROR+'version.json?now='+Date.now(),
+    BP_PATCH_RENDER+'/api/update/manifest?now='+Date.now()
+  ]);
+  if(!/^\d+\.\d+\.\d+$/.test(m.version)||!Array.isArray(m.patches)||m.patches.length>50)
+    throw Error('更新情報が正しくありません');
+  return m;
+}
+function bpFindChain(manifest,from){
+  const result=[],seen=new Set();let current=from;
+  for(let k=0;k<12&&current!==manifest.version;k++){
+    if(seen.has(current))break;seen.add(current);
+    const candidates=manifest.patches.filter(p=>p.from===current&&/^\d+\.\d+\.\d+$/.test(p.to||'')&&
+      /^patches\/v\d+\.\d+\.\d+-to-v\d+\.\d+\.\d+\.json$/.test(p.path||''));
+    const next=candidates.find(p=>p.to===manifest.version)||candidates[0];
+    if(!next)break;
+    result.push(next);current=next.to;
+  }
+  if(current!==manifest.version)throw Error('この版に対応する差分がないよ。最初の1回だけ通常更新が必要です');
+  return result;
+}
+async function bpPatchText(original,report){
+  let text=bpCanonical(original);
+  const match=text.match(/const CLIENT_VERSION='(\d+\.\d+\.\d+)';/);
+  if(!match)throw Error('Block Pop! の公式HTMLではないみたいです');
+  const manifest=await bpGetManifest();
+  const chain=bpFindChain(manifest,match[1]);
+  if(!chain.length)return {text,version:match[1],unchanged:true,bytes:0};
+  let bytes=0;
+  for(const entry of chain){
+    report('📡 '+entry.from+' → '+entry.to+' の差分を取得中…');
+    const file=entry.path.replace('patches/','');
+    const patch=await bpTryJson([
+      BP_PATCH_MIRROR+entry.path+'?now='+Date.now(),
+      BP_PATCH_RENDER+'/api/update/patch/'+file+'?now='+Date.now()
+    ]);
+    if(patch.from!==entry.from||patch.to!==entry.to||!Array.isArray(patch.ops)||patch.ops.length>80)
+      throw Error('差分データが不正です');
+    if(!/^[0-9a-f]{64}$/.test(patch.fromSha256||'')||
+       !/^[0-9a-f]{64}$/.test(patch.toSha256||''))throw Error('差分の署名情報が不正です');
+    if(await bpSHA256(text)!==patch.fromSha256)throw Error('元のHTMLが公式版と異なるため、破損防止で中止しました');
+    for(const op of patch.ops){
+      if(typeof op.before!=='string'||!op.before||typeof op.after!=='string'||op.after.length>75000)
+        throw Error('差分の形式が不正です');
+      const first=text.indexOf(op.before);
+      if(first<0||text.indexOf(op.before,first+op.before.length)!==-1)
+        throw Error('変更場所が一致しないため、安全のため中止しました');
+      text=text.slice(0,first)+op.after+text.slice(first+op.before.length);
+    }
+    if(await bpSHA256(text)!==patch.toSha256)throw Error('差分適用後の検証に失敗しました');
+    bytes+=patch.bytes||JSON.stringify(patch).length;
+  }
+  return {text,version:manifest.version,unchanged:false,bytes};
+}
+function bpSaveLocal(text,version){
+  const blob=new Blob([text],{type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='BlockPop_ONLINE_v'+version+'_patch.html';
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),30000);
+}
+
+let busy=false;
+const statusEl=document.getElementById('status');
+function report(msg){statusEl.textContent=msg}
+async function runFile(file,handle){
+ try{
+  report('🔍 元HTMLを検証しています…');
+  if(file.size>2*1024*1024)throw Error('ファイルが大きすぎます');
+  const x=await bpPatchText(await file.text(),report);
+  if(x.unchanged){report('✅ すでに最新版だよ。変更は不要！');return}
+  if(handle){const writable=await handle.createWritable();try{await writable.write(x.text);await writable.close()}catch(e){try{await writable.abort()}catch(_){}throw e}
+    report('✅ 元のHTMLを直接更新したよ！同じファイルを開き直してね。');}
+  else {bpSaveLocal(x.text,x.version);report('✅ 差分だけ受信してHTMLを更新したよ！新しく保存したファイルを開いてね。');}
+ }catch(e){report('⚠️ '+(e?.message||'更新に失敗しました'))}
+ finally{busy=false;document.getElementById('chooseBtn').disabled=false}
+}
+document.getElementById('chooseBtn').addEventListener('click',async()=>{
+ if(busy)return;
+ if(typeof window.showOpenFilePicker!=='function'){document.getElementById('chooseFile').click();return}
+ busy=true;try{const a=await showOpenFilePicker({multiple:false,types:[{description:'Block Pop! HTML',accept:{'text/html':['.html','.htm']}}]});if(a&&a[0])await runFile(await a[0].getFile(),a[0]);}
+ catch(e){if(e?.name!=='AbortError')report('⚠️ '+(e?.message||'ファイルを開けませんでした'));busy=false}
+});
+document.getElementById('chooseFile').addEventListener('change',async e=>{
+ const f=e.target.files?.[0];e.target.value='';if(!f)return;
+ busy=true;await runFile(f,null);
+});
+
+</script></body></html>

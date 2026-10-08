@@ -1,8 +1,12 @@
 'use strict';
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),zlib=require('node:zlib');
-const PORT=Number(process.env.PORT||3000),VERSION='1.3.2',ROUND_MS=120000;
+const PORT=Number(process.env.PORT||3000),VERSION='1.3.3',ROUND_MS=120000;
 // Serve the game as one compressed, cached HTML resource (no external assets).
 const PAGE=fs.readFileSync(path.join(__dirname,'index.html'));
+const PATCHER_PAGE=fs.readFileSync(path.join(__dirname,'patcher.html'));
+const PATCHER_GZIP=zlib.gzipSync(PATCHER_PAGE,{level:9});
+const DELTA_MANIFEST=fs.readFileSync(path.join(__dirname,'version.json'));
+if(DELTA_MANIFEST.length>16000)throw Error('Update manifest too large');
 if(PAGE.length>5*1024*1024)throw Error('Game HTML must stay under 5 MiB');
 const PAGE_GZIP=zlib.gzipSync(PAGE,{level:9});
 const PAGE_ETAG='W/"'+crypto.createHash('sha256').update(PAGE).digest('hex')+'"';
@@ -125,6 +129,27 @@ const server=http.createServer((req,res)=>{
   res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');
   const url=(req.url||'').split('?')[0];
   if(LIVE_SHOP_ADMIN.handle(req,res,url))return;
+  if(url==='/patcher'||url==='/patcher.html'){
+    const gz=String(req.headers['accept-encoding']||'').includes('gzip');
+    const body=gz?PATCHER_GZIP:PATCHER_PAGE;
+    const headers={'Content-Type':'text/html; charset=utf-8','Content-Length':body.length,'Cache-Control':'public, max-age=3600'};
+    if(gz)headers['Content-Encoding']='gzip';
+    res.writeHead(200,headers);return res.end(body);
+  }
+  if(url==='/api/update/manifest'){
+    res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Access-Control-Allow-Origin':'*','Cache-Control':'no-store','Content-Length':DELTA_MANIFEST.length});
+    return res.end(DELTA_MANIFEST);
+  }
+  if(/^\/api\/update\/patch\/v\d+\.\d+\.\d+-to-v\d+\.\d+\.\d+\.json$/.test(url)){
+    const filename=url.slice('/api/update/patch/'.length);
+    fs.readFile(path.join(__dirname,'patches',filename),(err,data)=>{
+      if(err){res.writeHead(404,{'Access-Control-Allow-Origin':'*'});return res.end('Patch not found');}
+      if(data.length>120000){res.writeHead(413);return res.end('Patch too large');}
+      res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Access-Control-Allow-Origin':'*','Content-Length':data.length,'Cache-Control':'public, max-age=300'});
+      res.end(data);
+    });
+    return;
+  }
   if(url==='/health'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({ok:true,version:VERSION,rooms:rooms.size,adminConfigured:LIVE_SHOP_ADMIN.configured}));}
   if(url==='/api/live/status'){
     res.setHeader('Access-Control-Allow-Origin','*');
@@ -161,7 +186,7 @@ const server=http.createServer((req,res)=>{
     });
     return res.end(PAGE);
   }
-  if(url==='/api/version'){res.setHeader('Access-Control-Allow-Origin','*');res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({version:VERSION,release:'Block Pop! HTMLネットワーク更新 v1.3.2',notes:'Renderが利用できない時はGitHubを経由してHTMLの最新版を取得。既存の対戦・ショップ・プレゼント機能を継続。',url:'/',downloadUrl:'/download/latest'}));}
+  if(url==='/api/version'){res.setHeader('Access-Control-Allow-Origin','*');res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({version:VERSION,release:'Block Pop! 差分アップデート v1.3.3',notes:'変更部分だけを受信し、対応ブラウザでは元HTMLを直接書き換える差分更新を追加。',url:'/',downloadUrl:'/download/latest'}));}
   if(url!=='/'&&url!=='/index.html'){res.writeHead(404);return res.end('Not found');}
   res.setHeader('Cache-Control','private, no-cache');
   res.setHeader('ETag',PAGE_ETAG);
