@@ -1,6 +1,6 @@
 'use strict';
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),zlib=require('node:zlib');
-const PORT=Number(process.env.PORT||3000),VERSION='1.3.0',ROUND_MS=120000;
+const PORT=Number(process.env.PORT||3000),VERSION='1.3.1',ROUND_MS=120000;
 // Serve the game as one compressed, cached HTML resource (no external assets).
 const PAGE=fs.readFileSync(path.join(__dirname,'index.html'));
 if(PAGE.length>5*1024*1024)throw Error('Game HTML must stay under 5 MiB');
@@ -125,7 +125,12 @@ const server=http.createServer((req,res)=>{
   res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');
   const url=(req.url||'').split('?')[0];
   if(LIVE_SHOP_ADMIN.handle(req,res,url))return;
-  if(url==='/health'){res.writeHead(200,{'Content-Type':'application/json'});return res.end(JSON.stringify({ok:true,version:VERSION,rooms:rooms.size}));}
+  if(url==='/health'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({ok:true,version:VERSION,rooms:rooms.size,adminConfigured:LIVE_SHOP_ADMIN.configured}));}
+  if(url==='/api/live/status'){
+    res.setHeader('Access-Control-Allow-Origin','*');
+    res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});
+    return res.end(JSON.stringify({version:VERSION,adminConfigured:LIVE_SHOP_ADMIN.configured,shopCount:SHOP_DATA.items.length}));
+  }
   if(url==='/api/shop/catalog'){
     const params=new URL(req.url||'/', 'http://localhost').searchParams;
     // No schema: old v1.2.3 client receives 27 products.
@@ -156,7 +161,7 @@ const server=http.createServer((req,res)=>{
     });
     return res.end(PAGE);
   }
-  if(url==='/api/version'){res.setHeader('Access-Control-Allow-Origin','*');res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({version:VERSION,release:'Block Pop! LIVE SHOP & GIFTS v1.3.0',notes:'管理者コードでライブ価格変更・プレゼントの配布と停止。旧版27品・新版62品にも対応。',url:'/',downloadUrl:'/download/latest'}));}
+  if(url==='/api/version'){res.setHeader('Access-Control-Allow-Origin','*');res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({version:VERSION,release:'Block Pop! LIVE SHOP & GIFTS v1.3.1',notes:'管理者ログイン・プレゼント通信のエラー処理を改善。サーバー起動待ちと通信制限に対応。',url:'/',downloadUrl:'/download/latest'}));}
   if(url!=='/'&&url!=='/index.html'){res.writeHead(404);return res.end('Not found');}
   res.setHeader('Cache-Control','private, no-cache');
   res.setHeader('ETag',PAGE_ETAG);
@@ -179,4 +184,4 @@ server.on('upgrade',(req,socket)=>{
   connection(socket);
 });
 setInterval(()=>{for(const [code,room] of rooms){if((room.status==='lobby'&&stamp()-room.createdAt>3600000)||(room.status==='finished'&&stamp()-room.endsAt>300000))rooms.delete(code)}},60000).unref();
-server.listen(PORT,'0.0.0.0',()=>console.log('Block Pop online '+VERSION+' on '+PORT));
+server.listen(PORT,'0.0.0.0',()=>console.log('Block Pop online '+VERSION+' on '+PORT+'; admin ready='+LIVE_SHOP_ADMIN.configured));

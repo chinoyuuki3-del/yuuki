@@ -59,7 +59,9 @@ module.exports = function createLiveAdmin({catalog, legacyIds}) {
     fs.renameSync(tmp,statePath);
   }
   function limit(bucket,req,max,windowMs){
-    const ip=(req.socket.remoteAddress||'unknown').slice(0,100);
+    // Avoid grouping all players behind the same Render proxy address.
+    const forwarded=String(req.headers['x-forwarded-for']||'').split(',')[0].trim().slice(0,100);
+    const ip=/^[0-9a-fA-F.:]{3,100}$/.test(forwarded)?forwarded:(req.socket.remoteAddress||'unknown').slice(0,100);
     const now=Date.now(),entry=bucket.get(ip);
     if(!entry||entry.until<now){bucket.set(ip,{n:1,until:now+windowMs});return true;}
     entry.n++;return entry.n<=max;
@@ -170,7 +172,7 @@ module.exports = function createLiveAdmin({catalog, legacyIds}) {
     }
     if(url==='/api/admin/login' && req.method==='POST'){
       if(!adminReady){status(res,503,{error:'管理者認証はサーバーで未設定です'});return true;}
-      if(!limit(LOGIN_LIMIT,req,6,15*60*1000)){status(res,429,{error:'入力回数が多いため15分後に試してください'});return true;}
+      if(!limit(LOGIN_LIMIT,req,12,5*60*1000)){status(res,429,{error:'入力回数が多いため5分後に試してください'});return true;}
       readJson(req,(e,v)=>{
         if(e){status(res,400,{error:e.message});return;}
         const code=typeof v.code==='string'?v.code:'';
@@ -237,5 +239,5 @@ module.exports = function createLiveAdmin({catalog, legacyIds}) {
     }
     status(res,404,{error:'APIが見つかりません'});return true;
   }
-  return {handle};
+  return {handle, configured:adminReady};
 };

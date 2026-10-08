@@ -225,7 +225,7 @@ body[data-season] .musicBar{border:1px solid var(--season-grid)}
 #shopCatalogRefresh:disabled{opacity:.65}
 .shopBadge{font-size:9px;font-weight:950;border-radius:6px;color:#8b4900;background:#fff0b0;padding:3px 5px;display:inline-block;margin-top:4px}
 
-/* v1.3.0 online live shop, server gifts and code-protected admin controls. */
+/* v1.3.1 online live shop, server gifts and code-protected admin controls. */
 .footer{grid-template-columns:repeat(6,minmax(0,1fr))!important}
 #giftBtn{background:linear-gradient(#f9bd78,#e28b59);box-shadow:0 4px 0 #aa6747}
 #adminBtn{background:linear-gradient(#9f9ebd,#777393);box-shadow:0 4px 0 #514d6e}
@@ -1001,7 +1001,7 @@ async function fetchShopCatalog(force=false){
   if(refresh)refresh.disabled=true;
   shopCatalogStatus('📡 オンラインカタログを確認中…');
   shopCatalogPending=(async()=>{
-    const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),6000);
+    const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),45000);
     try{
       const res=await fetch(ONLINE_ORIGIN+'/api/shop/catalog?schema=2',{method:'GET',cache:'no-cache',mode:'cors',signal:controller.signal});
       if(!res.ok)throw Error('HTTP '+res.status);
@@ -1599,7 +1599,7 @@ seasonModal.querySelectorAll('[data-season-choice]').forEach(b=>b.addEventListen
 }));
 setInterval(()=>{if(seasonChoice==='auto')applySeasonTheme()},15*60*1000);
 
-const CLIENT_VERSION='1.3.0';
+const CLIENT_VERSION='1.3.1';
 const ONLINE_ORIGIN=location.protocol==='file:'?'https://block-pop-online.onrender.com':location.origin;
 const ONLINE_SOCKET=ONLINE_ORIGIN.replace(/^http/,'ws')+'/ws';
 const onlineModal=document.getElementById('onlineModal');
@@ -1785,7 +1785,7 @@ document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'&&Date.now()-lastUpdateCheckAt>1800000)checkForOnlineUpdate(false);
 });
 
-// v1.3.0 Live Shop & Server Gifts. All administrator changes require server auth.
+// v1.3.1 Live Shop & Server Gifts. All administrator changes require server auth.
 const liveGiftModal=document.getElementById('giftModal');
 const liveAdminModal=document.getElementById('adminModal');
 const giftStatus=document.getElementById('giftStatus');
@@ -1809,13 +1809,25 @@ function playerRandomId(){
 }
 function giftLedger(){try{return JSON.parse(localStorage.getItem(GIFT_LEDGER_KEY)||'{}')||{}}catch{return {}}}
 async function liveApi(url,options={}){
-  const timeout=new AbortController(),timer=setTimeout(()=>timeout.abort(),7500);
+  // Render Free can take longer than 7.5 seconds to start after idle.
+  const timeout=new AbortController(),timer=setTimeout(()=>timeout.abort(),60000);
   try{
-    const response=await fetch(ONLINE_ORIGIN+url,{method:options.body?'POST':'GET',mode:'cors',cache:'no-store',signal:timeout.signal,
-      headers:{...(options.body?{'Content-Type':'application/json'}:{}),...(options.auth?{'Authorization':'Bearer '+adminBearer}:{})},
-      ...(options.body?{body:JSON.stringify(options.body)}:{})});
-    const data=await response.json();
-    if(!response.ok)throw new Error(data.error||'サーバーエラー '+response.status);
+    let response;
+    try{
+      response=await fetch(ONLINE_ORIGIN+url,{method:options.body?'POST':'GET',mode:'cors',cache:'no-store',signal:timeout.signal,
+        headers:{...(options.body?{'Content-Type':'application/json'}:{}),...(options.auth?{'Authorization':'Bearer '+adminBearer}:{})},
+        ...(options.body?{body:JSON.stringify(options.body)}:{})});
+    }catch(e){
+      if(e&&e.name==='AbortError')throw new Error('サーバーが応答しませんでした。しばらくしてから再試行してね');
+      throw new Error('サーバーに接続できません。通信環境とRenderの状態を確認してね');
+    }
+    const raw=await response.text();
+    let data;
+    try{data=JSON.parse(raw)}catch{data=null}
+    if(response.status===404 && !data?.error)
+      throw new Error('サーバーが旧バージョンのままです。Renderの更新完了後に再試行してね');
+    if(!response.ok)throw new Error(data?.error||('サーバーエラー HTTP '+response.status));
+    if(!data||typeof data!=='object')throw new Error('サーバーから正しいデータが返りませんでした');
     return data;
   }finally{clearTimeout(timer);}
 }
@@ -1934,11 +1946,12 @@ document.getElementById('adminBtn').addEventListener('click',()=>{liveAdminModal
   if(adminBearer)reloadAdmin();});
 document.getElementById('adminClose').addEventListener('click',()=>liveAdminModal.classList.remove('show'));
 document.getElementById('adminLoginBtn').addEventListener('click',async()=>{
-  const field=document.getElementById('adminCode'),code=field.value;field.value='';
+  const field=document.getElementById('adminCode'),code=field.value.trim();
   if(!code){liveMessage(adminStatus,'管理者コードを入力してね');return;}
-  liveMessage(adminStatus,'🔐 コードを照合中…');
+  liveMessage(adminStatus,'🔐 サーバーへ接続し、コードを照合中…');
   try{const data=await liveApi('/api/admin/login',{body:{code}});
-    adminBearer=data.token;document.getElementById('adminLogin').hidden=true;document.getElementById('adminControls').hidden=false;
+    if(!data.token)throw new Error('認証データが不足しています');
+    field.value='';adminBearer=data.token;document.getElementById('adminLogin').hidden=true;document.getElementById('adminControls').hidden=false;
     populateLiveAdminInputs();clearAdminGiftForm();await reloadAdmin();}
   catch(e){adminError(e);}
 });
