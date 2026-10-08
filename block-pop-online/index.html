@@ -375,7 +375,7 @@ body[data-season] .musicBar{border:1px solid var(--season-grid)}
       <div class="coinPill">🪙 <span id="shopCoins">0</span></div>
       <button class="closeShop" id="closeShop">✕</button>
     </div>
-    <div class="shopInfo">全62種類！ スコア5点ごとに🪙1枚。購入アイテムとコインは端末保存。</div>
+    <div class="shopInfo">新旧HTMLに対応するオンラインショップ！ 全62種類、セーブは端末に保存。</div>
     <div class="shopCatalogLine"><span id="shopCatalogStatus" aria-live="polite">📦 内蔵カタログ</span><button id="shopCatalogRefresh" type="button">🔄 カタログ更新</button></div>
     <div class="shopSearchBar"><input id="shopSearch" placeholder="🔎 商品名・カテゴリ・効果で検索" maxlength="40" aria-label="商品を検索"></div>
     <div id="shopCount">62種類</div>
@@ -901,19 +901,22 @@ const SHOP_CATALOG_TTL=30*60*1000;
 let shopCatalogCheckedAt=0,shopCatalogPending=null,shopCatalogMode='📦 内蔵カタログ';
 function escapeShopText(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function parseShopCatalog(data){
-  if(!data||!Array.isArray(data.items)||data.items.length!==SHOP_DEFAULT_ITEMS.length)return null;
+  // Future and legacy catalogues: ignore unimplemented IDs; use local
+  // behaviour for missing items, never execute remote code.
+  if(!data||!Array.isArray(data.items)||data.items.length<1||data.items.length>250)return null;
   const defaults=new Map(SHOP_DEFAULT_ITEMS.map(x=>[x.id,x]));
-  const used=new Set(),clean=[];
+  const overrides=new Map(),used=new Set();
   for(const entry of data.items){
-    if(!entry||typeof entry.id!=='string'||used.has(entry.id))return null;
-    const def=defaults.get(entry.id);
-    if(!def||entry.mode!==def.mode||!Number.isInteger(entry.price)||entry.price<0||entry.price>9999)return null;
-    if(['name','icon','desc','category'].some(k=>typeof entry[k]!=='string'||entry[k].length>160||!entry[k].trim()))return null;
-    if(entry.badge!==undefined&&(typeof entry.badge!=='string'||entry.badge.length>24))return null;
+    if(!entry||typeof entry.id!=='string'||entry.id.length>48||used.has(entry.id))continue;
     used.add(entry.id);
-    clean.push({...def,name:entry.name,icon:entry.icon,desc:entry.desc,category:entry.category,price:entry.price,badge:entry.badge||''});
+    const def=defaults.get(entry.id);
+    if(!def||entry.mode!==def.mode||!Number.isInteger(entry.price)||entry.price<0||entry.price>9999)continue;
+    if(['name','icon','desc','category'].some(k=>typeof entry[k]!=='string'||entry[k].length>160||!entry[k].trim()))continue;
+    if(entry.badge!==undefined&&(typeof entry.badge!=='string'||entry.badge.length>24))continue;
+    overrides.set(entry.id,{...def,name:entry.name,icon:entry.icon,desc:entry.desc,category:entry.category,price:entry.price,badge:entry.badge||''});
   }
-  return used.size===SHOP_DEFAULT_ITEMS.length?clean:null;
+  if(overrides.size===0)return null;
+  return SHOP_DEFAULT_ITEMS.map(def=>overrides.get(def.id)||{...def});
 }
 function shopCatalogStatus(text){
   shopCatalogMode=text;
@@ -939,7 +942,7 @@ async function fetchShopCatalog(force=false){
   shopCatalogPending=(async()=>{
     const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),6000);
     try{
-      const res=await fetch(ONLINE_ORIGIN+'/api/shop/catalog',{method:'GET',cache:'no-cache',mode:'cors',signal:controller.signal});
+      const res=await fetch(ONLINE_ORIGIN+'/api/shop/catalog?schema=2',{method:'GET',cache:'no-cache',mode:'cors',signal:controller.signal});
       if(!res.ok)throw Error('HTTP '+res.status);
       if(Number(res.headers.get('content-length')||0)>45000)throw Error('catalog too large');
       const text=await res.text();if(text.length>45000)throw Error('catalog too large');
@@ -947,7 +950,8 @@ async function fetchShopCatalog(force=false){
       if(!clean)throw Error('invalid catalog');
       ITEM_DEFS=clean;
       try{localStorage.setItem(SHOP_CACHE_KEY,JSON.stringify(data))}catch(e){}
-      shopCatalogStatus('🌐 オンライン商品 '+clean.length+'種類 · '+String(data.version||'最新').slice(0,25));
+      const unsupported=data.items.filter(x=>x&&typeof x.id==='string'&&!SHOP_DEFAULT_ITEMS.some(def=>def.id===x.id)).length;
+      shopCatalogStatus('🌐 対応商品 '+clean.length+'種類'+(unsupported?' · 新商品'+unsupported+'種類は本体更新が必要':'')+' · '+String(data.version||'最新').slice(0,25));
       if(shopModal.classList.contains('show'))renderShop();
     }catch(e){
       if(e?.name!=='AbortError')console.warn('Shop catalogue fallback:',e);
@@ -1509,7 +1513,7 @@ function applySeasonTheme(){
   document.body.dataset.season=selected;
   if(selected!==activeSeason){activeSeason=selected;seasonParticleField(selected)}
   seasonBtn.textContent=item.icon+' 季節';
-  const sub=document.querySelector('.top .sub');if(sub)sub.textContent=`${item.icon} ${item.name} SEASON · ONLINE v1.2.4 · 62 ITEMS`;
+  const sub=document.querySelector('.top .sub');if(sub)sub.textContent=`${item.icon} ${item.name} SEASON · ONLINE v1.2.5 · 互換カタログ`;
   seasonStatus.textContent=`現在は ${item.icon} ${item.name}！ `+(seasonChoice==='auto'?'📆 月ごとに自動で変わるよ':'🎨 手動で固定中');
   seasonModal.querySelectorAll('[data-season-choice]').forEach(b=>{b.classList.toggle('selected',b.dataset.seasonChoice===seasonChoice);b.setAttribute('aria-pressed',String(b.dataset.seasonChoice===seasonChoice))});
 }
@@ -1534,7 +1538,7 @@ seasonModal.querySelectorAll('[data-season-choice]').forEach(b=>b.addEventListen
 }));
 setInterval(()=>{if(seasonChoice==='auto')applySeasonTheme()},15*60*1000);
 
-const CLIENT_VERSION='1.2.4';
+const CLIENT_VERSION='1.2.5';
 const ONLINE_ORIGIN=location.protocol==='file:'?'https://block-pop-online.onrender.com':location.origin;
 const ONLINE_SOCKET=ONLINE_ORIGIN.replace(/^http/,'ws')+'/ws';
 const onlineModal=document.getElementById('onlineModal');
