@@ -6,6 +6,16 @@
   "downloadUrl": "https://raw.githubusercontent.com/chinoyuuki3-del/yuuki/block-pop-online/block-pop-online/index.html",
   "patches": [
     {
+      "from": "1.3.0",
+      "to": "1.3.1",
+      "path": "patches/v1.3.0-to-v1.3.1.json"
+    },
+    {
+      "from": "1.3.1",
+      "to": "1.3.2",
+      "path": "patches/v1.3.1-to-v1.3.2.json"
+    },
+    {
       "from": "1.3.2",
       "to": "1.3.3",
       "path": "patches/v1.3.2-to-v1.3.3.json",
