@@ -1,7 +1,7 @@
 {
-  "version": "1.5.1",
-  "release": "Block Pop! イベント管理センター v1.5.1",
-  "notes": "画面の上下スクロールと15個のメニューボタン表示を修正。イベント・アカウント・共有対戦機能は継続。",
+  "version": "1.6.0",
+  "release": "Block Pop! SOCIAL PACK v1.6.0",
+  "notes": "イベントパス、フレンドメモ、ランクポイント、5種類のブロックスキンを追加。イベントや共有対戦、スクロール表示は維持。フレンド・RP・パス記録は端末内保存。",
   "publishedAt": "2026-10-09",
   "downloadUrl": "https://raw.githubusercontent.com/chinoyuuki3-del/yuuki/block-pop-online/block-pop-online/index.html",
   "patches": [
@@ -44,6 +44,12 @@
       "to": "1.5.1",
       "path": "patches/v1.5.0-to-v1.5.1.json",
       "bytes": 2587
+    },
+    {
+      "from": "1.5.1",
+      "to": "1.6.0",
+      "path": "patches/v1.5.1-to-v1.6.0.json",
+      "bytes": 23481
     }
   ]
 }

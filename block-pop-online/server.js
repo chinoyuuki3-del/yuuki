@@ -1,6 +1,6 @@
 'use strict';
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),zlib=require('node:zlib');
-const PORT=Number(process.env.PORT||3000),VERSION='1.5.1',ROUND_MS=120000;
+const PORT=Number(process.env.PORT||3000),VERSION='1.6.0',ROUND_MS=120000;
 // Serve the game as one compressed, cached HTML resource (no external assets).
 const PAGE=fs.readFileSync(path.join(__dirname,'index.html'));
 const PATCHER_PAGE=fs.readFileSync(path.join(__dirname,'patcher.html'));
@@ -199,7 +199,7 @@ const server=http.createServer((req,res)=>{
     });
     return res.end(PAGE);
   }
-  if(url==='/api/version'){res.setHeader('Access-Control-Allow-Origin','*');res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({version:VERSION,release:'Block Pop! イベント管理センター v1.5.1',notes:'コイン倍率・スコア大会・全員プレゼントを管理者が作成、編集、中止。参加状況と大会ランキングを永続保存。スクロールとメニューボタンの表示を修正。',url:'/',downloadUrl:'/download/latest'}));}
+  if(url==='/api/version'){res.setHeader('Access-Control-Allow-Origin','*');res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({version:VERSION,release:'Block Pop! SOCIAL PACK v1.6.0',notes:'コイン倍率・スコア大会・全員プレゼントを管理者が作成、編集、中止。参加状況と大会ランキングを永続保存。スクロール・メニューを維持しイベントパス、フレンドメモ、ランクRP、スキンを追加。',url:'/',downloadUrl:'/download/latest'}));}
   if(url!=='/'&&url!=='/index.html'){res.writeHead(404);return res.end('Not found');}
   res.setHeader('Cache-Control','private, no-cache');
   res.setHeader('ETag',PAGE_ETAG);
