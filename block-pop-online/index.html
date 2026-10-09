@@ -293,6 +293,82 @@ body[data-season] .musicBar{border:1px solid var(--season-grid)}
 #bpEventForm .bpEventActions{margin-top:12px}
 #bpEventForm button{font-size:12px}
 
+/* v1.5.1: All game buttons remain reachable on narrow screens. */
+html {
+  height:auto !important;
+  min-height:100%;
+  overflow-x:hidden !important;
+  overflow-y:auto !important;
+  overscroll-behavior-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+body {
+  display:block !important;
+  height:auto !important;
+  min-height:100vh;
+  overflow-x:hidden !important;
+  overflow-y:visible !important;
+  overscroll-behavior-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+.app {
+  width:min(95vw,540px);
+  height:auto !important;
+  min-height:100vh;
+  max-height:none !important;
+  margin:0 auto;
+  padding:12px 0 28px;
+  padding-bottom:calc(28px + env(safe-area-inset-bottom,0px));
+  gap:10px !important;
+  overflow:visible !important;
+}
+.app .top {flex-wrap:wrap;row-gap:8px;}
+.app .scores {margin-left:auto;}
+.app .boardWrap {
+  width:100% !important;
+  max-width:500px;
+  align-self:center;
+  flex:0 0 auto;
+}
+.app .piecesPanel {
+  flex:0 0 auto !important;
+  min-height:140px !important;
+  padding:11px;
+}
+.app .pieceSlot {min-height:94px !important;}
+.app .hint {display:block !important;}
+.app .musicBar {flex-wrap:wrap;}
+.app #bgmVolume {flex:1 1 90px;min-width:90px;}
+.app .footer {
+  display:grid !important;
+  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  gap:9px !important;
+  width:100%;
+  flex:0 0 auto;
+  padding-bottom:10px;
+}
+.app .footer button {
+  min-width:0;
+  min-height:46px;
+  padding:10px 5px !important;
+  font-size:clamp(10px,2.8vw,12px) !important;
+  line-height:1.25;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  word-break:normal;
+}
+@media(min-width:460px){
+  .app .footer {grid-template-columns:repeat(4,minmax(0,1fr)) !important;}
+}
+@media(max-width:360px){
+  .app .footer {gap:7px !important;}
+  .app .footer button {font-size:10px !important;}
+  .app .top .title {font-size:clamp(23px,7vw,31px);}
+}
+.bpEventSheet,.liveSheet,.bpScreen,.onlineSheet,.bpAccountSheet {
+  -webkit-overflow-scrolling:touch;
+}
+
 </style>
 </head>
 <body>
@@ -351,7 +427,7 @@ body[data-season] .musicBar{border:1px solid var(--season-grid)}
     <input id="bgmVolume" type="range" min="0" max="100" value="35" aria-label="BGM音量">
   </div>
 
-  <div class="footer">
+  <div class="footer" id="allGameMenus" aria-label="ゲームの全メニュー">
     <button id="updateManual" type="button">🔄 更新確認</button>
     <button id="restartBtn">↻ リスタート</button>
     <button id="bombBtn" class="bombButton">💣 ×5</button>
@@ -1722,7 +1798,7 @@ seasonModal.querySelectorAll('[data-season-choice]').forEach(b=>b.addEventListen
 }));
 setInterval(()=>{if(seasonChoice==='auto')applySeasonTheme()},15*60*1000);
 
-const CLIENT_VERSION='1.5.0';
+const CLIENT_VERSION='1.5.1';
 // Always use the official Render service for online play and management.
 // file://, preview browsers, and other standalone HTML viewers are supported.
 const ONLINE_ORIGIN=(location.hostname==='localhost'||location.hostname==='127.0.0.1')?location.origin:'https://block-pop-online.onrender.com';
