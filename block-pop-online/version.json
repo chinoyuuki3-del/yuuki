@@ -1,8 +1,8 @@
 {
-  "version": "1.6.0",
-  "release": "Block Pop! SOCIAL PACK v1.6.0",
-  "notes": "イベントパス、フレンドメモ、ランクポイント、5種類のブロックスキンを追加。イベントや共有対戦、スクロール表示は維持。フレンド・RP・パス記録は端末内保存。",
-  "publishedAt": "2026-10-09",
+  "version": "1.7.0",
+  "release": "Block Pop! デモジェムショップ＆プレミアムパス v1.7.0",
+  "notes": "実際のお金が動かないデモジェム補充・限定スキン・プレミアムパスを追加。ユーザー情報・決済情報の入力は不要。既存機能、全20メニューボタン、縦スクロールは維持。",
+  "publishedAt": "2026-10-13",
   "downloadUrl": "https://raw.githubusercontent.com/chinoyuuki3-del/yuuki/block-pop-online/block-pop-online/index.html",
   "patches": [
     {
@@ -50,6 +50,12 @@
       "to": "1.6.0",
       "path": "patches/v1.5.1-to-v1.6.0.json",
       "bytes": 23481
+    },
+    {
+      "from": "1.6.0",
+      "to": "1.7.0",
+      "path": "patches/v1.6.0-to-v1.7.0.json",
+      "bytes": 17444
     }
   ]
 }

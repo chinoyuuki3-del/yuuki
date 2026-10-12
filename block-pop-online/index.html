@@ -399,6 +399,34 @@ body {
 @media(max-width:460px){.bpSkinGrid{grid-template-columns:1fr}}
 
 
+/* v1.7.0: simulated gems and cosmetics only, NO payment integration. */
+#bpDemoShopBtn{background:linear-gradient(155deg,#a994ff,#6650d9)!important;box-shadow:0 4px 0 #4832a9!important}
+#bpDemoShopModal{position:fixed;inset:0;z-index:5500;display:none;align-items:center;justify-content:center;padding:10px;background:rgba(10,24,52,.83);backdrop-filter:blur(5px)}
+#bpDemoShopModal.show{display:flex}
+.bpDemoScreen{width:min(96vw,570px);max-height:94vh;max-height:94dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:linear-gradient(155deg,#fff,#f1ecff 75%,#eaf8ff);border-radius:22px;box-shadow:0 18px 54px #07152977;padding:15px;color:#29395a}
+.bpDemoHead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.bpDemoHead h2{font-size:21px;margin:2px 0}
+.bpDemoNote{font-size:12px;line-height:1.65;color:#5f5f80;margin:8px 0}
+.bpDemoWarn{border:1px solid #cbbcff;background:#f5f0ff;padding:10px 12px;border-radius:12px;font-size:12px;font-weight:800;line-height:1.6}
+.bpDemoCard{background:#fff;border:1px solid #e2d9fb;border-radius:16px;padding:12px;margin:10px 0;box-shadow:0 4px 16px #6855b60f}
+.bpDemoWallet{font-size:26px;font-weight:1000;color:#6346ce;font-variant-numeric:tabular-nums}
+.bpDemoGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:9px}
+.bpDemoItem{display:flex;flex-direction:column;gap:6px;justify-content:space-between;background:#f7f4ff;border:1px solid #e5dcff;border-radius:12px;padding:10px;min-width:0}
+.bpDemoItem strong{font-size:13px}.bpDemoItem small{font-size:11px;line-height:1.5;color:#5d6681}
+.bpDemoBtn{width:100%;min-height:39px;border:0;border-radius:10px;background:linear-gradient(#9582ed,#7053d5);box-shadow:0 3px 0 #4b32ad;color:white;font-weight:900;padding:8px 7px;cursor:pointer;font-size:12px}
+.bpDemoBtn.secondary{background:linear-gradient(#fff,#f0ebff);color:#42397d;box-shadow:0 3px 0 #d4cbec}
+.bpDemoBtn:disabled{opacity:.6;cursor:default}
+#bpDemoMessage{background:#eee8ff;border-radius:12px;padding:10px;margin-top:10px;line-height:1.5;font-size:12px;min-height:36px}
+#bpDemoReceipts{max-height:110px;overflow:auto;font-size:11px;line-height:1.8;color:#647}
+.bpPremiumCard{border:1px solid #f3d18f;background:linear-gradient(145deg,#fff8e3,#ffeff7);border-radius:16px;padding:12px;margin-top:10px}
+.bpPremiumCard h3{font-size:17px;margin:0 0 6px}
+.bpPremiumCard p{font-size:12px;line-height:1.6;color:#755f64;margin:5px 0 10px}
+.bpPremiumReward{padding:9px 10px;border-radius:11px;background:#fff;border:1px solid #f2deae;margin:7px 0;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.bpPremiumReward span{font-size:12px;line-height:1.5}
+.bpPremiumReward button{font-size:12px!important;min-width:86px}
+.bpDemoOwned{font-size:11px;font-weight:800;color:#6b45ae}
+@media(max-width:355px){.bpDemoGrid{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -477,10 +505,41 @@ body {
     <button id="bpFriendsBtn" type="button">👥 FRIEND</button>
     <button id="bpRankBtn" type="button">🏆 RANK</button>
     <button id="bpSkinBtn" type="button">🎨 SKIN</button>
+    <button id="bpDemoShopBtn" type="button">💎 DEMO SHOP</button>
   </div>
 </div>
 
 
+
+<div id="bpDemoShopModal" role="dialog" aria-modal="true" aria-label="Block Pop! デモジェムショップ">
+  <div class="bpDemoScreen">
+    <div class="bpDemoHead"><h2>💎 デモジェムショップ</h2><button id="bpDemoShopClose" type="button" class="secondary" aria-label="ショップを閉じる">✕</button></div>
+    <div class="bpDemoWarn">🧪 これはデモ課金！ 実際のお金は一切使いません。クレジットカード・メール・購入手続き不要。ジェムも購入品もこの端末内だけで保存されます。</div>
+    <div class="bpDemoCard">
+      <div class="bpDemoNote">現在の所持ジェム</div>
+      <div class="bpDemoWallet" id="bpDemoBalance">💎 260</div>
+      <strong>🎁 おためしジェム補充</strong>
+      <div class="bpDemoNote">好きな数を選ぶと、無料のテスト用ジェムが増えるよ。すべてゲーム内の疑似処理です。</div>
+      <div id="bpDemoBundles" class="bpDemoGrid"></div>
+    </div>
+    <div class="bpPremiumCard">
+      <h3>🎟️ プレミアムイベントパス</h3>
+      <p>無料パスはそのまま！ デモジェムでプレミアムコースを開放すると、レベル報酬にジェム・コイン・オーロラスキンが追加されるよ。</p>
+      <button id="bpDemoBuyPremium" class="bpDemoBtn" type="button">💎 240ジェムで開放</button>
+      <div id="bpDemoPremiumStatus" class="bpDemoNote"></div>
+    </div>
+    <div class="bpDemoCard">
+      <strong>🌈 限定ブロックスキン</strong>
+      <div class="bpDemoNote">見た目だけのアイテムだよ。無料の5種類は引き続き使える！</div>
+      <div id="bpDemoSkinItems" class="bpDemoGrid"></div>
+    </div>
+    <div id="bpDemoMessage" role="status" aria-live="polite">💎 デモショップへようこそ！</div>
+    <div class="bpDemoCard">
+      <strong>🧾 デモ取引履歴</strong>
+      <div id="bpDemoReceipts">まだ履歴がないよ</div>
+    </div>
+  </div>
+</div>
 
 <div id="onlineModal">
   <div class="onlineSheet">
@@ -547,6 +606,13 @@ body {
     </div>
     <div class="bpPackCard"><strong>🎯 デイリーミッション</strong><div id="bpPassMissions" class="bpPackList" style="margin-top:9px"></div></div>
     <div class="bpPackCard"><strong>🎁 レベル報酬</strong><div id="bpPassRewards" class="bpPackList" style="margin-top:9px"></div></div>
+    <div class="bpPremiumCard" id="bpPremiumPassPanel">
+      <h3>👑 プレミアムパス報酬（デモ）</h3>
+      <p>ショップでプレミアムパスを開放すると、イベントパスのレベルに応じて追加報酬を受け取れるよ。実際の課金はありません。</p>
+      <button id="bpPassOpenDemo" type="button" class="bpDemoBtn secondary" style="margin:4px 0 10px">💎 デモショップを開く</button>
+      <div id="bpPremiumPassRewards"></div>
+    </div>
+
   </div>
 </div>
 
@@ -1884,7 +1950,7 @@ seasonModal.querySelectorAll('[data-season-choice]').forEach(b=>b.addEventListen
 }));
 setInterval(()=>{if(seasonChoice==='auto')applySeasonTheme()},15*60*1000);
 
-const CLIENT_VERSION='1.6.0';
+const CLIENT_VERSION='1.7.0';
 // Always use the official Render service for online play and management.
 // file://, preview browsers, and other standalone HTML viewers are supported.
 const ONLINE_ORIGIN=(location.hostname==='localhost'||location.hostname==='127.0.0.1')?location.origin:'https://block-pop-online.onrender.com';
@@ -2939,6 +3005,172 @@ document.getElementById('bpRankStart').addEventListener('click',bpStartRankMatch
 document.getElementById('bpRankReset').addEventListener('click',bpResetRank);
 ['bpSharedLeave','bpSharedCreate','bpSharedJoin','bpSharedQuick'].forEach(id=>document.getElementById(id).addEventListener('click',()=>{bpRankQueue.waiting=false;bpRankQueue.active=false},{capture:true}));
 [bpPassModal,bpFriendsModal,bpRankModal,bpSkinModal].forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show')}));
+// v1.7.0 DEMO PREMIUM STORE. No third-party SDKs, card details, or real money.
+const BP_DEMO_WALLET_KEY='blockpop_demo_wallet_v1';
+const BP_DEMO_PRODUCTS=[
+ {id:'rainbow',name:'🌈 レインボースキン',price:90,detail:'カラフルな7色ブロック'},
+ {id:'galaxy',name:'🌌 ギャラクシースキン',price:130,detail:'宇宙色のブロック'},
+ {id:'gold',name:'✨ ゴールドスキン',price:180,detail:'きらめくゴールド風'}
+];
+const BP_DEMO_PACKS=[
+ {gems:100,label:'💎 100ジェム補充'},
+ {gems:300,label:'💎 300ジェム補充'},
+ {gems:800,label:'💎 800ジェム補充'}
+];
+const BP_DEMO_PASS_PRICE=240;
+const BP_DEMO_PREMIUM_REWARDS=[
+ {level:1,coins:60,label:'🪙 60コイン'},
+ {level:2,gems:60,label:'💎 60ジェム'},
+ {level:3,skin:'aurora',label:'🌌 オーロラスキン'},
+ {level:4,coins:120,label:'🪙 120コイン'},
+ {level:5,gems:100,label:'💎 100ジェム'},
+ {level:6,coins:200,label:'🪙 200コイン'}
+];
+// These palettes only change the appearance; game balance remains unchanged.
+SKIN_PALETTES.rainbow=[['#f7a3f1','#fe55a6'],['#ffbb8c','#fc6e7b'],['#fff19e','#facf3b'],['#9bf7b4','#37d997'],['#95e6fe','#3dacf2'],['#aca4ff','#7257f1'],['#fcd1f6','#cb6ad8']];
+SKIN_PALETTES.galaxy=[['#5950b0','#29276e'],['#966ecf','#56359a'],['#c3a7f6','#6d56b2'],['#5794c9','#24477d'],['#9172da','#44288a'],['#6e9edf','#334f9e'],['#b28acb','#5b3874']];
+SKIN_PALETTES.gold=[['#fff2a8','#e1a92e'],['#ffe39a','#c6881c'],['#ffefbd','#e0b454'],['#d5efae','#9dbc4c'],['#f9d29e','#c7903b'],['#fbe6c8','#daab6d'],['#ffe9a0','#f1c454']];
+SKIN_PALETTES.aurora=[['#94edff','#4ca9dd'],['#b3ffdf','#34ba93'],['#e8bbff','#9369d5'],['#f7c9ff','#c581b7'],['#b1bcff','#677edc'],['#a5e8cb','#61b5a3'],['#e7c0ff','#8a79ce']];
+const bpDemoModal=document.getElementById('bpDemoShopModal');
+const bpDemoMessageEl=document.getElementById('bpDemoMessage');
+let bpDemoState=bpLoad(BP_DEMO_WALLET_KEY,{gems:260,premium:false,skins:{},premiumClaims:{},receipts:[]});
+if(!Number.isSafeInteger(bpDemoState.gems)||bpDemoState.gems<0)bpDemoState.gems=260;
+bpDemoState.gems=Math.min(bpDemoState.gems,999999);
+if(!bpDemoState.skins||typeof bpDemoState.skins!=='object'||Array.isArray(bpDemoState.skins))bpDemoState.skins={};
+if(!bpDemoState.premiumClaims||typeof bpDemoState.premiumClaims!=='object'||Array.isArray(bpDemoState.premiumClaims))bpDemoState.premiumClaims={};
+if(!Array.isArray(bpDemoState.receipts))bpDemoState.receipts=[];
+bpDemoState.premium=bpDemoState.premium===true;
+function bpDemoSave(){bpSave(BP_DEMO_WALLET_KEY,bpDemoState)}
+function bpDemoNotice(msg){bpDemoMessageEl.textContent=msg;}
+function bpDemoReceipt(title,delta){
+ bpDemoState.receipts.unshift({title:String(title).slice(0,50),delta,when:Date.now()});
+ bpDemoState.receipts=bpDemoState.receipts.slice(0,15);
+}
+function bpDemoOwnSkin(id){return ['classic','candy','neon','crystal','retro'].includes(id)||bpDemoState.skins[id]===true;}
+function bpDemoPay(amount){
+ if(!Number.isSafeInteger(amount)||amount<0||bpDemoState.gems<amount)return false;
+ bpDemoState.gems-=amount;return true;
+}
+function bpDemoClaimPack(amount){
+ if(!BP_DEMO_PACKS.some(x=>x.gems===amount))return;
+ bpDemoState.gems=Math.min(999999,bpDemoState.gems+amount);
+ bpDemoReceipt('無料ジェム補充（デモ）',amount);
+ bpDemoSave();bpRenderDemoShop();bpDemoNotice('✅ '+amount+'ジェムを補充！ これはデモなので支払いは発生しないよ。');
+}
+function bpDemoBuyPremium(){
+ if(bpDemoState.premium){bpDemoNotice('👑 プレミアムパスは開放済み！');return;}
+ if(!bpDemoPay(BP_DEMO_PASS_PRICE)){bpDemoNotice('💎 ジェム不足！ 上の無料補充を使ってね。');return;}
+ bpDemoState.premium=true;bpDemoReceipt('プレミアムパス開放（デモ）',-BP_DEMO_PASS_PRICE);
+ bpDemoSave();bpRenderDemoShop();bpRenderPremiumPass();
+ bpDemoNotice('🎉 プレミアムパスを開放したよ！ 「🎟️ パス」から報酬を受け取れるよ。');
+}
+function bpDemoBuySkin(id){
+ const item=BP_DEMO_PRODUCTS.find(x=>x.id===id);
+ if(!item)return;
+ if(bpDemoOwnSkin(id)){bpDemoNotice('✅ このスキンは入手済み！');return;}
+ if(!bpDemoPay(item.price)){bpDemoNotice('💎 ジェムが足りないよ。無料で補充してね。');return;}
+ bpDemoState.skins[id]=true;
+ bpDemoReceipt(item.name+'（デモ）',-item.price);
+ bpDemoSave();bpApplySkin(id);bpRenderDemoShop();
+ bpDemoNotice('🌈 '+item.name+'を交換して装備したよ！');
+}
+function bpDemoOpen(){bpDemoModal.classList.add('show');bpRenderDemoShop();}
+function bpDemoClose(){bpDemoModal.classList.remove('show');}
+function bpDemoButton(label,action,disabled=false){
+ const b=document.createElement('button');b.type='button';b.className='bpDemoBtn';b.textContent=label;b.disabled=disabled;
+ if(action)b.addEventListener('click',action);return b;
+}
+function bpRenderDemoShop(){
+ document.getElementById('bpDemoBalance').textContent='💎 '+bpDemoState.gems.toLocaleString('ja-JP');
+ const packs=document.getElementById('bpDemoBundles');packs.replaceChildren();
+ for(const pack of BP_DEMO_PACKS){
+  const el=document.createElement('div');el.className='bpDemoItem';
+  const title=document.createElement('strong');title.textContent=pack.label;
+  const desc=document.createElement('small');desc.textContent='🧪 完全無料・支払いなし';
+  el.append(title,desc,bpDemoButton('無料でデモ補充',()=>bpDemoClaimPack(pack.gems)));packs.appendChild(el);
+ }
+ const premiumBtn=document.getElementById('bpDemoBuyPremium');
+ premiumBtn.disabled=bpDemoState.premium;
+ premiumBtn.textContent=bpDemoState.premium?'✅ 開放済み':'💎 '+BP_DEMO_PASS_PRICE+'ジェムで開放';
+ document.getElementById('bpDemoPremiumStatus').textContent=bpDemoState.premium?'👑 プレミアムパスの報酬が受け取れるよ。':'🎟️ 無料パスは引き続き使えるよ。';
+ const items=document.getElementById('bpDemoSkinItems');items.replaceChildren();
+ for(const item of BP_DEMO_PRODUCTS){
+  const el=document.createElement('div');el.className='bpDemoItem';
+  const name=document.createElement('strong');name.textContent=item.name;
+  const desc=document.createElement('small');desc.textContent=item.detail+' ・ 💎'+item.price;
+  const owned=bpDemoOwnSkin(item.id);
+  el.append(name,desc,bpDemoButton(owned?'✅ 入手済み':'💎'+item.price+'で交換',()=>bpDemoBuySkin(item.id),owned));items.appendChild(el);
+ }
+ const receipts=document.getElementById('bpDemoReceipts');receipts.replaceChildren();
+ if(!bpDemoState.receipts.length)receipts.textContent='まだ履歴がないよ';
+ else for(const rec of bpDemoState.receipts){
+  const row=document.createElement('div');
+  const dt=new Date(rec.when);const timestamp=Number.isFinite(dt.getTime())?dt.toLocaleString('ja-JP'):'';
+  row.textContent=timestamp+' ｜ '+rec.title+' ｜ '+(rec.delta>=0?'+':'')+rec.delta+' 💎';
+  receipts.appendChild(row);
+ }
+}
+function bpClaimPremiumReward(level){
+ const reward=BP_DEMO_PREMIUM_REWARDS.find(x=>x.level===level);
+ if(!reward||!bpDemoState.premium||bpPassState.level<level||bpDemoState.premiumClaims[level])return;
+ bpDemoState.premiumClaims[level]=true;
+ if(reward.coins){coins+=reward.coins;saveCoins();renderShop();}
+ if(reward.gems){bpDemoState.gems=Math.min(999999,bpDemoState.gems+reward.gems);bpDemoReceipt('パス報酬 Lv.'+level,reward.gems);}
+ if(reward.skin)bpDemoState.skins[reward.skin]=true;
+ bpDemoSave();bpRenderDemoShop();bpRenderPremiumPass();bpRenderSkin();
+ toast('👑 プレミアム報酬 '+reward.label+' をゲット！');
+}
+function bpRenderPremiumPass(){
+ const target=document.getElementById('bpPremiumPassRewards');target.replaceChildren();
+ const openBtn=document.getElementById('bpPassOpenDemo');openBtn.textContent=bpDemoState.premium?'💎 デモショップを見る':'💎 デモショップでパスを開放';
+ for(const reward of BP_DEMO_PREMIUM_REWARDS){
+  const row=document.createElement('div');row.className='bpPremiumReward';
+  const desc=document.createElement('span');desc.textContent='Lv.'+reward.level+'　'+reward.label;
+  const eligible=bpDemoState.premium&&bpPassState.level>=reward.level;
+  const claimed=!!bpDemoState.premiumClaims[reward.level];
+  const btn=bpDemoButton(claimed?'受取済み':eligible?'受け取る':bpDemoState.premium?'Lv.'+reward.level+'で開放':'未開放',()=>bpClaimPremiumReward(reward.level),!eligible||claimed);
+  row.append(desc,btn);target.appendChild(row);
+ }
+}
+// Keep the five existing free skins. Premium variants are gated by the demo wallet.
+const __bpDemoOrigApplySkin=bpApplySkin;
+bpApplySkin=function(name){
+ if(!bpDemoOwnSkin(name)){
+  bpDemoOpen();
+  bpDemoNotice(name==='aurora'?'🌌 オーロラスキンはプレミアムパス Lv.3 報酬だよ。':'🔒 限定スキンはジェムショップで交換できるよ！');
+  return;
+ }
+ return __bpDemoOrigApplySkin(name);
+};
+bpRenderSkin=function(){
+ const grid=document.getElementById('bpSkinGrid');grid.replaceChildren();
+ for(const [name,pal] of Object.entries(SKIN_PALETTES)){
+  const card=document.createElement('div');card.className='bpSkinOption';
+  const title=document.createElement('b');title.textContent=name.toUpperCase();
+  const sw=document.createElement('div');sw.className='bpSkinSwatches';
+  for(const pair of pal){const i=document.createElement('i');i.style.background='linear-gradient(145deg,'+pair[0]+','+pair[1]+')';sw.appendChild(i);}
+  const owned=bpDemoOwnSkin(name);
+  const item=BP_DEMO_PRODUCTS.find(x=>x.id===name);
+  const btn=document.createElement('button');btn.type='button';
+  btn.textContent=!owned?(item?'🔒 💎'+item.price+'で交換':'🔒 プレミアム Lv.3'):bpSkinName===name?'✅ 使用中':'このスキンを使う';
+  btn.disabled=owned&&bpSkinName===name;
+  btn.addEventListener('click',()=>bpApplySkin(name));
+  card.append(title,sw,btn);grid.appendChild(card);
+ }
+};
+// Append the premium rewards to the existing free pass, leaving free rewards intact.
+const __bpDemoOrigRenderPass=bpRenderPass;
+bpRenderPass=function(){__bpDemoOrigRenderPass();bpRenderPremiumPass();};
+document.getElementById('bpDemoShopBtn').addEventListener('click',bpDemoOpen);
+document.getElementById('bpDemoShopClose').addEventListener('click',bpDemoClose);
+document.getElementById('bpDemoBuyPremium').addEventListener('click',bpDemoBuyPremium);
+document.getElementById('bpPassOpenDemo').addEventListener('click',bpDemoOpen);
+bpDemoModal.addEventListener('click',e=>{if(e.target===bpDemoModal)bpDemoClose()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&bpDemoModal.classList.contains('show'))bpDemoClose()});
+// Eagerly restore the last owned skin; a missing or invalid ownership falls back to classic.
+if(!bpDemoOwnSkin(bpSkinName))bpSkinName='classic';
+// End v1.7.0 demo shop.
+
 // initial render/apply
 bpEnsurePassDay();bpApplySkin(bpSkinName);bpRenderPass();bpRenderFriends();bpRenderRank();bpRenderSkin();
 // --- End v1.6.0 Social Pack ---
