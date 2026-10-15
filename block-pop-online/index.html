@@ -427,6 +427,46 @@ body {
 .bpDemoOwned{font-size:11px;font-weight:800;color:#6b45ae}
 @media(max-width:355px){.bpDemoGrid{grid-template-columns:1fr}}
 
+/* v1.8.0: gift codes, server announcements, offline CPU challenge */
+#bpCodeBtn{background:linear-gradient(#ffc586,#ed8c4b)!important;box-shadow:0 4px 0 #bd6531!important}
+#bpNewsBtn{background:linear-gradient(#93c9ff,#527fd8)!important;box-shadow:0 4px 0 #3860a9!important}
+#bpAiBtn{background:linear-gradient(#99eac8,#48ad87)!important;box-shadow:0 4px 0 #2c8469!important}
+#bpCodeModal,#bpNewsModal,#bpAiModal{position:fixed;inset:0;z-index:5700;display:none;align-items:center;justify-content:center;padding:9px;background:rgba(11,24,51,.86)}
+#bpCodeModal.show,#bpNewsModal.show,#bpAiModal.show{display:flex}
+.bp180Screen{width:min(97vw,590px);max-height:94dvh;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:linear-gradient(160deg,#fffefa,#ecf5ff);border-radius:20px;padding:15px;color:#293b57;box-shadow:0 18px 40px #0004}
+.bp180Head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:9px}.bp180Head h2{margin:0;font-size:20px}
+.bp180Head button{padding:6px 12px!important}
+.bp180Card{border:1px solid #d9e4f6;border-radius:14px;background:#fff;box-shadow:0 5px 16px #30519914;padding:12px;margin:10px 0;line-height:1.6}
+.bp180Card p,.bp180Note{font-size:12px;color:#536985;line-height:1.6;margin:6px 0}
+.bp180Card input,.bp180Card select,.bp180Card textarea{width:100%;padding:10px;border-radius:10px;border:1px solid #c8d7ee;background:white;font-size:15px;color:#263a56;margin:4px 0;min-width:0}
+.bp180Card textarea{min-height:74px;resize:vertical}
+.bp180Card button{border:0;border-radius:9px;background:#5378dc;color:#fff;padding:9px 12px;font-size:12px;font-weight:800;cursor:pointer}
+.bp180Card button:disabled{opacity:.45;cursor:default}
+.bp180Row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.bp180Row>*{min-width:0;flex:1}
+.bp180Grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.bp180Label{font-size:12px;font-weight:800;color:#49607a;display:block;margin-top:6px}
+.bp180Status{background:#ecf3ff;border-radius:11px;padding:8px 10px;font-size:12px;font-weight:800;min-height:27px;margin:8px 0}
+.bp180Pill{display:inline-block;background:#e9eeff;color:#4260ae;border-radius:999px;font-size:11px;padding:4px 9px;font-weight:800}
+.bp180Notice{margin:8px 0;border:1px solid #d2dff9;border-radius:12px;padding:10px;background:white}
+.bp180Notice.important{border-color:#ffd076;background:#fff9e7}
+.bp180NoticeTitle{font-weight:900;font-size:15px}
+.bp180NoticeTime{color:#6c7792;font-size:11px;margin:5px 0}
+.bp180NoticeBody{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.5}
+.bp180AdminBox{background:#fff6e7;border:1px solid #ffdb9f;border-radius:15px;padding:10px;margin:10px 0}
+.bp180AdminBox[hidden]{display:none!important}
+.bp180CodeResult{font-size:22px;font-weight:1000;color:#264e9d;letter-spacing:1px;overflow-wrap:anywhere}
+.bp180Board{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:3px;border-radius:12px;padding:6px;background:#b8cdf0;width:min(100%,310px);margin:8px auto;touch-action:manipulation}
+.bp180Cell{aspect-ratio:1;min-width:0;border:1px solid #c5d2e5;border-radius:6px;background:#e8effb;padding:0!important;box-shadow:none!important;cursor:pointer}
+.bp180Cell.on{border:1px solid #ffffff8e;box-shadow:inset 0 -3px 0 #0002!important}
+.bp180CpuBoard .bp180Cell{cursor:default}
+.bp180GameStats{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;font-weight:900}
+.bp180Pieces{display:flex;gap:7px;justify-content:space-around;align-items:stretch;margin-top:8px}
+.bp180Piece{flex:1;border:2px solid #c7d6f1!important;border-radius:12px!important;background:#f4f8ff!important;box-shadow:none!important;min-height:60px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;padding:6px!important;color:#2e456c!important}
+.bp180Piece.chosen{border-color:#557de3!important;background:#ddeaff!important}
+.bp180Piece[disabled]{opacity:.4}
+.bp180Shape{display:grid;gap:2px}.bp180Shape i{width:11px;height:11px;display:block;border-radius:3px}
+@media(max-width:420px){.bp180Grid2{grid-template-columns:1fr}.bp180Screen{padding:10px}.bp180Card{padding:10px}}
+
 </style>
 </head>
 <body>
@@ -506,6 +546,9 @@ body {
     <button id="bpRankBtn" type="button">🏆 RANK</button>
     <button id="bpSkinBtn" type="button">🎨 SKIN</button>
     <button id="bpDemoShopBtn" type="button">💎 DEMO SHOP</button>
+    <button id="bpCodeBtn" type="button">🎁 コード</button>
+    <button id="bpNewsBtn" type="button">📢 お知らせ</button>
+    <button id="bpAiBtn" type="button">🤖 AI対戦</button>
   </div>
 </div>
 
@@ -653,6 +696,73 @@ body {
     <div class="bpPackText">好きな見た目に切り替えると、盤面上の既存ブロックと次のブロックにもすぐ反映されるよ。</div>
     <div id="bpSkinGrid" class="bpSkinGrid"></div>
   </div>
+</div>
+
+<div id="bpCodeModal" role="dialog" aria-modal="true" aria-label="プレゼントコード">
+ <div class="bp180Screen">
+  <div class="bp180Head"><h2>🎁 プレゼントコード</h2><button id="bpCodeClose" class="secondary" type="button">✕</button></div>
+  <div class="bp180Card">
+   <p>管理者が発行したコードを入力すると、ゲーム内コインを受け取れるよ。1つのコードは1プレイヤーにつき1回まで。</p>
+   <label class="bp180Label" for="bpRedeemText">プレゼントコード</label>
+   <input id="bpRedeemText" maxlength="24" placeholder="例：GIFT-ABCD1234" autocomplete="off" autocapitalize="characters">
+   <button id="bpRedeemBtn" type="button">🎁 コードを受け取る</button>
+   <div id="bpRedeemStatus" class="bp180Status" aria-live="polite">コードを入力してね</div>
+  </div>
+  <div id="bpCodeAdmin" class="bp180AdminBox" hidden>
+   <strong>🔐 管理者：コード管理</strong><p class="bp180Note">管理者センターでログインしている場合だけ発行・編集できるよ。</p>
+   <input id="bpCodeAdminId" type="hidden">
+   <label class="bp180Label" for="bpCodeAdminCode">コード文字列（空欄は自動生成）</label>
+   <input id="bpCodeAdminCode" placeholder="空欄でランダム生成" maxlength="24">
+   <label class="bp180Label" for="bpCodeAdminNote">説明メモ</label>
+   <input id="bpCodeAdminNote" placeholder="記念プレゼント" maxlength="80">
+   <div class="bp180Grid2">
+    <div><label class="bp180Label" for="bpCodeAdminCoins">報酬コイン</label><input id="bpCodeAdminCoins" type="number" min="1" max="1000" value="50"></div>
+    <div><label class="bp180Label" for="bpCodeAdminLimit">利用可能人数</label><input id="bpCodeAdminLimit" type="number" min="1" max="10000" value="100"></div>
+    <div><label class="bp180Label" for="bpCodeAdminStart">開始日時</label><input id="bpCodeAdminStart" type="datetime-local"></div>
+    <div><label class="bp180Label" for="bpCodeAdminEnd">終了日時</label><input id="bpCodeAdminEnd" type="datetime-local"></div>
+   </div>
+   <div class="bp180Row"><button id="bpCodeAdminSave" type="button">➕ コードを発行</button><button id="bpCodeAdminClear" type="button">入力リセット</button></div>
+   <div id="bpCodeAdminStatus" class="bp180Status" aria-live="polite">管理者モード</div>
+   <div id="bpCodeAdminList"></div>
+  </div>
+ </div>
+</div>
+<div id="bpNewsModal" role="dialog" aria-modal="true" aria-label="お知らせセンター">
+ <div class="bp180Screen">
+  <div class="bp180Head"><h2>📢 お知らせ</h2><button id="bpNewsClose" class="secondary" type="button">✕</button></div>
+  <div id="bpNewsStatus" class="bp180Status" aria-live="polite">お知らせを読み込み中…</div>
+  <div id="bpNewsList"></div>
+  <div id="bpNewsAdmin" class="bp180AdminBox" hidden>
+   <strong>🔐 管理者：お知らせ配信</strong>
+   <input id="bpNewsAdminId" type="hidden">
+   <label class="bp180Label" for="bpNewsAdminTitle">タイトル</label>
+   <input id="bpNewsAdminTitle" placeholder="新しいイベントのお知らせ" maxlength="80">
+   <label class="bp180Label" for="bpNewsAdminBody">本文</label>
+   <textarea id="bpNewsAdminBody" maxlength="600" placeholder="プレイヤーのみんなに届けるメッセージ"></textarea>
+   <label class="bp180Label"><input id="bpNewsAdminImportant" type="checkbox" style="width:auto"> 重要なお知らせとして強調</label>
+   <div class="bp180Grid2">
+    <div><label class="bp180Label" for="bpNewsAdminStart">配信開始</label><input id="bpNewsAdminStart" type="datetime-local"></div>
+    <div><label class="bp180Label" for="bpNewsAdminEnd">配信終了</label><input id="bpNewsAdminEnd" type="datetime-local"></div>
+   </div>
+   <div class="bp180Row"><button id="bpNewsAdminSave" type="button">📢 お知らせを投稿</button><button id="bpNewsAdminClear" type="button">入力リセット</button></div>
+   <div id="bpNewsAdminStatus" class="bp180Status" aria-live="polite">管理者モード</div>
+   <div id="bpNewsAdminList"></div>
+  </div>
+ </div>
+</div>
+<div id="bpAiModal" role="dialog" aria-modal="true" aria-label="オフラインAI対戦">
+ <div class="bp180Screen">
+  <div class="bp180Head"><h2>🤖 AI対戦</h2><button id="bpAiClose" class="secondary" type="button">✕</button></div>
+  <div class="bp180Card">
+   <p>ネット不要のCPU対戦。ブロックを選び、自分の盤面の「左上になるマス」をタップして配置しよう。置くたびにCPUが1手プレイするよ。</p>
+   <div class="bp180GameStats"><span id="bpAiScoreYou">あなた 0点</span><span id="bpAiScoreCpu">CPU 0点</span></div>
+   <div id="bpAiStatus" class="bp180Status" aria-live="polite">「新しい試合」でスタート！</div>
+   <div class="bp180Row"><button id="bpAiNew" type="button">▶ 新しい試合</button><button id="bpAiRotate" type="button">🔁 回転</button></div>
+  </div>
+  <div class="bp180Card"><strong>🎮 あなたの盤面</strong><div id="bpAiPlayerBoard" class="bp180Board"></div><div id="bpAiPieces" class="bp180Pieces"></div></div>
+  <div class="bp180Card"><strong>🤖 CPUの盤面</strong><div id="bpAiCpuBoard" class="bp180Board bp180CpuBoard"></div></div>
+  <p class="bp180Note">15手対戦。勝敗と自己記録は、この端末内に保存されるよ。<span id="bpAiHistory"></span></p>
+ </div>
 </div>
 
 <div id="updateBanner" role="status" aria-live="polite">
@@ -1950,7 +2060,7 @@ seasonModal.querySelectorAll('[data-season-choice]').forEach(b=>b.addEventListen
 }));
 setInterval(()=>{if(seasonChoice==='auto')applySeasonTheme()},15*60*1000);
 
-const CLIENT_VERSION='1.7.0';
+const CLIENT_VERSION='1.8.0';
 // Always use the official Render service for online play and management.
 // file://, preview browsers, and other standalone HTML viewers are supported.
 const ONLINE_ORIGIN=(location.hostname==='localhost'||location.hostname==='127.0.0.1')?location.origin:'https://block-pop-online.onrender.com';
@@ -3174,6 +3284,268 @@ if(!bpDemoOwnSkin(bpSkinName))bpSkinName='classic';
 // initial render/apply
 bpEnsurePassDay();bpApplySkin(bpSkinName);bpRenderPass();bpRenderFriends();bpRenderRank();bpRenderSkin();
 // --- End v1.6.0 Social Pack ---
+
+// --- v1.8.0: server notices, admin gift codes, offline CPU battle ---
+const bpCodeModal=document.getElementById('bpCodeModal');
+const bpNewsModal=document.getElementById('bpNewsModal');
+const bpAiModal=document.getElementById('bpAiModal');
+const bpCodeAdmin=document.getElementById('bpCodeAdmin');
+const bpNewsAdmin=document.getElementById('bpNewsAdmin');
+let bpSocialCodes=[],bpSocialNotices=[],bpSocialBusy=false;
+const bpById=id=>document.getElementById(id);
+const bpSocialAdmin=()=>typeof adminBearer==='string'&&adminBearer.length>30;
+const bpSocialMsg=(id,msg)=>{bpById(id).textContent=String(msg)};
+function bpSocialDateValue(value){
+ const d=new Date(value);if(!Number.isFinite(+d))return '';
+ const local=new Date(+d-d.getTimezoneOffset()*60000);return local.toISOString().slice(0,16);
+}
+function bpSocialResetDates(prefix){
+ bpById(prefix+'Start').value=bpSocialDateValue(Date.now()-60000);
+ bpById(prefix+'End').value=bpSocialDateValue(Date.now()+30*86400000);
+}
+function bpSocialIso(id){
+ const time=new Date(bpById(id).value).getTime();
+ if(!Number.isFinite(time))throw Error('日時を入力してね');return new Date(time).toISOString();
+}
+function bpSocialDateText(v){const d=new Date(v);return Number.isFinite(+d)?d.toLocaleString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'日時不明'}
+function bpSocialNode(tag,className,text){const el=document.createElement(tag);if(className)el.className=className;if(text!==undefined)el.textContent=String(text);return el}
+async function bpSocialApi(path,{body,admin=false}={}){
+ const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),60000);
+ try{
+  const response=await fetch(ONLINE_ORIGIN+path,{method:body?'POST':'GET',cache:'no-store',mode:'cors',signal:controller.signal,
+   headers:{...(body?{'Content-Type':'application/json'}:{}),...(admin?{'Authorization':'Bearer '+adminBearer}:{})},
+   ...(body?{body:JSON.stringify(body)}:{})});
+  let data;try{data=await response.json()}catch{throw Error('サーバーの応答を読み取れないよ')}
+  if(!response.ok)throw Error(data?.error||'通信エラー HTTP '+response.status);
+  return data;
+ }catch(e){if(e?.name==='AbortError')throw Error('サーバーが応答しないよ。もう一度試してね');throw e}
+ finally{clearTimeout(timeout)}
+}
+function bpSocialCodeClear(){
+ bpById('bpCodeAdminId').value='';bpById('bpCodeAdminCode').value='';bpById('bpCodeAdminCode').readOnly=false;
+ bpById('bpCodeAdminNote').value='';bpById('bpCodeAdminCoins').value='50';bpById('bpCodeAdminLimit').value='100';
+ bpSocialResetDates('bpCodeAdmin');bpById('bpCodeAdminSave').textContent='➕ コードを発行';
+}
+function bpSocialNewsClear(){
+ bpById('bpNewsAdminId').value='';bpById('bpNewsAdminTitle').value='';bpById('bpNewsAdminBody').value='';
+ bpById('bpNewsAdminImportant').checked=false;bpSocialResetDates('bpNewsAdmin');
+ bpById('bpNewsAdminSave').textContent='📢 お知らせを投稿';
+}
+function bpSocialCodeFill(v){
+ bpById('bpCodeAdminId').value=v.id;bpById('bpCodeAdminCode').value=v.code;
+ bpById('bpCodeAdminCode').readOnly=true;bpById('bpCodeAdminNote').value=v.note||'';
+ bpById('bpCodeAdminCoins').value=v.coins;bpById('bpCodeAdminLimit').value=v.maxUses;
+ bpById('bpCodeAdminStart').value=bpSocialDateValue(v.startsAt);bpById('bpCodeAdminEnd').value=bpSocialDateValue(v.endsAt);
+ bpById('bpCodeAdminSave').textContent='💾 コードを編集';bpById('bpCodeAdminCode').focus();
+}
+function bpSocialNewsFill(v){
+ bpById('bpNewsAdminId').value=v.id;bpById('bpNewsAdminTitle').value=v.title;
+ bpById('bpNewsAdminBody').value=v.body;bpById('bpNewsAdminImportant').checked=!!v.important;
+ bpById('bpNewsAdminStart').value=bpSocialDateValue(v.startsAt);bpById('bpNewsAdminEnd').value=bpSocialDateValue(v.endsAt);
+ bpById('bpNewsAdminSave').textContent='💾 お知らせを編集';bpById('bpNewsAdminTitle').focus();
+}
+function bpSocialAdminControls(target,onEdit,onStop){
+ const actions=bpSocialNode('div','bp180Row');
+ const edit=bpSocialNode('button','','✏️ 編集'),stop=bpSocialNode('button','','⏹ 中止');
+ edit.type=stop.type='button';edit.onclick=onEdit;stop.onclick=onStop;
+ actions.append(edit,stop);target.appendChild(actions);
+}
+function bpSocialRenderCodes(){
+ const container=bpById('bpCodeAdminList');container.replaceChildren();
+ if(!bpSocialCodes.length){container.appendChild(bpSocialNode('div','bp180Card','コードはまだ発行されていないよ'));return}
+ bpSocialCodes.forEach(v=>{
+  const card=bpSocialNode('div','bp180Card');card.appendChild(bpSocialNode('strong','bp180CodeResult',v.code));
+  card.appendChild(bpSocialNode('div','bp180Note',(v.enabled?'🟢':'⏹')+' '+(v.note||'メモなし')+' ｜ 🪙'+v.coins+' ｜ '+v.claimed+' / '+v.maxUses+'人'));
+  card.appendChild(bpSocialNode('div','bp180Note',bpSocialDateText(v.startsAt)+' 〜 '+bpSocialDateText(v.endsAt)));
+  if(v.enabled)bpSocialAdminControls(card,()=>bpSocialCodeFill(v),async()=>{
+   if(!confirm('このプレゼントコードを中止する？'))return;
+   try{await bpSocialApi('/api/social/admin/codes',{admin:true,body:{action:'stop',id:v.id}});await bpSocialLoadCodes();}
+   catch(e){bpSocialMsg('bpCodeAdminStatus','⚠️ '+e.message)}
+  });container.appendChild(card);
+ });
+}
+function bpSocialRenderNews(items,targetId,isAdmin=false){
+ const container=bpById(targetId);container.replaceChildren();
+ if(!items.length){container.appendChild(bpSocialNode('div','bp180Card',isAdmin?'管理中のお知らせはないよ':'📭 今のお知らせはまだないよ'));return}
+ for(const v of items){
+  const row=bpSocialNode('div','bp180Notice'+(v.important?' important':''));
+  const title=bpSocialNode('div','bp180NoticeTitle',(v.important?'📌 ':'')+v.title);row.appendChild(title);
+  row.appendChild(bpSocialNode('div','bp180NoticeTime',bpSocialDateText(v.startsAt)+' 〜 '+bpSocialDateText(v.endsAt)+(isAdmin?(v.enabled?' ｜ 配信設定中':' ｜ 中止済み'):'')));
+  row.appendChild(bpSocialNode('div','bp180NoticeBody',v.body));
+  if(isAdmin&&v.enabled)bpSocialAdminControls(row,()=>bpSocialNewsFill(v),async()=>{
+   if(!confirm('このお知らせの配信を中止する？'))return;
+   try{await bpSocialApi('/api/social/admin/notices',{admin:true,body:{action:'stop',id:v.id}});await bpSocialLoadNews();}
+   catch(e){bpSocialMsg('bpNewsAdminStatus','⚠️ '+e.message)}
+  });container.appendChild(row);
+ }
+}
+async function bpSocialLoadCodes(){
+ const data=await bpSocialApi('/api/social/admin/codes',{admin:true});
+ bpSocialCodes=Array.isArray(data.codes)?data.codes:[];bpSocialRenderCodes();
+ bpSocialMsg('bpCodeAdminStatus','✅ 発行済みコード '+bpSocialCodes.length+'件');
+}
+async function bpSocialLoadNews(){
+ bpSocialMsg('bpNewsStatus','📡 お知らせを読み込み中…');
+ try{
+  const data=await bpSocialApi('/api/social/notices');bpSocialNotices=Array.isArray(data.notices)?data.notices:[];
+  bpSocialRenderNews(bpSocialNotices,'bpNewsList');bpSocialMsg('bpNewsStatus','📢 配信中のお知らせ '+bpSocialNotices.length+'件');
+ }catch(e){bpSocialMsg('bpNewsStatus','⚠️ '+e.message)}
+ if(bpSocialAdmin())try{
+  const data=await bpSocialApi('/api/social/admin/notices',{admin:true});
+  bpSocialRenderNews(Array.isArray(data.notices)?data.notices:[],'bpNewsAdminList',true);
+  bpSocialMsg('bpNewsAdminStatus','✅ 管理一覧を更新したよ');
+ }catch(e){bpSocialMsg('bpNewsAdminStatus','⚠️ '+e.message)}
+}
+function bpSocialShowCode(){bpCodeModal.classList.add('show');bpCodeAdmin.hidden=!bpSocialAdmin();
+ if(bpSocialAdmin())bpSocialLoadCodes().catch(e=>bpSocialMsg('bpCodeAdminStatus','⚠️ '+e.message));
+}
+function bpSocialShowNews(){bpNewsModal.classList.add('show');bpNewsAdmin.hidden=!bpSocialAdmin();bpSocialLoadNews();}
+async function bpSocialRedeem(){
+ if(bpSocialBusy)return;const code=bpById('bpRedeemText').value.trim().toUpperCase();
+ if(!/^[A-Z0-9-]{6,24}$/.test(code)){bpSocialMsg('bpRedeemStatus','⚠️ コードは英数字6〜24文字だよ');return}
+ const playerId=playerRandomId();if(!playerId){bpSocialMsg('bpRedeemStatus','⚠️ プレイヤーIDを準備できなかったよ');return}
+ bpSocialBusy=true;bpById('bpRedeemBtn').disabled=true;bpSocialMsg('bpRedeemStatus','📡 コードを確認しているよ…');
+ try{
+  const result=await bpSocialApi('/api/social/redeem',{body:{code,playerId}});
+  const key='blockpop_social_code_ledger_v1';let ledger={};try{ledger=JSON.parse(localStorage.getItem(key)||'{}')||{}}catch{}
+  const grant=!ledger[code]&&Number.isInteger(result.coins)&&result.coins>0;
+  if(grant){coins+=result.coins;saveCoins();ledger[code]=true;localStorage.setItem(key,JSON.stringify(ledger));renderShop();}
+  bpSocialMsg('bpRedeemStatus',grant?'🎉 コード受取成功！ 🪙'+result.coins+'コイン GET！':'✅ このコードは受け取り済みだよ');
+  if(grant)toast('🎁 🪙'+result.coins+'コイン獲得！');
+ }catch(e){bpSocialMsg('bpRedeemStatus','⚠️ '+e.message)}finally{bpSocialBusy=false;bpById('bpRedeemBtn').disabled=false}
+}
+async function bpSocialSaveCode(){
+ if(bpSocialBusy)return;const id=bpById('bpCodeAdminId').value;
+ let body;try{body={action:id?'edit':'create',id:id||undefined,code:bpById('bpCodeAdminCode').value.trim(),
+  note:bpById('bpCodeAdminNote').value.trim(),coins:Number(bpById('bpCodeAdminCoins').value),maxUses:Number(bpById('bpCodeAdminLimit').value),
+  startsAt:bpSocialIso('bpCodeAdminStart'),endsAt:bpSocialIso('bpCodeAdminEnd')}}catch(e){bpSocialMsg('bpCodeAdminStatus','⚠️ '+e.message);return}
+ bpSocialBusy=true;bpById('bpCodeAdminSave').disabled=true;
+ try{const result=await bpSocialApi('/api/social/admin/codes',{admin:true,body});
+  bpSocialCodeClear();bpSocialMsg('bpCodeAdminStatus','✅ コード '+result.code+' を保存したよ');
+  await bpSocialLoadCodes();bpSocialMsg('bpCodeAdminStatus','✅ '+result.code+' を保存したよ');
+ }catch(e){bpSocialMsg('bpCodeAdminStatus','⚠️ '+e.message)}finally{bpSocialBusy=false;bpById('bpCodeAdminSave').disabled=false}
+}
+async function bpSocialSaveNews(){
+ if(bpSocialBusy)return;const id=bpById('bpNewsAdminId').value;
+ let body;try{body={action:id?'edit':'create',id:id||undefined,title:bpById('bpNewsAdminTitle').value.trim(),
+  body:bpById('bpNewsAdminBody').value.trim(),important:bpById('bpNewsAdminImportant').checked,
+  startsAt:bpSocialIso('bpNewsAdminStart'),endsAt:bpSocialIso('bpNewsAdminEnd')}}catch(e){bpSocialMsg('bpNewsAdminStatus','⚠️ '+e.message);return}
+ bpSocialBusy=true;bpById('bpNewsAdminSave').disabled=true;
+ try{await bpSocialApi('/api/social/admin/notices',{admin:true,body});bpSocialNewsClear();await bpSocialLoadNews();bpSocialMsg('bpNewsAdminStatus','✅ 配信設定を保存したよ')}
+ catch(e){bpSocialMsg('bpNewsAdminStatus','⚠️ '+e.message)}finally{bpSocialBusy=false;bpById('bpNewsAdminSave').disabled=false}
+}
+bpById('bpCodeBtn').addEventListener('click',bpSocialShowCode);
+bpById('bpNewsBtn').addEventListener('click',bpSocialShowNews);
+bpById('bpCodeClose').addEventListener('click',()=>bpCodeModal.classList.remove('show'));
+bpById('bpNewsClose').addEventListener('click',()=>bpNewsModal.classList.remove('show'));
+bpById('bpRedeemBtn').addEventListener('click',bpSocialRedeem);
+bpById('bpCodeAdminSave').addEventListener('click',bpSocialSaveCode);
+bpById('bpCodeAdminClear').addEventListener('click',bpSocialCodeClear);
+bpById('bpNewsAdminSave').addEventListener('click',bpSocialSaveNews);
+bpById('bpNewsAdminClear').addEventListener('click',bpSocialNewsClear);
+[bpCodeModal,bpNewsModal].forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show')}));
+bpSocialCodeClear();bpSocialNewsClear();
+
+// AI offline mode, independent boards and 15 moves per side.
+const BP_AI_TURNS=15,BP_AI_STORAGE='blockpop_ai_history_v1';
+let bpAiGame=null;
+function bpAiDeal(){return Array.from({length:3},()=>({shape:SHAPES[Math.floor(Math.random()*SHAPES.length)].map(row=>row.slice()),color:1+Math.floor(Math.random()*COLORS.length),used:false}))}
+function bpAiRotate(shape,rotation){let out=shape;for(let i=0;i<rotation;i++)out=out[0].map((_,c)=>out.map(r=>r[c]).reverse());return out}
+function bpAiFit(board,shape,r,c){
+ for(let y=0;y<shape.length;y++)for(let x=0;x<shape[y].length;x++)if(shape[y][x]){
+  const yy=r+y,xx=c+x;if(yy<0||xx<0||yy>=8||xx>=8||board[yy*8+xx])return false;
+ }return true;
+}
+function bpAiDrop(board,shape,r,c,color){
+ let blocks=0;for(let y=0;y<shape.length;y++)for(let x=0;x<shape[y].length;x++)if(shape[y][x]){board[(r+y)*8+c+x]=color;blocks++}
+ let rows=[],cols=[];for(let y=0;y<8;y++)if(board.slice(y*8,y*8+8).every(Boolean))rows.push(y);
+ for(let x=0;x<8;x++){let full=true;for(let y=0;y<8;y++)if(!board[y*8+x])full=false;if(full)cols.push(x)}
+ const removed=new Set();for(const y of rows)for(let x=0;x<8;x++)removed.add(y*8+x);
+ for(const x of cols)for(let y=0;y<8;y++)removed.add(y*8+x);
+ for(const i of removed)board[i]=0;
+ return{score:blocks+10*(rows.length+cols.length)+removed.size,lines:rows.length+cols.length,blocks,removed:removed.size};
+}
+function bpAiPossible(board,pieces){for(const piece of pieces)if(!piece.used)for(let k=0;k<4;k++){
+ const shape=bpAiRotate(piece.shape,k);for(let r=0;r<=8-shape.length;r++)for(let c=0;c<=8-shape[0].length;c++)if(bpAiFit(board,shape,r,c))return true;
+ }return false}
+function bpAiCpuTurn(){const game=bpAiGame;if(!game||game.done)return;
+ let best=null;for(let p=0;p<game.cpuPieces.length;p++){
+  const piece=game.cpuPieces[p];if(piece.used)continue;
+  for(let rot=0;rot<4;rot++){
+   const shape=bpAiRotate(piece.shape,rot);
+   for(let r=0;r<=8-shape.length;r++)for(let c=0;c<=8-shape[0].length;c++){
+    if(!bpAiFit(game.cpu,shape,r,c))continue;
+    const simulation=game.cpu.slice(),result=bpAiDrop(simulation,shape,r,c,piece.color);
+    const remaining=simulation.filter(v=>!v).length;
+    const value=result.score*4+result.lines*35+remaining*.13+Math.random()*3;
+    if(!best||value>best.value)best={p,rot,r,c,value,shape};
+   }
+  }
+ }
+ if(!best){bpAiFinish('🤖 CPUが置けるブロックを失ったよ');return}
+ const piece=game.cpuPieces[best.p];const result=bpAiDrop(game.cpu,best.shape,best.r,best.c,piece.color);
+ game.cpuScore+=result.score;piece.used=true;
+ if(game.cpuPieces.every(p=>p.used))game.cpuPieces=bpAiDeal();
+}
+function bpAiHistory(){try{return JSON.parse(localStorage.getItem(BP_AI_STORAGE)||'{}')||{}}catch{return {}}}
+function bpAiFinish(reason='15手終了！'){
+ const game=bpAiGame;if(!game||game.done)return;game.done=true;
+ const win=game.playerScore>game.cpuScore,draw=game.playerScore===game.cpuScore;
+ const data=bpAiHistory();data.games=(data.games||0)+1;data.wins=(data.wins||0)+(win?1:0);
+ data.draws=(data.draws||0)+(draw?1:0);data.best=Math.max(data.best||0,game.playerScore);
+ try{localStorage.setItem(BP_AI_STORAGE,JSON.stringify(data))}catch{}
+ game.message=reason+' '+(draw?'🤝 引き分け！':win?'🏆 あなたの勝ち！':'🤖 CPUの勝ち！');
+ bpAiRender();
+}
+function bpAiMove(index){
+ const game=bpAiGame;if(!game||game.done)return;const piece=game.playerPieces[game.selected];if(!piece||piece.used)return;
+ const shape=bpAiRotate(piece.shape,game.rotation),r=Math.floor(index/8),c=index%8;
+ if(!bpAiFit(game.player,shape,r,c)){game.message='❌ そこには置けないよ。左上のマスを選んでね';bpAiRender();return}
+ const result=bpAiDrop(game.player,shape,r,c,piece.color);game.playerScore+=result.score;piece.used=true;
+ game.turns++;if(game.playerPieces.every(p=>p.used))game.playerPieces=bpAiDeal();
+ game.selected=game.playerPieces.findIndex(p=>!p.used);game.rotation=0;
+ bpAiCpuTurn();if(game.done)return;
+ if(game.turns>=BP_AI_TURNS){bpAiFinish('🏁 '+BP_AI_TURNS+'手の対戦が終了！');return}
+ if(!bpAiPossible(game.player,game.playerPieces)){bpAiFinish('置けるブロックがなくなったよ');return}
+ game.message='🎮 あなたの番！ あと'+(BP_AI_TURNS-game.turns)+'手';bpAiRender();
+}
+function bpAiCells(boardId,arr,interactive){const parent=bpById(boardId);parent.replaceChildren();
+ for(let i=0;i<64;i++){
+  const btn=bpSocialNode('button','bp180Cell'+(arr[i]?' on':''));btn.type='button';
+  if(arr[i])btn.style.background=colorCSS(COLORS[arr[i]-1]||COLORS[0]);
+  if(interactive){btn.setAttribute('aria-label',(Math.floor(i/8)+1)+'行'+(i%8+1)+'列に配置');btn.onclick=()=>bpAiMove(i)}
+  else btn.disabled=true;parent.appendChild(btn);
+ }
+}
+function bpAiRender(){const game=bpAiGame;
+ if(!game){bpById('bpAiStatus').textContent='「新しい試合」でスタート！';bpAiCells('bpAiPlayerBoard',Array(64).fill(0),false);bpAiCells('bpAiCpuBoard',Array(64).fill(0),false);bpById('bpAiPieces').replaceChildren();bpById('bpAiScoreYou').textContent='あなた 0点';bpById('bpAiScoreCpu').textContent='CPU 0点'}
+ else{
+  bpById('bpAiStatus').textContent=game.message;
+  bpById('bpAiScoreYou').textContent='あなた '+game.playerScore+'点';bpById('bpAiScoreCpu').textContent='CPU '+game.cpuScore+'点';
+  bpAiCells('bpAiPlayerBoard',game.player,!game.done);bpAiCells('bpAiCpuBoard',game.cpu,false);
+  const list=bpById('bpAiPieces');list.replaceChildren();
+  game.playerPieces.forEach((p,i)=>{
+   const btn=bpSocialNode('button','bp180Piece'+(game.selected===i?' chosen':''));btn.type='button';
+   btn.disabled=!!p.used||game.done;
+   btn.appendChild(bpSocialNode('span','',p.used?'使用済み':'ブロック '+(i+1)));
+   const shape=bpAiRotate(p.shape,game.selected===i?game.rotation:0),wrap=bpSocialNode('span','bp180Shape');
+   wrap.style.gridTemplateColumns='repeat('+shape[0].length+',11px)';
+   for(const row of shape)for(const v of row){const el=document.createElement('i');el.style.background=v?colorCSS(COLORS[p.color-1]):'transparent';wrap.appendChild(el)}
+   btn.appendChild(wrap);btn.onclick=()=>{game.selected=i;game.rotation=0;bpAiRender()};list.appendChild(btn);
+  });
+ }
+ const history=bpAiHistory();bpById('bpAiHistory').textContent=' 対戦'+(history.games||0)+'回 / 勝利'+(history.wins||0)+'回 / ベスト'+(history.best||0)+'点';
+ bpById('bpAiRotate').disabled=!game||game.done;
+}
+function bpAiNew(){bpAiGame={player:Array(64).fill(0),cpu:Array(64).fill(0),playerPieces:bpAiDeal(),cpuPieces:bpAiDeal(),playerScore:0,cpuScore:0,turns:0,selected:0,rotation:0,done:false,message:'🎮 あなたの番！ 左上にしたいマスをタップ'};bpAiRender()}
+function bpAiOpen(){bpAiModal.classList.add('show');bpAiRender()}
+bpById('bpAiBtn').addEventListener('click',bpAiOpen);
+bpById('bpAiClose').addEventListener('click',()=>bpAiModal.classList.remove('show'));
+bpById('bpAiNew').addEventListener('click',bpAiNew);
+bpById('bpAiRotate').addEventListener('click',()=>{if(!bpAiGame||bpAiGame.done)return;bpAiGame.rotation=(bpAiGame.rotation+1)%4;bpAiRender()});
+bpAiModal.addEventListener('click',e=>{if(e.target===bpAiModal)bpAiModal.classList.remove('show')});
+bpAiRender();
+// --- end v1.8.0 features ---
 
 // --- End ONLINE client ---
 

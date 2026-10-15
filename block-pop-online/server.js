@@ -1,6 +1,6 @@
 'use strict';
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),zlib=require('node:zlib');
-const PORT=Number(process.env.PORT||3000),VERSION='1.7.0',ROUND_MS=120000;
+const PORT=Number(process.env.PORT||3000),VERSION='1.8.0',ROUND_MS=120000;
 // Serve the game as one compressed, cached HTML resource (no external assets).
 const PAGE=fs.readFileSync(path.join(__dirname,'index.html'));
 const PATCHER_PAGE=fs.readFileSync(path.join(__dirname,'patcher.html'));
@@ -37,6 +37,7 @@ const LEGACY_SHOP_ETAG='W/"'+crypto.createHash('sha256').update(LEGACY_SHOP_JSON
 const LIVE_SHOP_ADMIN=require('./live-admin')({catalog:SHOP_DATA,legacyIds:LEGACY_IDS});
 const ACCOUNT=require('./account-service')();
 const EVENTS=require('./event-service')({isAdmin:req=>LIVE_SHOP_ADMIN.isAdmin(req)});
+const SOCIAL=require('./social-service')({isAdmin:req=>LIVE_SHOP_ADMIN.isAdmin(req)});
 const rooms=new Map(),ABC='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const stamp=()=>Date.now();
 function code(){let s;do{s=Array.from({length:6},()=>ABC[crypto.randomInt(ABC.length)]).join('')}while(rooms.has(s));return s;}
@@ -138,6 +139,10 @@ const server=http.createServer((req,res)=>{
     EVENTS.handle(req,res,url).catch(e=>{console.error('Event request:',e.message);if(!res.headersSent){res.writeHead(503,{'Content-Type':'application/json'});res.end(JSON.stringify({error:'イベントサーバーに接続できないよ'}));}});
     return;
   }
+  if(url.startsWith('/api/social/')){
+    SOCIAL.handle(req,res,url).catch(e=>{console.error('Social service:',e.message);if(!res.headersSent){res.writeHead(503,{'Content-Type':'application/json'});res.end(JSON.stringify({error:'お知らせ・コードサーバーに接続できないよ'}));}});
+    return;
+  }
   if(url.startsWith('/api/account/')){
     ACCOUNT.handle(req,res,url).catch(()=>{if(!res.headersSent){res.writeHead(502,{'Content-Type':'application/json'});res.end(JSON.stringify({error:'アカウントの通信エラーだよ'}));}});
     return;
@@ -199,7 +204,7 @@ const server=http.createServer((req,res)=>{
     });
     return res.end(PAGE);
   }
-  if(url==='/api/version'){res.setHeader('Access-Control-Allow-Origin','*');res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({version:VERSION,release:'Block Pop! DEMO GEM SHOP v1.7.0',notes:'コイン倍率・スコア大会・全員プレゼントを管理者が作成、編集、中止。参加状況と大会ランキングを永続保存。スクロール・メニューを維持しイベントパス、フレンドメモ、ランクRP、スキンを追加。',url:'/',downloadUrl:'/download/latest'}));}
+  if(url==='/api/version'){res.setHeader('Access-Control-Allow-Origin','*');res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({version:VERSION,release:'Block Pop! SOCIAL & AI UPDATE v1.8.0',notes:'コイン倍率・スコア大会・全員プレゼントを管理者が作成、編集、中止。参加状況と大会ランキングを永続保存。スクロールと既存23メニューを維持し、プレゼントコード、お知らせセンター、オフラインAI対戦を追加。',url:'/',downloadUrl:'/download/latest'}));}
   if(url!=='/'&&url!=='/index.html'){res.writeHead(404);return res.end('Not found');}
   res.setHeader('Cache-Control','private, no-cache');
   res.setHeader('ETag',PAGE_ETAG);
