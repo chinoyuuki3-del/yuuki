@@ -13,7 +13,7 @@
   <form id="authForm">
    <label for="username">ユーザー名</label><input id="username" autocomplete="username" maxlength="24" placeholder="ニックネーム" required>
    <label for="password">自分のパスワード</label><input id="password" type="password" autocomplete="current-password" minlength="8" maxlength="128" placeholder="8文字以上" required>
-   <div id="inviteWrap" hidden><label for="invite">招待コード</label><input id="invite" autocomplete="off" placeholder="招待コードを入力"></div>
+   <div id="inviteWrap" hidden><label for="invite" id="inviteLabel">招待コード</label><input id="invite" autocomplete="off" placeholder="招待コードを入力"></div>
    <p id="authError" class="error" aria-live="polite"></p><button class="primary wide" id="authButton" type="submit">ログイン →</button>
   </form>
   <div class="footnote">🔒 実名、学校名、住所は入力しないでね。<br>招待コードは性別・年齢の本人確認ではありません。</div>

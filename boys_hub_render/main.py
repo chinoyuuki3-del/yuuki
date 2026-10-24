@@ -18,6 +18,9 @@ if IS_PROD and (not DATABASE_URL or not os.getenv('SESSION_SECRET')):
     raise RuntimeError('Set DATABASE_URL and SESSION_SECRET before deploying')
 SECRET = (os.getenv('SESSION_SECRET') or secrets.token_urlsafe(48)).encode()
 INVITE = os.getenv('INVITE_CODE', '男子')
+OWNER_SETUP_CODE = os.getenv('OWNER_SETUP_CODE', '')
+if IS_PROD and len(OWNER_SETUP_CODE) < 24:
+    raise RuntimeError('Set a random OWNER_SETUP_CODE (24+ characters) before deploying')
 COOKIE = 'boyshub_session'
 TTL = 7 * 24 * 3600
 MAX_VIDEO = 8 * 1024 * 1024  # intentionally small until durable object storage is added
@@ -72,27 +75,23 @@ def setup_database():
            post_id TEXT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
            reason TEXT NOT NULL, created BIGINT NOT NULL, resolved INTEGER NOT NULL DEFAULT 0,
            UNIQUE(user_id,post_id))''',
+        '''CREATE TABLE IF NOT EXISTS site_setup (singleton INTEGER PRIMARY KEY CHECK(singleton=1),
+           owner_claimed INTEGER NOT NULL DEFAULT 0)''',
+        '''CREATE TABLE IF NOT EXISTS admin_invitations (id TEXT PRIMARY KEY,
+           token_hash TEXT UNIQUE NOT NULL, created_by TEXT NOT NULL REFERENCES users(id),
+           created BIGINT NOT NULL, expires BIGINT NOT NULL,
+           used_by TEXT REFERENCES users(id), used_at BIGINT)''',
+        "CREATE UNIQUE INDEX IF NOT EXISTS only_one_owner ON users(role) WHERE role='owner'",
+        'CREATE INDEX IF NOT EXISTS idx_invite_valid ON admin_invitations(expires,used_by)',
         'CREATE INDEX IF NOT EXISTS idx_post_date ON posts(created DESC)',
         'CREATE INDEX IF NOT EXISTS idx_comment_post ON comments(post_id,created)',
     ]
     with db() as conn:
         for sql in stmts: q(conn, sql)
-        admin_name = os.getenv('ADMIN_USERNAME', 'admin').strip()
-        admin_pw = os.getenv('ADMIN_PASSWORD', '')
-        if admin_pw:
-            if len(admin_pw) < 12:
-                raise RuntimeError('ADMIN_PASSWORD must be at least 12 characters')
-            admin = q(conn, 'SELECT id,role FROM users WHERE username=?', (admin_name,), one=True)
-            if not admin:
-                q(conn, 'INSERT INTO users(id,username,passhash,role,created) VALUES(?,?,?,?,?)',
-                  (uid(), admin_name, hash_password(admin_pw), 'admin', now()))
-            elif admin['role'] != 'admin':
-                raise RuntimeError('ADMIN_USERNAME conflicts with a regular user')
-            else:
-                # Environment secret is source of truth for administrator login.
-                stored = q(conn, 'SELECT passhash FROM users WHERE id=?', (admin['id'],), one=True)
-                if not verify_password(admin_pw, stored['passhash']):
-                    q(conn, 'UPDATE users SET passhash=? WHERE id=?', (hash_password(admin_pw),admin['id']))
+        q(conn, 'INSERT INTO site_setup(singleton,owner_claimed) VALUES(1,0) ON CONFLICT(singleton) DO NOTHING')
+        # Upgrade-safe: an existing owner should never allow second bootstrap.
+        if q(conn,"SELECT id FROM users WHERE role='owner' LIMIT 1",one=True):
+            q(conn,'UPDATE site_setup SET owner_claimed=1 WHERE singleton=1')
 
 @app.on_event('startup')
 def startup():
@@ -144,7 +143,7 @@ def user_for(request: Request):
     return user
 
 def admin_for(user=Depends(user_for)):
-    if user['role'] != 'admin': raise HTTPException(403, '管理者のみ利用できます')
+    if user['role'] not in ('owner','admin'): raise HTTPException(403, '管理者のみ利用できます')
     return user
 
 def limited(request: Request, scope, max_req, seconds):
@@ -177,6 +176,7 @@ class Credentials(BaseModel):
     username: str = Field(min_length=2, max_length=24)
     password: str = Field(min_length=8, max_length=128)
     invite: str = ''
+    owner_code: str = ''
 class Login(BaseModel):
     username: str
     password: str
@@ -186,22 +186,56 @@ class Report(BaseModel):
     reason: str = Field(min_length=3, max_length=160)
 class BlockAction(BaseModel):
     blocked: bool
+class AcceptAdminInvite(BaseModel):
+    code: str = Field(min_length=16, max_length=256)
+
+def token_hash(token: str) -> str:
+    return hashlib.sha256(token.encode('utf-8')).hexdigest()
+
+@app.get('/api/setup')
+def setup_status():
+    with db() as conn:
+        row = q(conn, 'SELECT owner_claimed FROM site_setup WHERE singleton=1', one=True)
+    return {'needs_owner': not bool(row and row['owner_claimed'])}
 
 @app.post('/api/register')
 def register(data: Credentials, request: Request, response: Response):
     limited(request, 'register', 5, 3600)
     name = data.username.strip()
-    if data.invite != INVITE: raise HTTPException(403, '招待コードが違います')
     if not NAME.fullmatch(name): raise HTTPException(400, 'ユーザー名は2～24文字の文字・数字にしてください')
-    if data.password == data.invite: raise HTTPException(400, 'アカウントのパスワードは招待コードと違うものにしてください')
+    if data.password == data.invite or data.password == data.owner_code:
+        raise HTTPException(400, '個人パスワードは招待コードと違うものにしてください')
+    if not data.owner_code and not data.invite:
+        raise HTTPException(403, '登録には招待コードが必要です')
     with db() as conn:
         if q(conn, 'SELECT id FROM users WHERE username=?', (name,), one=True):
             raise HTTPException(409, 'その名前はすでに使われています')
+        setup = q(conn, 'SELECT owner_claimed FROM site_setup WHERE singleton=1', one=True)
+        if not setup or not setup['owner_claimed']:
+            # On a brand-new SNS, ONLY the one-time owner code can create the first account.
+            if not OWNER_SETUP_CODE or not hmac.compare_digest(
+                    token_hash(data.owner_code), token_hash(OWNER_SETUP_CODE)):
+                raise HTTPException(403, '最初の登録には初代管理者パスワードが必要です')
+            claimed = q(conn,'''UPDATE site_setup SET owner_claimed=1
+                        WHERE singleton=1 AND owner_claimed=0 RETURNING singleton''',one=True)
+            if not claimed: raise HTTPException(409, '初代管理者は登録済みです')
+            role = 'owner'
+        else:
+            if data.owner_code:
+                raise HTTPException(403, '初代管理者の登録は終了しました')
+            role = 'user'
+            if data.invite != INVITE:
+                role = 'admin'
         user_id = uid()
         q(conn, 'INSERT INTO users(id,username,passhash,role,created) VALUES(?,?,?,?,?)',
-          (user_id,name,hash_password(data.password),'user',now()))
+          (user_id,name,hash_password(data.password),role,now()))
+        if role == 'admin':
+            claim = q(conn, '''UPDATE admin_invitations SET used_by=?,used_at=?
+                   WHERE token_hash=? AND used_by IS NULL AND expires>?
+                   RETURNING id''', (user_id,now(),token_hash(data.invite),now()), one=True)
+            if not claim: raise HTTPException(403, '招待コードが違うか、期限切れです')
     set_login(response, user_id)
-    return {'ok': True}
+    return {'ok': True, 'role': role}
 
 @app.post('/api/login')
 def login(data: Login, request: Request, response: Response):
@@ -293,7 +327,7 @@ def delete_post(post_id: str, user=Depends(user_for)):
     with db() as conn:
         p=q(conn,'SELECT user_id FROM posts WHERE id=?',(post_id,),one=True)
         if not p:raise HTTPException(404,'投稿がありません')
-        if p['user_id']!=user['id'] and user['role']!='admin': raise HTTPException(403,'削除権限がありません')
+        if p['user_id']!=user['id'] and user['role'] not in ('owner','admin'): raise HTTPException(403,'削除権限がありません')
         q(conn,'DELETE FROM posts WHERE id=?',(post_id,))
     return {'ok':True}
 
@@ -334,6 +368,36 @@ def report(post_id: str, data: Report, user=Depends(user_for)):
            (uid(),user['id'],post_id,data.reason.strip(),now()))
     return {'ok':True}
 
+@app.post('/api/admin/invites')
+def make_admin_invite(request: Request, admin=Depends(admin_for)):
+    limited(request, 'admin-invite-'+admin['id'], 8, 86400)
+    code = secrets.token_urlsafe(32)
+    issued = now()
+    with db() as conn:
+        q(conn, '''INSERT INTO admin_invitations(id,token_hash,created_by,created,expires)
+           VALUES(?,?,?,?,?)''', (uid(),token_hash(code),admin['id'],issued,issued+48*3600))
+    return {'code': code, 'expires': issued+48*3600,
+            'notice': 'このコードは一度しか表示されません。信頼できる相手にだけ渡してください'}
+
+@app.get('/api/admin/invites')
+def list_admin_invites(admin=Depends(admin_for)):
+    with db() as conn:
+        return q(conn, '''SELECT i.id,i.created,i.expires,i.used_at,u.username AS created_by
+            FROM admin_invitations i JOIN users u ON u.id=i.created_by
+            ORDER BY i.created DESC LIMIT 30''')
+
+@app.post('/api/admin/invites/accept')
+def accept_admin_invite(data: AcceptAdminInvite, user=Depends(user_for)):
+    if user['role'] in ('owner','admin'):
+        raise HTTPException(409,'すでに管理者です')
+    with db() as conn:
+        used = q(conn,'''UPDATE admin_invitations SET used_by=?,used_at=?
+           WHERE token_hash=? AND used_by IS NULL AND expires>?
+           RETURNING id''',(user['id'],now(),token_hash(data.code.strip()),now()),one=True)
+        if not used: raise HTTPException(403,'招待コードが違うか、使用済み・期限切れです')
+        q(conn,"UPDATE users SET role='admin' WHERE id=?",(user['id'],))
+    return {'ok':True,'role':'admin'}
+
 @app.get('/api/admin/users')
 def admin_users(admin=Depends(admin_for)):
     with db() as conn:
@@ -347,7 +411,7 @@ def admin_block(user_id: str, data: BlockAction, admin=Depends(admin_for)):
     with db() as conn:
         target=q(conn,'SELECT id,role FROM users WHERE id=?',(user_id,),one=True)
         if not target: raise HTTPException(404,'アカウントがありません')
-        if target['role']=='admin':raise HTTPException(403,'別の管理者は停止できません')
+        if target['role'] in ('owner','admin'):raise HTTPException(403,'別の管理者は停止できません')
         q(conn,'UPDATE users SET blocked=? WHERE id=?',(int(data.blocked),user_id))
     return {'ok':True}
 
@@ -366,7 +430,10 @@ def resolve_report(report_id: str, admin=Depends(admin_for)):
     return {'ok':True}
 
 @app.get('/health')
-def health(): return {'ok':True}
+def health():
+    with db() as conn:
+        result = q(conn,'SELECT 1 AS ok',one=True)
+    return {'ok':bool(result and result['ok']), 'database':'postgres' if DATABASE_URL else 'local'}
 
 @app.get('/')
 def homepage(): return FileResponse(BASE/'static'/'index.html')
