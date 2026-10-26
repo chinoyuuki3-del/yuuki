@@ -1,10 +1,10 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AF-4 SMART BASE</title><style>
 *{box-sizing:border-box}body{margin:0;color:#edf7ff;background:#101822;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",Arial,sans-serif}button,input,select{border-radius:0}header{background:#192635;border-bottom:3px solid #2878bd;padding:18px max(15px,calc((100% - 1040px)/2));display:flex;justify-content:space-between;align-items:center}h1{font-size:30px;font-weight:300;letter-spacing:4px;margin:0}header small{color:#5daae0;font-size:10px;letter-spacing:2px}#clock{font-size:26px;font-weight:300;min-width:120px;text-align:right}main{max-width:1040px;margin:16px auto;padding:0 12px}.legend{font-size:11px;letter-spacing:2px;color:#80a4be;margin:21px 0 10px}.layout{display:grid;grid-template-columns:1.5fr 1fr;gap:12px}.card{background:#1b2b3b;border-left:3px solid #468ec8;padding:14px}.card.alert{border-color:#e0555c}.card.success{border-color:#37c49f}.card h2{font-size:11px;letter-spacing:2px;font-weight:600;color:#9ebbd1;margin:0 0 10px}.livewrap{position:relative;background:#06101b;min-height:230px;display:flex;align-items:center;justify-content:center;overflow:hidden}.livewrap img{max-width:100%;width:100%;display:block;object-fit:contain}.placeholder{position:absolute;color:#577b96;text-align:center;font-size:12px;pointer-events:none}#liveTag{position:absolute;top:9px;left:10px;background:#123049;padding:4px 7px;font-size:11px;color:#6bd2ff}#online{font-size:17px;color:#a9d9f9}.sub{font-size:11px;color:#94abc0;line-height:1.7}.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.tile{min-height:87px;appearance:none;text-align:left;color:white;border:1px solid rgba(255,255,255,.07);padding:13px;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;font-size:14px;font-weight:500}.tile b{font-size:22px;font-weight:300}.tile:hover{filter:brightness(1.18)}.blue{background:#175783}.cyan{background:#145a62}.purple{background:#4a3e74}.red{background:#793849}.orange{background:#765333}.slate{background:#33465a}.section{display:none;margin-top:14px}.section.active{display:block}button.action{background:#226d9e;border:none;color:white;padding:11px 14px;cursor:pointer;font-size:13px}button.secondary{background:#41596b}input[type=password],input[type=text],select{background:#0d1c2a;border:1px solid #59768b;color:white;font-size:15px;padding:10px;width:100%;margin:8px 0}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.mini{font-size:12px;color:#adcadf}.feed{max-height:220px;overflow:auto;font-size:12px;line-height:1.7}.feed div{border-bottom:1px solid #31495a;padding:7px}.footer{padding:25px;color:#7c99b0;text-align:center;font-size:11px}#toast{position:fixed;bottom:15px;right:15px;background:#2d566f;color:#fff;padding:13px;display:none;z-index:11}#cover{position:fixed;inset:0;z-index:50;background:#040e1c;display:none;justify-content:center;align-items:center;overflow:hidden}#cover.visible{display:flex}#blueCircle{position:absolute;width:50px;height:50px;border-radius:50%;background:#0581e8;box-shadow:0 0 95px #4bbfff;transform:scale(0);transition:transform 1.7s}#cover.visible #blueCircle{transform:scale(46)}#afletters{position:relative;z-index:2;color:white;font-size:clamp(70px,15vw,130px);font-weight:200;letter-spacing:.05em;text-shadow:0 0 18px #d9faff}#afletters span{display:inline-block;transform:translateY(-120vh);transition:transform .8s cubic-bezier(.2,.8,.3,1.2)}#cover.visible #afletters span{transform:translateY(0)}#welcomeText{position:absolute;z-index:2;top:68%;font-size:18px;color:#fff;opacity:0;transition:opacity .5s;transition-delay:2.7s}#cover.visible #welcomeText{opacity:1}@media(max-width:730px){.layout{grid-template-columns:1fr}.tiles{grid-template-columns:repeat(2,1fr)}.livewrap{min-height:160px}}
 </style></head><body>
-<header><div><small>SMART BASE CONTROL PANEL</small><h1>AF-4</h1></div><div><div id="clock">--:--:--</div><div style="font-size:10px;color:#819eb5;text-align:right"><a href="/logout" style="color:#91b9d9">LOGOUT</a></div></div></header>
+<header><div><small>SMART BASE CONTROL PANEL</small><h1>AF-4</h1></div><div><div id="clock">--:--:--</div><div style="font-size:10px;color:#819eb5;text-align:right"><a href="javascript:openPanel('settings')" style="color:#91b9d9">接続・設定</a></div></div></header>
 <main>
 <div class="layout">
-<div class="card"><h2>CAMERA 01 · iPod touch 5 · 準ライブ映像</h2><div class="livewrap" id="livewrap"><span id="liveTag">● WAITING</span><div class="placeholder" id="placeholder">カメラの送信を待っています<br><span style="font-size:10px">約1～2秒間隔で画像を更新します</span></div><img id="camera" alt="AF-4ライブ映像" style="display:none"></div><p class="sub">現在の画像を連続受信します。音声・動画ファイルの録画ではありません。映像はログインした人だけが閲覧できます。</p></div>
+<div class="card"><h2>CAMERA 01 · iPod touch 5 · 準ライブ映像</h2><div class="livewrap" id="livewrap"><span id="liveTag">● WAITING</span><div class="placeholder" id="placeholder">カメラの送信を待っています<br><span style="font-size:10px">約1～2秒間隔で画像を更新します</span></div><img id="camera" alt="AF-4ライブ映像" style="display:none"></div><p class="sub">現在の画像を連続受信します。音声・動画ファイルの録画ではありません。映像は接続コードを登録した端末でだけ閲覧できます。</p></div>
 <div class="card" id="security"><h2>SECURITY STATUS</h2><div id="online">カメラ接続待機</div><div class="sub" style="margin-top:12px" id="statusDetail">サーバー接続中...</div><p class="sub" id="recognition">Gemini：未確認</p><div class="row"><button class="action" onclick="askNotification()">通知を許可</button><button class="action secondary" onclick="openPanel('logs')">検知履歴</button></div><p class="sub">ブラウザ通知は、このページを開いている間の簡易通知です。</p></div>
 </div>
 <div class="legend">TOUCH CONTROL / SMART HOME</div>
@@ -17,22 +17,62 @@
 <button class="tile cyan" onclick="openPanel('hardware')"><b>✳</b>換気</button><button class="tile slate" onclick="openPanel('hardware')"><b>♫</b>スピーカー</button>
 </div>
 <div id="details" class="section active card"><h2 id="detailsTitle">メニュー</h2><div id="detailsBody" class="sub">四角いボタンを押して操作・状態確認できます。</div></div>
-<div id="settingsPanel" class="section card"><h2>GEMINI APIキーの登録</h2><p class="sub">APIキーはHTTPSでRenderに送信され、サーバーで暗号化保存されます。ブラウザのJavaScriptには保存しません。Render無料プランでは再起動時に消えるため永続ディスクなどが必要です。</p><form onsubmit="saveKey(event)"><input type="password" id="geminiKey" autocomplete="off" placeholder="Google Gemini APIキー" required><button class="action" type="submit">サーバーに暗号化保存</button></form><p id="keyStatus" class="sub"></p></div>
+<div id="settingsPanel" class="section card">
+<h2>iPodとHTMLを接続する</h2>
+<p class="sub">ログイン画面はありません。最初にこのHTMLで接続コードを登録すると、監視映像やログを表示できます。接続コードを知っている端末だけが秘密基地データにアクセスできます。</p>
+<input type="password" id="deviceToken" autocomplete="off" placeholder="AF-4 接続コード">
+<div class="row"><button class="action" onclick="saveAccess()">この端末に接続コードを保存</button><button class="action secondary" onclick="clearAccess()">接続を解除</button></div>
+<p id="accessStatus" class="sub"></p>
+<h2 style="margin-top:22px">GEMINI APIキーの登録</h2>
+<p class="sub">接続コード登録後、Gemini APIキーをHTTPSでRenderに送信して暗号化保存できます。APIキーをHTMLソースへ直接書き込みません。Renderの無料プランでは再起動時に保存内容が消える場合があります。</p>
+<form onsubmit="saveKey(event)"><input type="password" id="geminiKey" autocomplete="off" placeholder="Google Gemini APIキー" required><button class="action" type="submit">Gemini APIキーをサーバーに保存</button></form><p id="keyStatus" class="sub"></p></div>
 </main><div class="footer">AF-4 / SECURE PRIVATE PANEL · 動画配信ではなく連続JPEGの低負荷モニター</div>
 <div id="cover"><div id="blueCircle"></div><div id="afletters"><span>A</span><span>F</span><span>-</span><span>4</span></div><div id="welcomeText">マスター、お入りください</div></div><div id="toast"></div>
 <script>
-var csrf={{ csrf | tojson }};var lastEvent=null,lastData={},opened='home',animation=false;var camera=document.getElementById('camera');
+var csrf={{ csrf | tojson }};var lastEvent=null,lastData={},opened='home',animation=false;
+var accessToken=localStorage.getItem('af4_access_code')||'';
+var camera=document.getElementById('camera');
 function clock(){var d=new Date();document.getElementById('clock').textContent=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+':'+('0'+d.getSeconds()).slice(-2)}clock();setInterval(clock,1000);
 function toast(t){var e=document.getElementById('toast');e.textContent=t;e.style.display='block';setTimeout(function(){e.style.display='none'},3500)}
-function api(url,method,body){return fetch(url,{method:method||'GET',credentials:'same-origin',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:body?JSON.stringify(body):undefined}).then(function(r){if(!r.ok)throw Error('HTTP '+r.status);return r.json()})}
-function refreshCamera(){camera.src='/api/frame/latest?t='+Date.now()}camera.onload=function(){camera.style.display='block';document.getElementById('placeholder').style.display='none'};camera.onerror=function(){camera.style.display='none';document.getElementById('placeholder').style.display='block'};setInterval(refreshCamera,1500);refreshCamera();
-function refresh(){api('/api/status').then(function(s){lastData=s;document.getElementById('liveTag').textContent=s.camera_online?'● LIVE':'● WAITING';var el=document.getElementById('online');el.textContent=s.camera_online?'カメラ接続中':'カメラ接続待機';document.getElementById('statusDetail').textContent='モード：'+s.mode+' / 最新フレーム：'+(s.last_frame||'未受信')+(s.processing?' / AI解析中':'');document.getElementById('recognition').textContent='Gemini：'+(s.gemini_configured?'設定済み':'未設定');document.getElementById('security').className='card';if(s.latest_event){if(s.latest_event.type==='alarm')document.getElementById('security').className='card alert';if(s.latest_event.type==='welcome')document.getElementById('security').className='card success';if(lastEvent!==null && s.latest_event.id!==lastEvent){if(s.latest_event.type==='welcome')welcome();if(s.latest_event.type==='alarm')notify(s.latest_event.message);toast(s.latest_event.message)}lastEvent=s.latest_event.id;}if(opened==='device'||opened==='ai'||opened==='server')openPanel(opened)}).catch(function(){document.getElementById('online').textContent='サーバーに接続できません'})}refresh();setInterval(refresh,2800);
+function api(url,method,body){
+  if(!accessToken)return Promise.reject(Error('接続コードを設定してください'));
+  return fetch(url,{method:method||'GET',credentials:'same-origin',
+    headers:{'Content-Type':'application/json','X-CSRF-Token':csrf,'X-AF4-Device-Token':accessToken},
+    body:body?JSON.stringify(body):undefined
+  }).then(function(r){if(!r.ok)throw Error('HTTP '+r.status);return r.json()});
+}
+var lastCameraUrl=null;
+function refreshCamera(){
+  if(!accessToken)return;
+  fetch('/api/frame/latest?t='+Date.now(),{credentials:'same-origin',cache:'no-store',
+    headers:{'X-AF4-Device-Token':accessToken}
+  }).then(function(r){
+    if(r.status===204)return null;
+    if(!r.ok)throw Error('HTTP '+r.status);
+    return r.blob();
+  }).then(function(blob){
+    if(!blob)return;
+    var old=lastCameraUrl;
+    lastCameraUrl=URL.createObjectURL(blob);
+    camera.onload=function(){
+      camera.style.display='block';
+      document.getElementById('placeholder').style.display='none';
+      if(old)URL.revokeObjectURL(old);
+    };
+    camera.src=lastCameraUrl;
+  }).catch(function(){
+    camera.style.display='none';
+    document.getElementById('placeholder').style.display='block';
+  });
+}
+setInterval(refreshCamera,1500);refreshCamera();
+function refresh(){api('/api/status').then(function(s){lastData=s;document.getElementById('liveTag').textContent=s.camera_online?'● LIVE':'● WAITING';var el=document.getElementById('online');el.textContent=s.camera_online?'カメラ接続中':'カメラ接続待機';document.getElementById('statusDetail').textContent='モード：'+s.mode+' / 最新フレーム：'+(s.last_frame||'未受信')+(s.processing?' / AI解析中':'');document.getElementById('recognition').textContent='Gemini：'+(s.gemini_configured?'設定済み':'未設定');document.getElementById('security').className='card';if(s.latest_event){if(s.latest_event.type==='alarm')document.getElementById('security').className='card alert';if(s.latest_event.type==='welcome')document.getElementById('security').className='card success';if(lastEvent!==null && s.latest_event.id!==lastEvent){if(s.latest_event.type==='welcome')welcome();if(s.latest_event.type==='alarm')notify(s.latest_event.message);toast(s.latest_event.message)}lastEvent=s.latest_event.id;}if(opened==='device'||opened==='ai'||opened==='server')openPanel(opened)}).catch(function(){document.getElementById('online').textContent=accessToken?'接続コードを確認してください':'「接続・設定」から接続コードを登録してください'})}refresh();setInterval(refresh,2800);
 function notify(message){if('Notification' in window && Notification.permission==='granted'){new Notification('AF-4 警報',{body:message})}}
 function askNotification(){if(!('Notification' in window)){toast('このブラウザでは通知機能を利用できません');return}Notification.requestPermission(function(p){toast(p==='granted'?'通知を許可しました':'通知は許可されていません')})}
 function show(title,html){document.getElementById('detailsTitle').textContent=title;document.getElementById('detailsBody').innerHTML=html;document.getElementById('details').className='section active';document.getElementById('settingsPanel').className='section';}
 function escapeHTML(s){return String(s||'').replace(/[&<>\"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
-function openPanel(which){opened=which;var s=lastData;if(which==='settings'){show('システム設定','APIキーをRenderに保存する設定です。');document.getElementById('settingsPanel').className='section active';return}
-if(which==='live')show('ライブカメラ','上のモニターにiPod touch第5世代が送信する画像を表示します。iPodアプリの「動体監視」をONにしてください。');
+function openPanel(which){opened=which;var s=lastData;if(which==='settings'){show('接続と設定','ここで接続コードとGemini APIキーを登録できます。');document.getElementById('settingsPanel').className='section active';return}
+if(which==='live')show('ライブカメラ','上のモニターにiPod touch第5世代が送信する画像を表示します。未表示なら「接続・設定」を開いてください。iPodアプリの「動体監視」をONにしてください。');
 if(which==='ai')show('Gemini AI認識','API設定：'+(s.gemini_configured?'済み':'未設定')+'。Geminiは動きを検知した後でだけ呼び出されます。白い目印は確実な本人確認手段ではありません。');
 if(which==='device')show('iPod端末状況','カメラ：'+(s.camera_online?'オンライン':'オフライン')+'<br>最終受信：'+escapeHTML(s.last_frame||'未受信')+'<br>端末の電池情報はiPodアプリ側に表示されます。');
 if(which==='server')show('Renderサーバー診断','サーバー：接続中<br>Gemini設定：'+(s.gemini_configured?'設定済み':'未設定')+'<br>AI処理：'+(s.processing?'処理中':'待機中'));
@@ -40,6 +80,34 @@ if(which==='hardware')show('設備操作','ライト・換気・Bluetoothスピ�
 if(which==='modes'){show('基地モード','<div class="row"><button class="action" onclick="setMode(\'home\')">通常</button><button class="action" onclick="setMode(\'away\')">外出</button><button class="action" onclick="setMode(\'sleep\')">おやすみ</button></div><p>現在：'+escapeHTML(s.mode)+'</p>');}
 if(which==='logs'||which==='alerts'){api('/api/events').then(function(data){var events=data.events||[];var h='<div class="feed">';for(var i=0;i<events.length;i++){var e=events[i];if(which==='alerts' && e.type!=='alarm')continue;h+='<div><b>'+escapeHTML(e.time)+'</b> ['+escapeHTML(e.type)+']<br>'+escapeHTML(e.message)+'</div>';}h+='</div>';show(which==='alerts'?'通知センター':'検知履歴',h)})}}
 function setMode(m){api('/api/admin/mode','POST',{mode:m}).then(function(){toast('基地モードを切り替えました');refresh();openPanel('modes')}).catch(function(){toast('変更に失敗しました')})}
-function saveKey(event){event.preventDefault();var key=document.getElementById('geminiKey').value;api('/api/admin/key','POST',{api_key:key}).then(function(data){document.getElementById('geminiKey').value='';document.getElementById('keyStatus').textContent='保存成功。'+data.warning;refresh()}).catch(function(error){document.getElementById('keyStatus').textContent='保存失敗。環境変数 AF4_ENCRYPTION_KEY の設定を確認してください。'})}
+function saveAccess(){
+  var token=document.getElementById('deviceToken').value.trim();
+  if(token.length<20){toast('20文字以上の接続コードを入力してください');return;}
+  accessToken=token;
+  localStorage.setItem('af4_access_code',token);
+  document.getElementById('accessStatus').textContent='接続コードをこのブラウザに保存しました。';
+  refresh();refreshCamera();toast('接続を確認しています');
+}
+function clearAccess(){
+  localStorage.removeItem('af4_access_code');
+  accessToken='';
+  document.getElementById('deviceToken').value='';
+  document.getElementById('accessStatus').textContent='接続を解除しました。';
+  camera.style.display='none';
+  document.getElementById('placeholder').style.display='block';
+  toast('接続コードを解除しました');
+}
+document.getElementById('deviceToken').value=accessToken;
+function saveKey(event){
+  event.preventDefault();
+  var key=document.getElementById('geminiKey').value;
+  api('/api/admin/key','POST',{api_key:key}).then(function(data){
+    document.getElementById('geminiKey').value='';
+    document.getElementById('keyStatus').textContent='保存成功。'+data.warning;
+    refresh();
+  }).catch(function(error){
+    document.getElementById('keyStatus').textContent='保存できませんでした。接続コードとGemini APIキーを確認してください。';
+  });
+}
 function welcome(){if(animation)return;animation=true;var c=document.getElementById('cover');c.className='';void c.offsetWidth;c.className='visible';var spans=document.querySelectorAll('#afletters span');for(var i=0;i<spans.length;i++)spans[i].style.transitionDelay=(1+i*.3)+'s';setTimeout(function(){c.className='';animation=false},4900)}
 </script></body></html>
