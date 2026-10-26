@@ -1,5 +1,6 @@
 """AF-4 / Render Web Service. Private single-device live snapshots + Gemini marker checks."""
 import base64
+import hashlib
 import json
 import os
 import re
@@ -64,6 +65,11 @@ def push_event(kind, message):
 
 def fernet():
     key = os.environ.get('AF4_ENCRYPTION_KEY', '')
+    if not key and DEVICE_TOKEN:
+        # Derive a stable encryption key from the private server-side token.
+        key = base64.urlsafe_b64encode(
+            hashlib.sha256(b'AF4-encryption-v1:' + DEVICE_TOKEN.encode('utf-8')).digest()
+        ).decode('ascii')
     if not key:
         return None
     try:
@@ -95,17 +101,32 @@ def require_device(fn):
     return wrapped
 
 
+def panel_authorized():
+    # The HTML itself is openable without a login page, but private media,
+    # events and settings always need the user-supplied access token.
+    token = request.headers.get('X-AF4-Device-Token', '')
+    return bool(
+        session.get('panel') or
+        (DEVICE_TOKEN and secrets.compare_digest(token, DEVICE_TOKEN))
+    )
+
+
 def require_panel(fn):
     @wraps(fn)
     def wrapped(*args, **kwargs):
-        if not session.get('panel'):
-            return jsonify(error='login required'), 401
+        if not panel_authorized():
+            return jsonify(error='connection code required'), 401
         return fn(*args, **kwargs)
     return wrapped
 
 
 def check_csrf():
-    if not secrets.compare_digest(request.headers.get('X-CSRF-Token', ''), session.get('csrf', '!')):
+    token = request.headers.get('X-AF4-Device-Token', '')
+    if DEVICE_TOKEN and secrets.compare_digest(token, DEVICE_TOKEN):
+        return
+    if not (session.get('panel') and secrets.compare_digest(
+        request.headers.get('X-CSRF-Token', ''), session.get('csrf', '!')
+    )):
         abort(403)
 
 
@@ -125,32 +146,21 @@ def health():
     return jsonify(ok=True)
 
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.get('/login')
 def login():
-    error = None
-    if request.method == 'POST':
-        password = request.form.get('password', '')
-        if PANEL_PASSWORD and secrets.compare_digest(password, PANEL_PASSWORD):
-            session.clear()
-            session['panel'] = True
-            session['csrf'] = secrets.token_urlsafe(32)
-            return redirect(url_for('panel'))
-        error = 'パスワードが正しくないか、サーバーに管理者パスワードが設定されていません。'
-        time.sleep(0.25)
-    return render_template('login.html', error=error)
+    # Legacy route: no separate login page.
+    return redirect(url_for('panel'))
 
 
 @app.get('/logout')
 def logout():
     session.clear()
-    return redirect(url_for('login'))
+    return redirect(url_for('panel'))
 
 
 @app.get('/')
 def panel():
-    if not session.get('panel'):
-        return redirect(url_for('login'))
-    return render_template('panel.html', csrf=session['csrf'])
+    return render_template('panel.html', csrf=session.get('csrf', ''))
 
 
 @app.get('/api/status')
@@ -224,7 +234,7 @@ def configure_key():
     check_csrf()
     crypto = fernet()
     if crypto is None:
-        return jsonify(error='AF4_ENCRYPTION_KEY が未設定です。Renderの環境変数に登録してください。'), 400
+        return jsonify(error='サーバー接続コードが未設定です。'), 400
     key = (request.get_json(silent=True) or {}).get('api_key', '').strip()
     if not re.fullmatch(r'[A-Za-z0-9_-]{20,256}', key):
         return jsonify(error='APIキーの形式を確認してください'), 400
