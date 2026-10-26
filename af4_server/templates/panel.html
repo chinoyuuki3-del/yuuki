@@ -337,5 +337,105 @@ document.addEventListener('visibilitychange',function(){
   if(document.hidden&&webCameraStream)stopWebCamera();
 });
 window.addEventListener('beforeunload',function(){if(webCameraStream)stopWebCamera();});
+
+var pcRecorder=null,pcRecordedChunks=[],pcRecordingUrl=null;
+var pcAlarmSound=true,pcVentTimer=null,pcVentDeadline=0,pcMusicUrl=null;
+function toggleLamp(on){document.getElementById('screenLamp').className=on?'on':'';}
+function updateCameraRate(){
+  if(!webCameraStream)return;
+  if(webCameraTimer)clearInterval(webCameraTimer);
+  var rate=Number(document.getElementById('cameraRate').value)||2500;
+  webCameraTimer=setInterval(captureWebFrame,rate);
+  toast('撮影の送信間隔を変更しました');
+}
+function saveSnapshot(){
+  if(!webCameraStream||preview.readyState<2){toast('先にPCカメラをONにしてね');return;}
+  try{
+    var w=preview.videoWidth||640,h=preview.videoHeight||480,scale=Math.min(1,960/w);
+    shotCanvas.width=Math.round(w*scale);shotCanvas.height=Math.round(h*scale);
+    shotContext.drawImage(preview,0,0,shotCanvas.width,shotCanvas.height);
+    var a=document.createElement('a');a.download='AF4_'+Date.now()+'.jpg';
+    a.href=shotCanvas.toDataURL('image/jpeg',.85);document.body.appendChild(a);a.click();
+    document.body.removeChild(a);toast('写真の保存を開始しました');
+  }catch(err){toast('写真保存エラー：'+err.message);}
+}
+function startRecording(){
+  if(!webCameraStream){toast('先にPCカメラをONにしてね');return;}
+  if(!window.MediaRecorder){toast('このブラウザは録画に非対応です');return;}
+  if(pcRecorder&&pcRecorder.state==='recording'){toast('すでに録画中です');return;}
+  pcRecordedChunks=[];
+  try{
+    pcRecorder=new MediaRecorder(webCameraStream);
+    pcRecorder.ondataavailable=function(e){if(e.data&&e.data.size)pcRecordedChunks.push(e.data);};
+    pcRecorder.onstop=function(){
+      if(!pcRecordedChunks.length){document.getElementById('recordStatus').textContent='録画データがありません';return;}
+      if(pcRecordingUrl)URL.revokeObjectURL(pcRecordingUrl);
+      var mime=pcRecorder.mimeType||'video/webm';
+      var extension=mime.indexOf('mp4')>=0?'mp4':'webm';
+      pcRecordingUrl=URL.createObjectURL(new Blob(pcRecordedChunks,{type:mime}));
+      var link=document.getElementById('recordDownload');
+      link.href=pcRecordingUrl;link.download='AF4_record_'+Date.now()+'.'+extension;
+      link.style.display='inline';document.getElementById('recordStatus').textContent='✅ 録画完了。ダウンロードを押すとPCに保存できます。';
+    };
+    pcRecorder.onerror=function(){document.getElementById('recordStatus').textContent='録画エラー。ブラウザを確認してください。';};
+    pcRecorder.start(1000);
+    document.getElementById('recordDownload').style.display='none';
+    document.getElementById('recordStatus').textContent='● 録画中。停止後、PCに保存できます。';
+  }catch(err){toast('録画できません：'+err.message);}
+}
+function stopRecording(){
+  if(pcRecorder&&pcRecorder.state==='recording'){
+    try{pcRecorder.stop();}catch(e){toast('録画の停止に失敗');}
+  }
+}
+function playAlarmTone(){
+  var AudioCtx=window.AudioContext||window.webkitAudioContext;
+  if(!AudioCtx){toast('音声に非対応のブラウザです');return;}
+  try{
+    var context=new AudioCtx(),osc=context.createOscillator(),gain=context.createGain();
+    osc.type='sine';osc.frequency.value=650;gain.gain.value=.06;
+    osc.connect(gain);gain.connect(context.destination);osc.start();
+    setTimeout(function(){try{osc.stop();context.close();}catch(ignore){}},340);
+  }catch(e){toast('PCのスピーカー設定を確認してください');}
+}
+function toggleAlarmSound(){
+  pcAlarmSound=!pcAlarmSound;toast('警報音：'+(pcAlarmSound?'ON':'OFF'));
+  if(opened==='alerts'||opened==='sound')openPanel(opened);
+}
+function fireBrowserAlarm(msg){
+  notify(msg);
+  if(pcAlarmSound && lastData.mode!=='sleep')playAlarmTone();
+}
+function testAlarm(){
+  api('/api/admin/alarm-test','POST',{}).then(function(){
+    toast('警報テストを記録しました');
+    fireBrowserAlarm('AF-4 手動警報テスト');
+    refresh();
+  }).catch(function(err){toast('テスト失敗：'+err.message);});
+}
+function setVentReminder(mins){
+  if(pcVentTimer){clearTimeout(pcVentTimer);pcVentTimer=null;}
+  pcVentDeadline=0;
+  if(mins){
+    pcVentDeadline=Date.now()+mins*60000;
+    pcVentTimer=setTimeout(function(){
+      pcVentTimer=null;pcVentDeadline=0;
+      toast('AF-4：換気を確認してね');
+      notify('AF-4の換気を確認してね');
+      if(pcAlarmSound)playAlarmTone();
+    },mins*60000);
+    toast(mins+'分後の換気お知らせを設定したよ');
+  }else toast('換気リマインダーを解除');
+  if(opened==='vent')openPanel('vent');
+}
+function playLocalMusic(input){
+  var f=input.files&&input.files[0];if(!f)return;
+  if(pcMusicUrl)URL.revokeObjectURL(pcMusicUrl);
+  pcMusicUrl=URL.createObjectURL(f);
+  var player=document.getElementById('pcAudio');
+  player.src=pcMusicUrl;
+  var result=player.play();if(result&&result.catch)result.catch(function(){});
+}
+
 function welcome(){if(animation)return;animation=true;var c=document.getElementById('cover');c.className='';void c.offsetWidth;c.className='visible';var spans=document.querySelectorAll('#afletters span');for(var i=0;i<spans.length;i++)spans[i].style.transitionDelay=(1+i*.3)+'s';setTimeout(function(){c.className='';animation=false},4900)}
 </script></body></html>
