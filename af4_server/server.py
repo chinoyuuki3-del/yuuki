@@ -226,6 +226,28 @@ def panel_mode():
     return jsonify(ok=True, mode=MODE)
 
 
+@app.post('/api/admin/alarm-test')
+@require_panel
+def panel_alarm_test():
+    """Test in-browser alert subscriptions without triggering real equipment."""
+    check_csrf()
+    e = push_event('alarm_test', 'AF-4 手動警報テスト（外部機器は動作しません）')
+    return jsonify(ok=True, event=e)
+
+
+@app.get('/api/admin/diagnostics')
+@require_panel
+def panel_diagnostics():
+    with LOCK:
+        return jsonify(ok=True, server_time=utc(), camera_online=LAST_FRAME_AT is not None and
+                       time.time() - LAST_FRAME_TIME[0] < 12,
+                       last_frame=LAST_FRAME_AT, mode=MODE,
+                       gemini_configured=bool(gemini_key()),
+                       recent_event_count=len(EVENTS),
+                       processing=bool(PENDING) or ACTIVE_WORK,
+                       storage_note='Render Free uses temporary local storage; restart may erase keys and events.')
+
+
 @app.post('/api/admin/key')
 @require_panel
 def configure_key():
