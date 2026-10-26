@@ -141,16 +141,67 @@ function notify(message){if('Notification' in window && Notification.permission=
 function askNotification(){if(!('Notification' in window)){toast('このブラウザでは通知機能を利用できません');return}Notification.requestPermission(function(p){toast(p==='granted'?'通知を許可しました':'通知は許可されていません')})}
 function show(title,html){document.getElementById('detailsTitle').textContent=title;document.getElementById('detailsBody').innerHTML=html;document.getElementById('details').className='section active';document.getElementById('settingsPanel').className='section';document.getElementById('cameraSourcePanel').className='section';}
 function escapeHTML(s){return String(s||'').replace(/[&<>\"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
-function openPanel(which){opened=which;var s=lastData;
-if(which==='settings'){show('接続と設定','ここで接続コードとGemini APIキーを登録できます。');document.getElementById('settingsPanel').className='section active';return}
-if(which==='capture'){show('Webカメラ送信','この端末からAF-4の映像を送信します。iPod touch 5では写真送信をご利用ください。');document.getElementById('cameraSourcePanel').className='section active';return}
-if(which==='live')show('ライブモニター','上の画面にサーバーが受信した画像を表示します。送信する端末では「Webカメラ送信」を開いてください。iOS 9では写真送信、対応する新しいブラウザなら連続撮影ができます。');
-if(which==='ai')show('Gemini AI認識','API設定：'+(s.gemini_configured?'済み':'未設定')+'。Geminiは動きを検知した後でだけ呼び出されます。白い目印は確実な本人確認手段ではありません。<p><button class="action" onclick="testAI()">現在の画像で認識テスト</button></p><p>直近のカメラ画像を使うテストで、警報は出しません。結果は検知履歴に記録します。</p>');
-if(which==='device')show('端末・カメラ状況','カメラ：'+(s.camera_online?'オンライン':'オフライン')+'<br>最終受信：'+escapeHTML(s.last_frame||'未受信')+'<br>Web版では電池残量が取得できない端末があります。');
-if(which==='server')show('Renderサーバー診断','サーバー：接続中<br>Gemini設定：'+(s.gemini_configured?'設定済み':'未設定')+'<br>AI処理：'+(s.processing?'処理中':'待機中'));
-if(which==='hardware')show('設備操作','ライト・換気・Bluetoothスピーカーはまだ実際の機器とは接続していません。表示用ボタンです。');
-if(which==='modes'){show('基地モード','<div class="row"><button class="action" onclick="setMode(\'home\')">通常</button><button class="action" onclick="setMode(\'away\')">外出</button><button class="action" onclick="setMode(\'sleep\')">おやすみ</button></div><p>現在：'+escapeHTML(s.mode)+'</p>');}
-if(which==='logs'||which==='alerts'){show(which==='alerts'?'通知センター':'検知履歴','履歴を読み込み中…');api('/api/events').then(function(data){var events=data.events||[];var h='<div class="feed">';if(!events.length)h+='<div>まだ検知履歴はありません。</div>';for(var i=0;i<events.length;i++){var e=events[i];if(which==='alerts' && e.type!=='alarm')continue;h+='<div><b>'+escapeHTML(e.time)+'</b> ['+escapeHTML(e.type)+']<br>'+escapeHTML(e.message)+'</div>';}h+='</div>';show(which==='alerts'?'通知センター':'検知履歴',h)}).catch(function(err){show('履歴の読み込みエラー',escapeHTML(err.message))})}}
+function openPanel(which){
+ opened=which;
+ var s=lastData;
+ if(which==='settings'){
+   show('接続と設定','ここで接続コードとGemini APIキーを設定できます。');
+   document.getElementById('settingsPanel').className='section active';
+   return;
+ }
+ if(which==='capture'){
+   show('PCカメラ撮影・録画','PCのカメラを起動してライブ配信・写真・録画を使えます。ブラウザがカメラ許可を求めたら許可してください。');
+   document.getElementById('cameraSourcePanel').className='section active';
+   return;
+ }
+ if(which==='live'){
+   show('ライブモニター','<p>画面上部で最新のAF-4カメラ映像を表示中。</p><button class="action" onclick="openPanel('+"'capture'"+')">PCカメラを使う</button> <button class="action secondary" onclick="refreshCamera()">映像を更新</button>');
+ }
+ if(which==='ai'){
+   show('Gemini認識・テスト','<p>Geminiの設定：'+(s.gemini_configured?'✅ 設定済み':'⚠️ 未設定')+'</p><p>PCカメラの動体検知から自動的にAI画像判定を依頼できます。白いマーカーの判定は確実な本人確認ではありません。</p><div class="row"><button class="action" onclick="testAI()">最新映像でAI認識テスト</button><button class="action secondary" onclick="openPanel('+"'settings'"+')">Gemini APIキー設定</button><button class="action secondary" onclick="openPanel('+"'logs'"+')">認識履歴を見る</button></div><p>※動体検知がOFFなら自動判定は行いません。AIテストは警報なしです。</p>');
+ }
+ if(which==='device'){
+   var d='<p>PCブラウザ：'+escapeHTML(navigator.userAgent)+'</p><p>ネットワーク：'+(navigator.onLine?'オンライン':'オフライン')+'</p><p>映像：'+(s.camera_online?'接続中':'未受信')+'</p><p>最終受信：'+escapeHTML(s.last_frame||'未受信')+'</p><p>画面解像度：'+screen.width+' × '+screen.height+'</p>';
+   show('PC・カメラの状態',d);
+   if(navigator.getBattery){navigator.getBattery().then(function(b){if(opened==='device')show('PC・カメラの状態',d+'<p>バッテリー：'+Math.round(b.level*100)+'%'+(b.charging?' (充電中)':'')+'</p>');}).catch(function(){});}
+ }
+ if(which==='server'){
+   show('Renderサーバー診断','接続を診断中…');
+   api('/api/admin/diagnostics').then(function(d){
+     if(opened!=='server')return;
+     show('Renderサーバー診断','<p>✅ APIサーバー接続：正常</p><p>現在時刻：'+escapeHTML(d.server_time)+'</p><p>カメラ：'+(d.camera_online?'オンライン':'オフライン')+'</p><p>Gemini：'+(d.gemini_configured?'設定済み':'未設定')+'</p><p>AI処理：'+(d.processing?'処理中':'待機中')+'</p><p>履歴件数：'+d.recent_event_count+'</p><p>無料プランではサーバー再起動でGeminiキーや履歴が消える可能性があります。</p>');
+   }).catch(function(e){if(opened==='server')show('診断エラー',escapeHTML(e.message));});
+ }
+ if(which==='light'){
+   show('PC画面ライト','<p>このPCの画面を白くする簡易ライトです。実際の基地の照明を操作する機能ではありません。</p><button class="action" onclick="toggleLamp(true)">☀ 画面ライトON</button>');
+ }
+ if(which==='vent'){
+   show('換気リマインダー','<p>AF-4の換気を忘れないための通知タイマー。実物の換気ファンは操作しません。</p><div class="row"><button class="action" onclick="setVentReminder(10)">10分</button><button class="action" onclick="setVentReminder(20)">20分</button><button class="action" onclick="setVentReminder(30)">30分</button><button class="action secondary" onclick="setVentReminder(0)">解除</button></div><p>状態：'+(pcVentDeadline?'設定中（あと約'+Math.max(0,Math.round((pcVentDeadline-Date.now())/60000))+'分）':'未設定')+'</p>');
+ }
+ if(which==='sound'){
+   show('PCスピーカー・BGM','<p>PCのスピーカーから音を出せます。BluetoothスピーカーをPCに接続していればその出力先を使用できます。</p><div class="row"><button class="action" onclick="playAlarmTone()">効果音を試す</button><button class="action secondary" onclick="toggleAlarmSound()">警報音 '+(pcAlarmSound?'ON':'OFF')+'</button></div><div class="pcBox"><h3>PCにある音楽を再生する</h3><input type="file" accept="audio/*" onchange="playLocalMusic(this)"><audio id="pcAudio" controls style="width:100%;margin-top:12px"></audio><p>曲はPC内で再生します。サーバーにはアップロードしません。</p></div>');
+ }
+ if(which==='alerts'){
+   show('警報・通知センター','<p>動体検知によりGeminiがマーカーなしと判断した場合、警報を履歴に記録します。ブラウザを開いている間はPCで通知できます。</p><div class="row"><button class="action" onclick="testAlarm()">🔔 警報テスト</button><button class="action secondary" onclick="toggleAlarmSound()">警報音 '+(pcAlarmSound?'ON':'OFF')+'</button><button class="action secondary" onclick="askNotification()">PC通知を許可</button><button class="action secondary" onclick="openPanel('+"'logs'"+')">警報履歴</button></div><p>外部サイレンは未接続。ブラウザを閉じている間の通知には非対応です。</p>');
+ }
+ if(which==='modes'){
+   show('基地モード','<div class="row"><button class="action" onclick="setMode('+"'home'"+')">通常</button><button class="action" onclick="setMode('+"'away'"+')">外出</button><button class="action" onclick="setMode('+"'sleep'"+')">おやすみ</button></div><p>現在：'+escapeHTML(s.mode||'home')+'</p><p>「おやすみ」ではPCの警報音を鳴らしません。履歴は残ります。撮影は手動でOFFにするまで継続します。</p>');
+ }
+ if(which==='logs'){
+   show('検知履歴','履歴を読み込み中…');
+   api('/api/events').then(function(data){
+     if(opened!=='logs')return;
+     var ev=data.events||[],h='<div class="feed">';
+     if(!ev.length)h+='<div>まだ検知履歴はありません。</div>';
+     for(var i=0;i<ev.length;i++){
+       var e=ev[i];
+       h+='<div><b>'+escapeHTML(e.time)+'</b> ['+escapeHTML(e.type)+']<p>'+escapeHTML(e.message)+'</p></div>';
+     }
+     h+='</div>';
+     show('検知履歴',h);
+   }).catch(function(err){if(opened==='logs')show('履歴の読み込みエラー',escapeHTML(err.message));});
+ }
+}
 function setMode(m){api('/api/admin/mode','POST',{mode:m}).then(function(){toast('基地モードを切り替えました');refresh();openPanel('modes')}).catch(function(){toast('変更に失敗しました')})}
 function saveAccess(){
   var token=document.getElementById('deviceToken').value.trim();
