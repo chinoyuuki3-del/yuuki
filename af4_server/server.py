@@ -20,7 +20,7 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('AF4_SESSION_SECRET') or secrets.token_urlsafe(48)
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Strict',
                   SESSION_COOKIE_SECURE=os.environ.get('AF4_LOCAL_HTTP') != '1',
-                  MAX_CONTENT_LENGTH=750_000)
+                  MAX_CONTENT_LENGTH=2_000_000)
 DATA_DIR = Path(os.environ.get('AF4_DATA_DIR', '/tmp/af4-data'))
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 EVENTS_PATH = DATA_DIR / 'events.json'
@@ -79,16 +79,14 @@ def fernet():
 
 
 def gemini_key():
-    env = os.environ.get('GEMINI_API_KEY')
-    if env:
-        return env
+    # Explicitly saved keys must override any older environment configuration.
     crypto = fernet()
     if crypto and KEY_PATH.exists():
         try:
             return crypto.decrypt(KEY_PATH.read_bytes()).decode('utf-8')
         except (InvalidToken, OSError, UnicodeError):
-            return None
-    return None
+            app.logger.warning('Saved Gemini key cannot be decrypted')
+    return os.environ.get('GEMINI_API_KEY') or None
 
 
 def require_device(fn):
@@ -306,7 +304,7 @@ def process_image(image_bytes, job_id):
         pending['messages'].append(msg)
         attempts = pending['attempts']
         test = pending['test']
-        finished = result == 'visible' or attempts >= 2
+        finished = test or result == 'visible' or attempts >= 2
         if finished:
             if test:
                 kind = 'test'
