@@ -235,14 +235,28 @@ def configure_key():
     crypto = fernet()
     if crypto is None:
         return jsonify(error='サーバー接続コードが未設定です。'), 400
-    key = (request.get_json(silent=True) or {}).get('api_key', '').strip()
-    if not re.fullmatch(r'[A-Za-z0-9_-]{20,256}', key):
-        return jsonify(error='APIキーの形式を確認してください'), 400
-    temp = KEY_PATH.with_suffix('.tmp')
-    temp.write_bytes(crypto.encrypt(key.encode('utf-8')))
-    os.chmod(temp, 0o600)
-    temp.replace(KEY_PATH)
-    return jsonify(ok=True, warning='無料プランのローカル保存は再起動で消えます。永続保存にはPersistent Diskなどが必要です。')
+    supplied = (request.get_json(silent=True) or {}).get('api_key', '')
+    if not isinstance(supplied, str):
+        return jsonify(error='APIキーは文字列で入力してください。'), 400
+    # Copying an API key from another page sometimes adds quotes and newlines.
+    key = supplied.strip().strip('\\"\\\'').strip()
+    if key.startswith('GEMINI_API_KEY='):
+        key = key.split('=', 1)[1].strip().strip('\\"\\\'')
+    # An API key is opaque: don't assume that all keys contain only letters,
+    # underscores and hyphens. Still reject whitespace/control chars.
+    if not re.fullmatch(r'[!-~]{8,512}', key, flags=re.ASCII):
+        return jsonify(error='APIキーが短すぎるか、空白・改行が混ざっています。Google AI Studioのキー文字列だけを貼り付けてください。'), 400
+    try:
+        temp = KEY_PATH.with_suffix('.tmp')
+        temp.write_bytes(crypto.encrypt(key.encode('utf-8')))
+        os.chmod(temp, 0o600)
+        temp.replace(KEY_PATH)
+        if gemini_key() != key:
+            return jsonify(error='保存確認に失敗しました。もう一度お試しください。'), 500
+    except OSError:
+        app.logger.exception('Failed to save encrypted API key')
+        return jsonify(error='サーバーの保存領域に書き込めませんでした。'), 500
+    return jsonify(ok=True, saved=True, warning='保存しました。Render無料プランの一時ストレージは再起動や再デプロイで消える可能性があります。')
 
 
 def analyze_image(image_bytes):
@@ -307,6 +321,30 @@ def process_image(image_bytes, job_id):
         ACTIVE_WORK = False
     if finished:
         push_event(kind, label)
+
+
+@app.post('/api/admin/test')
+@require_panel
+def panel_test():
+    """Run one safe manual Gemini test against the most recent received frame."""
+    check_csrf()
+    global PENDING, ACTIVE_WORK, LAST_TRIGGER
+    if not gemini_key():
+        return jsonify(error='Gemini APIキーが未登録です。設定画面で保存してください。'), 409
+    with LOCK:
+        if LAST_FRAME is None or time.time() - LAST_FRAME_TIME[0] > 60:
+            return jsonify(error='最近のカメラ画像がありません。iPodから映像を送信してください。'), 409
+        if PENDING or ACTIVE_WORK:
+            return jsonify(error='すでにAI認識を処理しています。少し後に確認してください。'), 409
+        now = time.time()
+        PENDING = {'id': secrets.token_hex(7), 'created': now, 'attempts': 0,
+                   'results': [], 'messages': [], 'test': True}
+        LAST_TRIGGER = now
+        ACTIVE_WORK = True
+        frame = LAST_FRAME
+        job_id = PENDING['id']
+    threading.Thread(target=process_image, args=(frame, job_id), daemon=True).start()
+    return jsonify(ok=True, message='Geminiの認識テストを開始しました。')
 
 
 @app.post('/api/frame')
