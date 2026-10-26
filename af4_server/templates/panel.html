@@ -25,26 +25,53 @@
 <p id="accessStatus" class="sub"></p>
 <h2 style="margin-top:22px">GEMINI APIキーの登録</h2>
 <p class="sub">接続コード登録後、Gemini APIキーをHTTPSでRenderに送信して暗号化保存できます。APIキーをHTMLソースへ直接書き込みません。Renderの無料プランでは再起動時に保存内容が消える場合があります。</p>
-<form onsubmit="saveKey(event)"><input type="password" id="geminiKey" autocomplete="off" placeholder="Google Gemini APIキー" required><button class="action" type="submit">Gemini APIキーをサーバーに保存</button></form><p id="keyStatus" class="sub"></p></div>
+<form onsubmit="saveKey(event);return false"><input type="password" id="geminiKey" autocomplete="off" placeholder="Google AI StudioのAPIキーを貼り付け" required><button class="action" id="saveApiBtn" type="submit">Gemini APIキーを保存</button></form><p id="keyStatus" class="sub" role="status">接続コードの登録後に保存できます。APIキーの文字列だけを貼り付けてください。</p></div>
 </main><div class="footer">AF-4 / SECURE PRIVATE PANEL · 動画配信ではなく連続JPEGの低負荷モニター</div>
 <div id="cover"><div id="blueCircle"></div><div id="afletters"><span>A</span><span>F</span><span>-</span><span>4</span></div><div id="welcomeText">マスター、お入りください</div></div><div id="toast"></div>
 <script>
 var csrf={{ csrf | tojson }};var lastEvent=null,lastData={},opened='home',animation=false;
-var accessToken=localStorage.getItem('af4_access_code')||'';
+var accessToken='';
+try { accessToken=localStorage.getItem('af4_access_code')||''; } catch(ignore) { accessToken=''; }
 var camera=document.getElementById('camera');
 function clock(){var d=new Date();document.getElementById('clock').textContent=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+':'+('0'+d.getSeconds()).slice(-2)}clock();setInterval(clock,1000);
 function toast(t){var e=document.getElementById('toast');e.textContent=t;e.style.display='block';setTimeout(function(){e.style.display='none'},3500)}
+// iOS 9 Safari doesn't implement fetch(). Use XHR there, without any external scripts.
+function afFetch(url,options){
+  options=options||{};
+  if(window.fetch)return window.fetch(url,options);
+  return new Promise(function(resolve,reject){
+    var x=new XMLHttpRequest();
+    x.open(options.method||'GET',url,true);
+    var imageRequest=url.indexOf('/api/frame/latest')>=0;
+    if(imageRequest)x.responseType='blob';
+    var headers=options.headers||{};
+    for(var name in headers){if(Object.prototype.hasOwnProperty.call(headers,name))x.setRequestHeader(name,headers[name]);}
+    x.onload=function(){
+      resolve({ok:x.status>=200&&x.status<300,status:x.status,
+        json:function(){try{return Promise.resolve(JSON.parse(x.responseText));}catch(e){return Promise.reject(e);}},
+        blob:function(){return Promise.resolve(x.response);}
+      });
+    };
+    x.onerror=function(){reject(Error('ネットワークに接続できません'));};
+    x.send(options.body||null);
+  });
+}
 function api(url,method,body){
   if(!accessToken)return Promise.reject(Error('接続コードを設定してください'));
-  return fetch(url,{method:method||'GET',credentials:'same-origin',
+  return afFetch(url,{method:method||'GET',credentials:'same-origin',
     headers:{'Content-Type':'application/json','X-CSRF-Token':csrf,'X-AF4-Device-Token':accessToken},
     body:body?JSON.stringify(body):undefined
-  }).then(function(r){if(!r.ok)throw Error('HTTP '+r.status);return r.json()});
+  }).then(function(r){
+    return r.json().then(function(data){
+      if(!r.ok)throw Error(data.error||('HTTP '+r.status));
+      return data;
+    });
+  });
 }
 var lastCameraUrl=null;
 function refreshCamera(){
   if(!accessToken)return;
-  fetch('/api/frame/latest?t='+Date.now(),{credentials:'same-origin',cache:'no-store',
+  afFetch('/api/frame/latest?t='+Date.now(),{credentials:'same-origin',cache:'no-store',
     headers:{'X-AF4-Device-Token':accessToken}
   }).then(function(r){
     if(r.status===204)return null;
@@ -53,6 +80,7 @@ function refreshCamera(){
   }).then(function(blob){
     if(!blob)return;
     var old=lastCameraUrl;
+    if(!window.URL||!URL.createObjectURL)throw Error('画像プレビューに非対応のブラウザです');
     lastCameraUrl=URL.createObjectURL(blob);
     camera.onload=function(){
       camera.style.display='block';
@@ -66,30 +94,38 @@ function refreshCamera(){
   });
 }
 setInterval(refreshCamera,1500);refreshCamera();
-function refresh(){api('/api/status').then(function(s){lastData=s;document.getElementById('liveTag').textContent=s.camera_online?'● LIVE':'● WAITING';var el=document.getElementById('online');el.textContent=s.camera_online?'カメラ接続中':'カメラ接続待機';document.getElementById('statusDetail').textContent='モード：'+s.mode+' / 最新フレーム：'+(s.last_frame||'未受信')+(s.processing?' / AI解析中':'');document.getElementById('recognition').textContent='Gemini：'+(s.gemini_configured?'設定済み':'未設定');document.getElementById('security').className='card';if(s.latest_event){if(s.latest_event.type==='alarm')document.getElementById('security').className='card alert';if(s.latest_event.type==='welcome')document.getElementById('security').className='card success';if(lastEvent!==null && s.latest_event.id!==lastEvent){if(s.latest_event.type==='welcome')welcome();if(s.latest_event.type==='alarm')notify(s.latest_event.message);toast(s.latest_event.message)}lastEvent=s.latest_event.id;}if(opened==='device'||opened==='ai'||opened==='server')openPanel(opened)}).catch(function(){document.getElementById('online').textContent=accessToken?'接続コードを確認してください':'「接続・設定」から接続コードを登録してください'})}refresh();setInterval(refresh,2800);
+function refresh(){api('/api/status').then(function(s){lastData=s;document.getElementById('liveTag').textContent=s.camera_online?'● LIVE':'● WAITING';if(!s.camera_online){camera.style.display='none';document.getElementById('placeholder').style.display='block';}var el=document.getElementById('online');el.textContent=s.camera_online?'カメラ接続中':'カメラ接続待機';document.getElementById('statusDetail').textContent='モード：'+s.mode+' / 最新フレーム：'+(s.last_frame||'未受信')+(s.processing?' / AI解析中':'');document.getElementById('recognition').textContent='Gemini：'+(s.gemini_configured?'設定済み':'未設定');document.getElementById('security').className='card';if(s.latest_event){if(s.latest_event.type==='alarm')document.getElementById('security').className='card alert';if(s.latest_event.type==='welcome')document.getElementById('security').className='card success';if(lastEvent!==null && s.latest_event.id!==lastEvent){if(s.latest_event.type==='welcome')welcome();if(s.latest_event.type==='alarm')notify(s.latest_event.message);toast(s.latest_event.message)}lastEvent=s.latest_event.id;}if(opened==='device'||opened==='ai'||opened==='server')openPanel(opened)}).catch(function(err){document.getElementById('online').textContent=accessToken?'接続エラー：'+err.message:'「接続・設定」から接続コードを登録してください'})}refresh();setInterval(refresh,2800);
 function notify(message){if('Notification' in window && Notification.permission==='granted'){new Notification('AF-4 警報',{body:message})}}
 function askNotification(){if(!('Notification' in window)){toast('このブラウザでは通知機能を利用できません');return}Notification.requestPermission(function(p){toast(p==='granted'?'通知を許可しました':'通知は許可されていません')})}
 function show(title,html){document.getElementById('detailsTitle').textContent=title;document.getElementById('detailsBody').innerHTML=html;document.getElementById('details').className='section active';document.getElementById('settingsPanel').className='section';}
 function escapeHTML(s){return String(s||'').replace(/[&<>\"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function openPanel(which){opened=which;var s=lastData;if(which==='settings'){show('接続と設定','ここで接続コードとGemini APIキーを登録できます。');document.getElementById('settingsPanel').className='section active';return}
 if(which==='live')show('ライブカメラ','上のモニターにiPod touch第5世代が送信する画像を表示します。未表示なら「接続・設定」を開いてください。iPodアプリの「動体監視」をONにしてください。');
-if(which==='ai')show('Gemini AI認識','API設定：'+(s.gemini_configured?'済み':'未設定')+'。Geminiは動きを検知した後でだけ呼び出されます。白い目印は確実な本人確認手段ではありません。');
+if(which==='ai')show('Gemini AI認識','API設定：'+(s.gemini_configured?'済み':'未設定')+'。Geminiは動きを検知した後でだけ呼び出されます。白い目印は確実な本人確認手段ではありません。<p><button class="action" onclick="testAI()">現在の画像で認識テスト</button></p><p>直近のカメラ画像を使うテストで、警報は出しません。結果は検知履歴に記録します。</p>');
 if(which==='device')show('iPod端末状況','カメラ：'+(s.camera_online?'オンライン':'オフライン')+'<br>最終受信：'+escapeHTML(s.last_frame||'未受信')+'<br>端末の電池情報はiPodアプリ側に表示されます。');
 if(which==='server')show('Renderサーバー診断','サーバー：接続中<br>Gemini設定：'+(s.gemini_configured?'設定済み':'未設定')+'<br>AI処理：'+(s.processing?'処理中':'待機中'));
 if(which==='hardware')show('設備操作','ライト・換気・Bluetoothスピーカーはまだ実際の機器とは接続していません。表示用ボタンです。');
 if(which==='modes'){show('基地モード','<div class="row"><button class="action" onclick="setMode(\'home\')">通常</button><button class="action" onclick="setMode(\'away\')">外出</button><button class="action" onclick="setMode(\'sleep\')">おやすみ</button></div><p>現在：'+escapeHTML(s.mode)+'</p>');}
-if(which==='logs'||which==='alerts'){api('/api/events').then(function(data){var events=data.events||[];var h='<div class="feed">';for(var i=0;i<events.length;i++){var e=events[i];if(which==='alerts' && e.type!=='alarm')continue;h+='<div><b>'+escapeHTML(e.time)+'</b> ['+escapeHTML(e.type)+']<br>'+escapeHTML(e.message)+'</div>';}h+='</div>';show(which==='alerts'?'通知センター':'検知履歴',h)})}}
+if(which==='logs'||which==='alerts'){show(which==='alerts'?'通知センター':'検知履歴','履歴を読み込み中…');api('/api/events').then(function(data){var events=data.events||[];var h='<div class="feed">';if(!events.length)h+='<div>まだ検知履歴はありません。</div>';for(var i=0;i<events.length;i++){var e=events[i];if(which==='alerts' && e.type!=='alarm')continue;h+='<div><b>'+escapeHTML(e.time)+'</b> ['+escapeHTML(e.type)+']<br>'+escapeHTML(e.message)+'</div>';}h+='</div>';show(which==='alerts'?'通知センター':'検知履歴',h)}).catch(function(err){show('履歴の読み込みエラー',escapeHTML(err.message))})}}
 function setMode(m){api('/api/admin/mode','POST',{mode:m}).then(function(){toast('基地モードを切り替えました');refresh();openPanel('modes')}).catch(function(){toast('変更に失敗しました')})}
 function saveAccess(){
   var token=document.getElementById('deviceToken').value.trim();
-  if(token.length<20){toast('20文字以上の接続コードを入力してください');return;}
+  if(token.length<20){toast('接続コードを確認してください');return;}
+  var previous=accessToken;
   accessToken=token;
-  localStorage.setItem('af4_access_code',token);
-  document.getElementById('accessStatus').textContent='接続コードをこのブラウザに保存しました。';
-  refresh();refreshCamera();toast('接続を確認しています');
+  document.getElementById('accessStatus').textContent='サーバーに接続中…';
+  api('/api/status').then(function(){
+    try{localStorage.setItem('af4_access_code',token);}catch(e){toast('ブラウザの保存制限により一時接続になります');}
+    document.getElementById('accessStatus').textContent='✅ 接続成功！このHTMLからカメラやGeminiの設定を使えます。';
+    refresh();refreshCamera();toast('AF-4 サーバーに接続しました');
+  }).catch(function(err){
+    accessToken=previous;
+    document.getElementById('accessStatus').textContent='❌ 接続できません：'+err.message;
+    toast('接続コードまたは通信状態を確認してください');
+  });
 }
 function clearAccess(){
-  localStorage.removeItem('af4_access_code');
+  try{localStorage.removeItem('af4_access_code');}catch(ignore){}
   accessToken='';
   document.getElementById('deviceToken').value='';
   document.getElementById('accessStatus').textContent='接続を解除しました。';
@@ -99,15 +135,25 @@ function clearAccess(){
 }
 document.getElementById('deviceToken').value=accessToken;
 function saveKey(event){
-  event.preventDefault();
+  if(event&&event.preventDefault)event.preventDefault();
   var key=document.getElementById('geminiKey').value;
+  var status=document.getElementById('keyStatus');
+  var btn=document.getElementById('saveApiBtn');
+  if(!accessToken){status.textContent='まず上でAF-4接続コードを登録してください。';return false;}
+  if(!key.trim()){status.textContent='Gemini APIキーを入力してください。';return false;}
+  btn.disabled=true;status.textContent='Gemini APIキーを安全に保存しています…';
   api('/api/admin/key','POST',{api_key:key}).then(function(data){
     document.getElementById('geminiKey').value='';
-    document.getElementById('keyStatus').textContent='保存成功。'+data.warning;
+    status.textContent='✅ APIキー保存成功！ '+(data.warning||'');
     refresh();
   }).catch(function(error){
-    document.getElementById('keyStatus').textContent='保存できませんでした。接続コードとGemini APIキーを確認してください。';
-  });
+    status.textContent='❌ 保存失敗：'+error.message;
+  }).then(function(){btn.disabled=false;},function(){btn.disabled=false;});
+  return false;
+}
+function testAI(){
+  api('/api/admin/test','POST',{}).then(function(data){toast(data.message||'AI認識テストを開始しました');})
+    .catch(function(error){toast('テスト不可：'+error.message);});
 }
 function welcome(){if(animation)return;animation=true;var c=document.getElementById('cover');c.className='';void c.offsetWidth;c.className='visible';var spans=document.querySelectorAll('#afletters span');for(var i=0;i<spans.length;i++)spans[i].style.transitionDelay=(1+i*.3)+'s';setTimeout(function(){c.className='';animation=false},4900)}
 </script></body></html>
