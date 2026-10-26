@@ -136,7 +136,7 @@ function refreshCamera(){
   });
 }
 setInterval(refreshCamera,1500);refreshCamera();
-function refresh(){api('/api/status').then(function(s){lastData=s;document.getElementById('liveTag').textContent=s.camera_online?'● LIVE':'● WAITING';if(!s.camera_online){camera.style.display='none';document.getElementById('placeholder').style.display='block';}var el=document.getElementById('online');el.textContent=s.camera_online?'カメラ接続中':'カメラ接続待機';document.getElementById('statusDetail').textContent='モード：'+s.mode+' / 最新フレーム：'+(s.last_frame||'未受信')+(s.processing?' / AI解析中':'');document.getElementById('recognition').textContent='Gemini：'+(s.gemini_configured?'設定済み':'未設定');document.getElementById('security').className='card';if(s.latest_event){if(s.latest_event.type==='alarm')document.getElementById('security').className='card alert';if(s.latest_event.type==='welcome')document.getElementById('security').className='card success';if(lastEvent!==null && s.latest_event.id!==lastEvent){if(s.latest_event.type==='welcome')welcome();if(s.latest_event.type==='alarm')notify(s.latest_event.message);toast(s.latest_event.message)}lastEvent=s.latest_event.id;}if(opened==='device'||opened==='ai'||opened==='server')openPanel(opened)}).catch(function(err){document.getElementById('online').textContent=accessToken?'接続エラー：'+err.message:'「接続・設定」から接続コードを登録してください'})}refresh();setInterval(refresh,2800);
+function refresh(){api('/api/status').then(function(s){lastData=s;document.getElementById('liveTag').textContent=s.camera_online?'● LIVE':'● WAITING';if(!s.camera_online){camera.style.display='none';document.getElementById('placeholder').style.display='block';}var el=document.getElementById('online');el.textContent=s.camera_online?'カメラ接続中':'カメラ接続待機';document.getElementById('statusDetail').textContent='モード：'+s.mode+' / 最新フレーム：'+(s.last_frame||'未受信')+(s.processing?' / AI解析中':'');document.getElementById('recognition').textContent='Gemini：'+(s.gemini_configured?'設定済み':'未設定');document.getElementById('security').className='card';if(s.latest_event){if(s.latest_event.type==='alarm'||s.latest_event.type==='alarm_test')document.getElementById('security').className='card alert';if(s.latest_event.type==='welcome')document.getElementById('security').className='card success';if(lastEvent!==null && s.latest_event.id!==lastEvent){if(s.latest_event.type==='welcome')welcome();if(s.latest_event.type==='alarm'||s.latest_event.type==='alarm_test')fireBrowserAlarm(s.latest_event.message);toast(s.latest_event.message)}lastEvent=s.latest_event.id;}if(opened==='device'||opened==='ai'||opened==='server')openPanel(opened)}).catch(function(err){document.getElementById('online').textContent=accessToken?'接続エラー：'+err.message:'「接続・設定」から接続コードを登録してください'})}refresh();setInterval(refresh,2800);
 function notify(message){if('Notification' in window && Notification.permission==='granted'){new Notification('AF-4 警報',{body:message})}}
 function askNotification(){if(!('Notification' in window)){toast('このブラウザでは通知機能を利用できません');return}Notification.requestPermission(function(p){toast(p==='granted'?'通知を許可しました':'通知は許可されていません')})}
 function show(title,html){document.getElementById('detailsTitle').textContent=title;document.getElementById('detailsBody').innerHTML=html;document.getElementById('details').className='section active';document.getElementById('settingsPanel').className='section';document.getElementById('cameraSourcePanel').className='section';}
@@ -220,6 +220,7 @@ function saveAccess(){
   });
 }
 function clearAccess(){
+  stopWebCamera();
   stopWebCamera();
   try{localStorage.removeItem('af4_access_code');}catch(ignore){}
   accessToken='';
@@ -460,7 +461,6 @@ function fireBrowserAlarm(msg){
 function testAlarm(){
   api('/api/admin/alarm-test','POST',{}).then(function(){
     toast('警報テストを記録しました');
-    fireBrowserAlarm('AF-4 手動警報テスト');
     refresh();
   }).catch(function(err){toast('テスト失敗：'+err.message);});
 }
