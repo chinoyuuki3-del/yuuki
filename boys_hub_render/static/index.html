@@ -14,6 +14,7 @@
    <label for="username">ユーザー名</label><input id="username" autocomplete="username" maxlength="24" placeholder="ニックネーム" required>
    <label for="password">自分のパスワード</label><input id="password" type="password" autocomplete="current-password" minlength="8" maxlength="128" placeholder="8文字以上" required>
    <div id="inviteWrap" hidden><label for="invite" id="inviteLabel">招待コード</label><input id="invite" autocomplete="off" placeholder="招待コードを入力"></div>
+   <div id="registrationRules" class="footnote" hidden style="text-align:left;padding:12px;border:1px solid #8bb4ff;border-radius:12px;margin:14px 0"><strong>🛡️ 登録する前に必ず読んでね</strong><p>ここは男子向けの招待制コミュニティです。招待を受けた本人だけが登録してください。顔写真で性別や年齢を判定することはありません。女子や大人を含め、他人の顔写真を勝手に使って登録しないでください。</p><label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" id="rulesAccepted" style="width:auto;margin-top:4px">ルールを読み、本人として登録することを確認しました。</label></div>
    <p id="authError" class="error" aria-live="polite"></p><button class="primary wide" id="authButton" type="submit">ログイン →</button>
   </form>
   <div class="footnote">🔒 実名、学校名、住所は入力しないでね。<br>招待コードは性別・年齢の本人確認ではありません。</div>
