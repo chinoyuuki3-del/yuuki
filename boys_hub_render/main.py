@@ -177,6 +177,7 @@ class Credentials(BaseModel):
     password: str = Field(min_length=8, max_length=128)
     invite: str = ''
     owner_code: str = ''
+    rules_accepted: bool = False
 class Login(BaseModel):
     username: str
     password: str
@@ -202,6 +203,8 @@ def setup_status():
 def register(data: Credentials, request: Request, response: Response):
     limited(request, 'register', 5, 3600)
     name = data.username.strip()
+    if not data.rules_accepted:
+        raise HTTPException(400, '参加ルールを確認して同意してください')
     if not NAME.fullmatch(name): raise HTTPException(400, 'ユーザー名は2～24文字の文字・数字にしてください')
     if data.password == data.invite or data.password == data.owner_code:
         raise HTTPException(400, '個人パスワードは招待コードと違うものにしてください')
