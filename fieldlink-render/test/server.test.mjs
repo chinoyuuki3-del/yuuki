@@ -29,5 +29,15 @@ test('HTTP, shop, QR, mutual friendship, two-player match, disconnect and signed
  a.ws.close();await b.until(m=>m.type==='room'&&m.room.status==='paused');
  const recovered=await client(spent.save);clients.push(recovered);assert.equal(recovered.hello.profile.ammo.rifle,89);await recovered.until(m=>m.type==='state'&&m.room.status==='playing');
  recovered.send({type:'leave'});await b.until(m=>m.type==='left');
+ recovered.log.length=0;b.log.length=0;
+ recovered.send({type:'create',practice:false,control:'physical',location:{lat:0,lon:0,accuracy:2}});
+ const physical=(await recovered.until(m=>m.type==='room'&&m.room.control==='physical')).room;
+ b.send({type:'join',code:physical.code,location:{lat:0,lon:.00005,accuracy:2}});
+ await b.until(m=>m.type==='room'&&m.room.code===physical.code&&m.room.players.length===2);
+ recovered.send({type:'ready'});b.send({type:'ready'});
+ const positions=(await recovered.until(m=>m.type==='state'&&m.room.code===physical.code)).state.players;
+ const host=positions.find(p=>p.id===recovered.hello.profile.id),guest=positions.find(p=>p.id===b.hello.profile.id);
+ assert.equal(host.x,0);assert.equal(host.y,0);assert.ok(Math.abs(guest.x-5.566)<.01);assert.equal(guest.y,0);
+ recovered.send({type:'leave'});
  const forged=await client(spent.save+'tampered');clients.push(forged);assert.notEqual(forged.hello.profile.id,a.hello.profile.id);
 });
