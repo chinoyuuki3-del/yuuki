@@ -1,0 +1,33 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {spawn} from 'node:child_process';
+import {once} from 'node:events';
+import WebSocket from 'ws';
+const origin='http://127.0.0.1:3187';
+function client(save){return new Promise((resolve,reject)=>{const ws=new WebSocket(origin.replace('http','ws')+'/ws',{origin});const log=[];ws.on('message',raw=>log.push(JSON.parse(raw)));ws.on('open',()=>ws.send(JSON.stringify({type:'hello',name:'TEST',save})));ws.on('error',reject);const send=m=>ws.send(JSON.stringify(m));const until=(f,timeout=6000)=>new Promise((resolve,reject)=>{const start=Date.now();const timer=setInterval(()=>{const found=log.find(f);if(found){clearInterval(timer);resolve(found);}else if(Date.now()-start>timeout){clearInterval(timer);reject(Error('Timed out waiting for protocol event'));}},20);});until(m=>m.type==='profile').then(hello=>resolve({ws,log,send,until,hello}),reject);});}
+test('HTTP, shop, QR, mutual friendship, two-player match, disconnect and signed recovery',async t=>{
+ const proc=spawn(process.execPath,['server.mjs'],{cwd:new URL('..',import.meta.url),env:{...process.env,PORT:'3187',GAME_SECRET:'test-only-do-not-use-in-production'},stdio:['ignore','pipe','pipe']});
+ const clients=[];t.after(()=>{for(const c of clients)c.ws.terminate();proc.kill();});await once(proc.stdout,'data');
+ assert.equal((await fetch(origin+'/health')).status,200);
+ assert.match(await (await fetch(origin+'/')).text(),/親指/);
+ assert.equal((await fetch(origin+'/../server.mjs')).status,404);
+ const a=await client(),b=await client();clients.push(a,b);
+ assert.equal(a.hello.profile.coins,500);
+ a.send({type:'buy',item:'rifle'});const purchased=await a.until(m=>m.type==='profile'&&m.profile.owned.includes('rifle'));assert.equal(purchased.profile.coins,220);
+ a.send({type:'buy',item:'rail'});await a.until(m=>m.type==='error'&&m.message.includes('コイン'));
+ a.send({type:'friendRequest',code:b.hello.profile.id});const req=await b.until(m=>m.type==='friendRequest');assert.equal(req.from.id,a.hello.profile.id);
+ b.send({type:'friendAccept',from:a.hello.profile.id});await a.until(m=>m.type==='profile'&&m.profile.friends.length===1);await b.until(m=>m.type==='profile'&&m.profile.friends.length===1);
+ const qr=await fetch(origin+'/qr.svg?kind=friend&code='+a.hello.profile.id);assert.equal(qr.status,200);assert.match(await qr.text(),/<svg/);
+ a.send({type:'create',practice:false,control:'keyboard'});const room=(await a.until(m=>m.type==='room')).room;
+ b.send({type:'join',code:room.code});await b.until(m=>m.type==='room'&&m.room.players.length===2);
+ a.send({type:'ready'});b.send({type:'ready'});
+ const active=await a.until(m=>m.type==='state'&&m.room.status==='playing');assert.equal(active.state.players.length,2);
+ a.send({type:'action',action:'weapon',value:'rail'});a.send({type:'action',action:'jump'});
+ const raised=await a.until(m=>m.type==='state'&&m.state.players.find(p=>p.id===a.hello.profile.id)?.z===1);assert.equal(raised.state.players.find(p=>p.id===a.hello.profile.id).weapon,'pistol');
+ a.send({type:'action',action:'weapon',value:'rifle'});await a.until(m=>m.type==='state'&&m.state.players.find(p=>p.id===a.hello.profile.id)?.weapon==='rifle');
+ a.send({type:'action',action:'fire'});const spent=await a.until(m=>m.type==='profile'&&m.profile.ammo.rifle===89);assert.equal(spent.profile.coins,220);
+ a.ws.close();await b.until(m=>m.type==='room'&&m.room.status==='paused');
+ const recovered=await client(spent.save);clients.push(recovered);assert.equal(recovered.hello.profile.ammo.rifle,89);await recovered.until(m=>m.type==='state'&&m.room.status==='playing');
+ recovered.send({type:'leave'});await b.until(m=>m.type==='left');
+ const forged=await client(spent.save+'tampered');clients.push(forged);assert.notEqual(forged.hello.profile.id,a.hello.profile.id);
+});
