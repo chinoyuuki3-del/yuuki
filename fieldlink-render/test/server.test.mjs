@@ -20,8 +20,11 @@ test('HTTP, shop, QR, mutual friendship, two-player match, disconnect and signed
  a.send({type:'friendRequest',code:b.hello.profile.id});const req=await b.until(m=>m.type==='friendRequest');assert.equal(req.from.id,a.hello.profile.id);
  b.send({type:'friendAccept',from:a.hello.profile.id});await a.until(m=>m.type==='profile'&&m.profile.friends.length===1);await b.until(m=>m.type==='profile'&&m.profile.friends.length===1);
  const qr=await fetch(origin+'/qr.svg?kind=friend&code='+a.hello.profile.id);assert.equal(qr.status,200);assert.match(await qr.text(),/<svg/);
- a.send({type:'create',practice:false,control:'keyboard'});const room=(await a.until(m=>m.type==='room')).room;
- b.send({type:'join',code:room.code});await b.until(m=>m.type==='room'&&m.room.players.length===2);
+ a.send({type:'create',practice:true,control:'keyboard'});await a.until(m=>m.type==='error'&&m.message.includes('NPC'));
+ a.send({type:'create',control:'keyboard'});const room=(await a.until(m=>m.type==='room')).room;
+ assert.equal(room.practice,false);assert.equal(room.status,'waiting');
+ b.send({type:'join',code:room.code,control:'physical'});await b.until(m=>m.type==='error'&&m.message.includes('同じ操作方法'));
+ b.send({type:'join',code:room.code,control:'keyboard'});await b.until(m=>m.type==='room'&&m.room.players.length===2);
  a.send({type:'ready'});b.send({type:'ready'});
  const active=await a.until(m=>m.type==='state'&&m.room.status==='playing');assert.equal(active.state.players.length,2);
  a.send({type:'action',action:'weapon',value:'rail'});a.send({type:'action',action:'jump'});
@@ -42,4 +45,22 @@ test('HTTP, shop, QR, mutual friendship, two-player match, disconnect and signed
  assert.equal(host.x,0);assert.equal(host.y,0);assert.ok(Math.abs(guest.x-5.566)<.01);assert.equal(guest.y,0);
  recovered.send({type:'leave'});
  const forged=await client(spent.save+'tampered');clients.push(forged);assert.notEqual(forged.hello.profile.id,a.hello.profile.id);
+ // Offline recipient, sender disconnect, redelivery after reconnect, and signed recovery.
+ const c=await client(),d=await client();clients.push(c,d);const dc=d.hello.profile.id;
+ d.ws.close();await once(d.ws,'close');
+ c.send({type:'friendRequest',code:'https://fieldlink-arena-yuuki.onrender.com/?friend='+dc.toLowerCase()});
+ await c.until(m=>m.type==='friendStatus'&&m.state==='pending'&&m.message.includes('預かり'));
+ c.ws.close();await once(c.ws,'close');
+ const d2=await client(d.hello.save);clients.push(d2);await d2.until(m=>m.type==='friendRequest'&&m.from.id===c.hello.profile.id);
+ d2.ws.close();await once(d2.ws,'close');
+ const d3=await client(d.hello.save);clients.push(d3);await d3.until(m=>m.type==='friendRequest'&&m.from.id===c.hello.profile.id);
+ d3.send({type:'friendAccept',from:c.hello.profile.id});await d3.until(m=>m.type==='profile'&&m.profile.friends.length===1);
+ const c2=await client(c.hello.save);clients.push(c2);assert.equal(c2.hello.profile.friends[0].id,dc);
+ c2.send({type:'friendRequest',code:dc});await c2.until(m=>m.type==='friendStatus'&&m.state==='added');assert.equal(c2.hello.profile.friends.length,1);
+ // Both users pressing request expresses mutual consent and completes the friendship.
+ const e=await client(),f=await client();clients.push(e,f);
+ e.send({type:'friendRequest',code:f.hello.profile.id});await f.until(m=>m.type==='friendRequest');
+ f.send({type:'friendRequest',code:e.hello.profile.id});await e.until(m=>m.type==='profile'&&m.profile.friends.length===1);await f.until(m=>m.type==='profile'&&m.profile.friends.length===1);
+ e.send({type:'friendRequest',code:'12345678'});await e.until(m=>m.type==='error'&&m.context==='friendRequest'&&m.message.includes('ルーム'));
+
 });

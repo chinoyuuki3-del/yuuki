@@ -9,7 +9,6 @@ export const GOODS = {
   ammo: { price: 80, label: '弾薬パック' }, revive: { price: 160, label: '復活シールド' },
   grenade: { price: 70, label: 'ボム ×3' }, premium: { price: 110, label: '強化地雷 ×2' }
 };
-export const DIFFICULTIES = ['簡単', '普通', '難しい', '難しすぎる'];
 export const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 export const distance = (a, b) => Math.hypot(a.x-b.x, a.y-b.y, (a.z||0)-(b.z||0));
 export const direction = (yaw, pitch) => ({x:Math.sin(yaw)*Math.cos(pitch),y:Math.cos(yaw)*Math.cos(pitch),z:Math.sin(pitch)});
@@ -37,14 +36,10 @@ export function purchase(profile, key) {
   return null;
 }
 export function makePlayer(profile, opts={}) {
-  return {id:profile.id,name:profile.name,profile,x:opts.x??0,y:opts.y??-8,z:0,yaw:0,pitch:0,hp:100,score:0,weapon:'pistol',low:!!opts.low,physical:!!opts.physical,bot:!!opts.bot,alive:true,cool:0,shield:0,jumpCool:0,mineCool:0,input:{mx:0,my:0,turn:0,tilt:0,fire:false},lastInput:0,ready:false};
+  return {id:profile.id,name:profile.name,profile,x:opts.x??0,y:opts.y??-8,z:0,yaw:0,pitch:0,hp:100,score:0,weapon:'pistol',low:!!opts.low,physical:!!opts.physical,alive:true,cool:0,shield:0,jumpCool:0,mineCool:0,input:{mx:0,my:0,turn:0,tilt:0,fire:false},lastInput:0,ready:false};
 }
-export function createMatch(players, {difficulty=1, practice=true, random=Math.random}={}) {
-  const g={players:[...players],practice,difficulty:clamp(difficulty,0,3),t:0,duration:150,status:'playing',items:[],mines:[],bombs:[],effects:[],events:[],serial:0,random,result:null};
-  if(practice) {
-    const spots=[[-5,5,0],[5,8,2],[0,11,0]];
-    spots.forEach((s,i)=>{const p=makePlayer(newProfile('npc-'+i,'NPC '+String(i+1).padStart(2,'0')),{x:s[0],y:s[1],bot:true});p.z=s[2];p.think=2+i;p.profile.grenade=999;g.players.push(p);});
-  }
+export function createMatch(players, {random=Math.random}={}) {
+  const g={players:[...players],practice:false,t:0,duration:150,status:'playing',items:[],mines:[],bombs:[],effects:[],events:[],serial:0,random,result:null};
   for(let i=0;i<8;i++)g.items.push({id:++g.serial,x:(random()-.5)*22,y:(random()-.5)*22,z:0,type:['coins','ammo','health','grenade'][i%4],active:true,respawn:0});
   // One nearby item lets the first-time player discover the proximity cue immediately.
   g.items[0].x=2;g.items[0].y=-7;
@@ -56,7 +51,7 @@ export function damage(g,p,amount,attacker) {
   p.hp=Math.max(0,p.hp-amount);emit(g,p,'ダメージ −'+amount,'damage');
   if(p.hp===0) {
     if(p.profile.revive>0) {p.profile.revive--;p.hp=100;p.shield=g.t+4;emit(g,p,'復活！ 4秒間シールド','revive');}
-    else {p.alive=false;p.respawn=g.t+3; if(attacker && attacker.id!==p.id){attacker.score++;if(!attacker.bot){attacker.profile.coins+=80;attacker.profile.kills++;}emit(g,attacker,p.name+'を撃破！ +80','kill');}}
+    else {p.alive=false; if(attacker && attacker.id!==p.id){attacker.score++;attacker.profile.coins+=80;attacker.profile.kills++;emit(g,attacker,p.name+'を撃破！ +80','kill');}}
   }
   return true;
 }
@@ -68,7 +63,7 @@ export function fire(g,p) {
   p.cool=g.t+w.interval;p.shield=0;
   const origin={x:p.x,y:p.y,z:p.z+.65},dir=direction(p.yaw,p.pitch);
   let best=null,nearest=w.range;
-  for(const target of g.players){if(target===p||!target.alive||(p.bot&&target.bot))continue;const d=rayHit(origin,dir,{x:target.x,y:target.y,z:target.z+.65},w.range);if(d!==null&&d<nearest){best=target;nearest=d;}}
+  for(const target of g.players){if(target===p||!target.alive)continue;const d=rayHit(origin,dir,{x:target.x,y:target.y,z:target.z+.65},w.range);if(d!==null&&d<nearest){best=target;nearest=d;}}
   g.effects.push({id:++g.serial,type:'shot',from:origin,to:{x:origin.x+dir.x*nearest,y:origin.y+dir.y*nearest,z:origin.z+dir.z*nearest},owner:p.id,hit:!!best,until:g.t+.2});
   if(best){damage(g,best,w.damage,p);emit(g,p,'命中！','hit');}
   return true;
@@ -98,32 +93,21 @@ export function action(g,p,type,value) {
 function explode(g,m,radius,power) {
   g.effects.push({id:++g.serial,type:'blast',x:m.x,y:m.y,z:m.z,radius,until:g.t+.6});
   const owner=g.players.find(p=>p.id===m.owner);
-  for(const p of g.players)if(p.alive&&p.id!==m.owner&&!(owner?.bot&&p.bot)&&distance(p,m)<radius)damage(g,p,power,owner);
-}
-function npc(g,p,dt) {
-  const target=g.players.find(t=>!t.bot&&t.alive);if(!target)return;
-  const dx=target.x-p.x,dy=target.y-p.y,len=Math.hypot(dx,dy),d=g.difficulty;
-  const move=d===0?.32:d===1?.65:d===2?1:1.35;
-  if(len>5){p.x+=dx/len*dt*move;p.y+=dy/len*dt*move;}else if(d>0){p.x+=Math.cos(g.t+p.x)*dt*move;p.y+=Math.sin(g.t+p.y)*dt*move;}
-  p.x=clamp(p.x,-WORLD,WORLD);p.y=clamp(p.y,-WORLD,WORLD);
-  p.yaw=Math.atan2(dx,dy);p.pitch=Math.atan2(target.z-p.z,Math.max(.01,len));
-  p.think-=dt;
-  if(p.think<=0){const error=[.45,.23,.10,.035][d];p.yaw+=(g.random()-.5)*error;p.pitch+=(g.random()-.5)*error;fire(g,p);p.think=[2.5,1.6,.95,.6][d]+g.random()*.3;if(d>=2&&g.random()<.14)action(g,p,'grenade');}
+  for(const p of g.players)if(p.alive&&p.id!==m.owner&&distance(p,m)<radius)damage(g,p,power,owner);
 }
 export function tick(g,dt=.05) {
   if(g.status!=='playing')return;
   g.t+=dt;
   for(const p of g.players) {
-    if(!p.alive){if(p.bot&&g.t>p.respawn){p.alive=true;p.hp=100;p.x=(g.random()-.5)*20;p.y=8+g.random()*4;p.shield=g.t+1;}continue;}
-    if(p.bot)npc(g,p,dt);
-    else {
+    if(!p.alive)continue;
+    {
       const input=g.t-p.lastInput<.8?p.input:{mx:0,my:0,turn:0,tilt:0,fire:false};
       const len=Math.hypot(input.mx,input.my)||1;
       if(!p.physical){p.x=clamp(p.x+input.mx/Math.max(1,len)*2.6*dt,-WORLD,WORLD);p.y=clamp(p.y+input.my/Math.max(1,len)*2.6*dt,-WORLD,WORLD);}
       p.yaw+=input.turn*1.4*dt;p.pitch=clamp(p.pitch+input.tilt*1.05*dt,-1.35,1.35);
       if(input.fire)fire(g,p);
     }
-    for(const item of g.items)if(item.active&&distance(p,item)<1.1&&!p.bot){
+    for(const item of g.items)if(item.active&&distance(p,item)<1.1){
       item.active=false;item.respawn=g.t+16;
       if(item.type==='coins'){p.profile.coins+=40;emit(g,p,'コイン +40','pickup');}
       if(item.type==='ammo'){for(const k of ['rifle','rail'])if(p.profile.owned.includes(k))p.profile.ammo[k]+=(k==='rifle'?20:5);emit(g,p,'弾薬を拾った！','pickup');}
@@ -135,15 +119,15 @@ export function tick(g,dt=.05) {
   g.mines=g.mines.filter(m=>{if(g.t>m.until)return false;if(g.t>m.arm&&g.players.some(p=>p.alive&&p.id!==m.owner&&distance(p,m)<1.1)){explode(g,m,m.premium?3:2,m.premium?80:40);return false;}return true;});
   g.bombs=g.bombs.filter(m=>{if(g.t>=m.until){explode(g,m,3,55);return false;}return true;});
   g.effects=g.effects.filter(e=>e.until>g.t);
-  const humans=g.players.filter(p=>!p.bot),live=humans.filter(p=>p.alive);
-  let ended=humans.some(p=>p.score>=5)||g.t>=g.duration||live.length===0||(!g.practice&&humans.length>1&&live.length<=1);
-  if(ended){g.status='ended';let winner=null;if(g.practice)winner=humans[0].alive&&humans[0].score>=5?humans[0]:null;else{const sorted=[...live].sort((a,b)=>b.score-a.score||b.hp-a.hp);if(sorted.length===1||sorted.length>1&&(sorted[0].score!==sorted[1].score||sorted[0].hp!==sorted[1].hp))winner=sorted[0];}
+  const humans=g.players,live=humans.filter(p=>p.alive);
+  let ended=humans.some(p=>p.score>=5)||g.t>=g.duration||live.length===0||(humans.length>1&&live.length<=1);
+  if(ended){g.status='ended';let winner=null;{const sorted=[...live].sort((a,b)=>b.score-a.score||b.hp-a.hp);if(sorted.length===1||sorted.length>1&&(sorted[0].score!==sorted[1].score||sorted[0].hp!==sorted[1].hp))winner=sorted[0];}
     if(winner){winner.profile.coins+=150;winner.profile.wins++;}else for(const p of humans)p.profile.coins+=30;
-    g.result={winner:winner?.id??null,reason:g.t>=g.duration?'時間切れ':g.practice?(winner?'5体撃破！':'HPがなくなりました'):'勝負あり'};
+    g.result={winner:winner?.id??null,reason:g.t>=g.duration?'時間切れ':'勝負あり'};
   }
 }
 export function snapshot(g,selfId) {
-  return {status:g.status,t:g.t,duration:g.duration,practice:g.practice,difficulty:g.difficulty,result:g.result,
-    players:g.players.map(p=>({id:p.id,name:p.name,x:p.x,y:p.y,z:p.z,yaw:p.yaw,pitch:p.pitch,hp:p.hp,score:p.score,weapon:p.weapon,alive:p.alive,shield:Math.max(0,p.shield-g.t),bot:p.bot,low:p.low,physical:p.physical})),
+  return {status:g.status,t:g.t,duration:g.duration,practice:false,result:g.result,
+    players:g.players.map(p=>({id:p.id,name:p.name,x:p.x,y:p.y,z:p.z,yaw:p.yaw,pitch:p.pitch,hp:p.hp,score:p.score,weapon:p.weapon,alive:p.alive,shield:Math.max(0,p.shield-g.t),low:p.low,physical:p.physical})),
     items:g.items.filter(i=>i.active),mines:g.mines,bombs:g.bombs,effects:g.effects,events:g.events.filter(e=>!e.player||e.player===selfId)};
 }
