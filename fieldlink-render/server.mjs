@@ -31,11 +31,11 @@ function announce(room){for(const id of room.members)send(accounts.get(id)?.sock
 function leave(a){if(!a.room)return;const r=rooms.get(a.room);a.room=null;a.ready=false;if(!r)return;r.members.delete(a.p.id);if(r.game||r.members.size===0){for(const id of r.members){const b=accounts.get(id);b.room=null;b.ready=false;send(b.socket,{type:'left',message:'相手が退出したため対戦を終了しました'});profile(b);}rooms.delete(r.code);}else announce(r);}
 function start(room){const players=[...room.members].map((id,i)=>{const a=accounts.get(id);const position=room.control==='physical'?project(a.location||room.origin,room.origin):{x:i===0?-2:2,y:i===0?-7:7};const p=makePlayer(a.p,{...position,low:a.low,physical:room.control==='physical'});if(i===1)p.yaw=Math.PI;return p;});room.game=createMatch(players);room.starts=Date.now()+3000;announce(room);}
 function createRoom(a,m){if(m.practice===true)throw Error('NPC対戦は廃止しました。再読み込みして友達と対戦してください');if(rooms.size>=100)throw Error('ただいま満員です。少し待ってください');leave(a);let c;do{c=code().slice(0,8);}while(rooms.has(c));const control=m.control==='physical'?'physical':'keyboard';
-  if(control==='physical'&&!validLocation(m.location))throw Error('精度20m以内の位置情報を取得してください');
+  if(control==='physical'&&!validLocation(m.location))throw Error('位置情報を許可して現在地を取得してください');
   const r={code:c,members:new Set([a.p.id]),practice:false,control,origin:control==='physical'?m.location:null,game:null,starts:0,paused:false,created:Date.now()};
   rooms.set(c,r);a.room=c;a.location=control==='physical'?m.location:null;a.ready=false;a.low=!!m.low;announce(r);
 }
-const validLocation=p=>p&&Number.isFinite(p.lat)&&Math.abs(p.lat)<=90&&Number.isFinite(p.lon)&&Math.abs(p.lon)<=180&&Number.isFinite(p.accuracy)&&p.accuracy>0&&p.accuracy<=20;
+const validLocation=p=>p&&Number.isFinite(p.lat)&&Math.abs(p.lat)<=90&&Number.isFinite(p.lon)&&Math.abs(p.lon)<=180&&Number.isFinite(p.accuracy)&&p.accuracy>=0;
 function project(p,o){return {x:(p.lon-o.lon)*111320*Math.cos(o.lat*Math.PI/180),y:(p.lat-o.lat)*111320};}
 function route(a,m){const r=rooms.get(a.room),p=r?.game?.players.find(x=>x.id===a.p.id);
   switch(m.type){

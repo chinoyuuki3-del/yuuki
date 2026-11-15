@@ -77,10 +77,9 @@ function handleInvite(){const q=new URLSearchParams(location.search);if(q.has('f
 function updateStart(){
  const needsLocation=app.control==='physical'&&!app.physical;
  const needsDirection=app.control==='physical'&&!app.orientation;
- const inaccurate=app.control==='physical'&&app.physical?.accuracy>20;
  const locating=['requesting','waiting'].includes(app.locationPhase);
- $('#startButton').disabled=locating||inaccurate||(!needsLocation&&!needsDirection&&!app.connected);
- $('#startLabel').textContent=locating?'端末の許可・位置取得を待っています':needsLocation?'① 位置情報を許可する':inaccurate?'位置の精度が上がるのを待っています':needsDirection?'② 本体の向きを許可する':!app.connected?'接続を待っています':'対戦ルームを作る';
+ $('#startButton').disabled=locating||(!needsLocation&&!needsDirection&&!app.connected);
+ $('#startLabel').textContent=locating?'端末の許可・位置取得を待っています':needsLocation?'① 位置情報を許可する':needsDirection?'② 本体の向きを許可する':!app.connected?'接続を待っています':'対戦ルームを作る';
 }
 function setControl(v){app.control=v;$('#keyboardMode').classList.toggle('selected',v==='keyboard');$('#physicalMode').classList.toggle('selected',v==='physical');$('#sensorSetup').hidden=v!=='physical';$('#keyboardSetup').hidden=v!=='keyboard';updateStart();}
 $('#keyboardMode').onclick=()=>setControl('keyboard');$('#physicalMode').onclick=()=>setControl('physical');
@@ -93,7 +92,7 @@ const locationControl=locationAccess({nav:navigator,secure:window.isSecureContex
   $('#locationButton').disabled=pending;
   $('#locationButton').textContent=pending?'許可・位置取得を待っています…':s.phase==='ready'?'位置情報を取り直す':'① 位置情報を許可する';
   const messages={idle:s.permission==='granted'?'位置情報は許可済みです。ボタンを押すと取得します。':'ボタンを押して、端末の確認画面で「許可」を選んでね。',requesting:s.permission==='granted'?'許可済みです。現在地を取得しています…':'端末の確認画面で「許可」を選んでね。許可済みなら、そのまま現在地を取得します。',waiting:'許可画面が見つからない・進まない場合は、下の案内を確認してね。',denied:'位置情報がブロックされています。下の手順で許可を変更してね。',timeout:'位置の取得に時間がかかっています。端末の位置情報を確認して、もう一度押してね。',unavailable:'現在地を取得できません。端末の位置情報がオンか確認してね。',unsupported:'このブラウザーでは位置情報を使えません。SafariやChromeで開いてね。',insecure:'位置情報にはHTTPSが必要です。下のリンクから開いてね。'};
-  $('#locationStatus').textContent=s.phase==='ready'?'許可済み · 位置の精度 ±'+Math.round(s.position.accuracy)+'m'+(s.position.accuracy>20?'。対戦には20m以内が必要です。正確な位置情報をオンにして、見晴らしのよい場所で待ってね。':' · 位置の準備OK'):messages[s.phase];
+  $('#locationStatus').textContent=s.phase==='ready'?'許可済み · 位置の準備OK':messages[s.phase];
   if(['waiting','denied','timeout','unavailable','unsupported','insecure'].includes(s.phase))locationHelp.open=true;
   updateStart();
  },onPosition(p){if(app.room?.control==='physical')transmit({type:'location',location:p});}
@@ -105,7 +104,7 @@ locationControl.inspect();
 let lastRaw=null;
 function orientation(e){if(e.alpha===null||e.beta===null||e.gamma===null)return;const compass=typeof e.webkitCompassHeading==='number';if(!compass&&!e.absolute){if(!app.orientation)$('#orientationStatus').textContent='地磁気による方角を取得できません。PCキー操作テストを利用できます';return;}const alpha=compass?360-e.webkitCompassHeading:e.alpha;const a=alpha*Math.PI/180,b=e.beta*Math.PI/180,c=e.gamma*Math.PI/180;const x=-(Math.cos(a)*Math.sin(c)+Math.sin(a)*Math.sin(b)*Math.cos(c)),y=-(Math.sin(a)*Math.sin(c)-Math.cos(a)*Math.sin(b)*Math.cos(c)),z=-Math.cos(b)*Math.cos(c);lastRaw={yaw:Math.atan2(x,y),pitch:Math.asin(clamp(z,-1,1))};if(!app.calibration)app.calibration={...lastRaw};app.orientation={yaw:lastRaw.yaw,pitch:clamp(lastRaw.pitch-app.calibration.pitch,-1.35,1.35)};$('#orientationStatus').textContent='方角センサーOK · 構えの上下を調整できます';updateStart();}
 $('#orientationButton').onclick=async()=>{if(!('DeviceOrientationEvent'in window)){toast('方向センサーがありません。キー・タッチ操作を使ってね');return;}try{if(typeof DeviceOrientationEvent.requestPermission==='function'){const r=await DeviceOrientationEvent.requestPermission();if(r!=='granted')throw Error('方向センサーが許可されませんでした');}if(lastRaw){app.calibration={...lastRaw};toast('構えの上下を調整しました。左右の向きは方角センサーを使います');}window.removeEventListener('deviceorientation',orientation);window.addEventListener('deviceorientation',orientation);window.removeEventListener('deviceorientationabsolute',orientation);window.addEventListener('deviceorientationabsolute',orientation);$('#orientationStatus').textContent='本体を構えてください。センサーを待っています…';setTimeout(()=>{if(!app.orientation)$('#orientationStatus').textContent='センサーの値を受け取れません。PCキー操作テストを選んでね';},4000);}catch(e){toast(e.message);}};
-function begin(){if(app.control==='physical'){if(!app.physical){locationControl.request();return;}if(!app.orientation){$('#orientationButton').click();return;}if(app.physical.accuracy>20){toast('位置の精度が20m以内になるまで待ってね');return;}}unlockAudio();app.eventId=0;lastEffect=0;app.shownResult=false;app.state=null;transmit({type:'create',control:app.control,low:app.low,location:app.physical});}
+function begin(){if(app.control==='physical'){if(!app.physical){locationControl.request();return;}if(!app.orientation){$('#orientationButton').click();return;}}unlockAudio();app.eventId=0;lastEffect=0;app.shownResult=false;app.state=null;transmit({type:'create',control:app.control,low:app.low,location:app.physical});}
 $('#startButton').onclick=begin;$('#joinRoom').onclick=()=>{unlockAudio();app.shownResult=false;app.eventId=0;transmit({type:'join',code:$('#roomCode').value,control:app.control,location:app.physical,low:app.low});};
 $('#readyButton').onclick=()=>transmit({type:'ready'});$('#cancelRoom').onclick=()=>transmit({type:'leave'});$('#leaveButton').onclick=()=>transmit({type:'leave'});
 function roomUpdate(r){const old=app.room;app.room=r;$$('#touchControls button').forEach(b=>b.disabled=r.status!=='playing');if(r.status==='waiting'){if(!$('#roomDialog').open)$('#roomDialog').showModal();$('#roomDisplay').textContent=r.code;if($('#roomQR').dataset.code!==r.code){$('#roomQR').src='/qr.svg?code='+r.code;$('#roomQR').dataset.code=r.code;}$('#roomPlayers').replaceChildren();for(const p of r.players){const row=document.createElement('div'),name=document.createElement('b'),status=document.createElement('span');name.textContent=p.name;status.textContent=p.ready?'準備OK':'準備中';row.append(name,status);$('#roomPlayers').append(row);}const self=r.players.find(p=>p.id===app.profile.id);$('#readyButton').textContent=self?.ready?'準備OKを取り消す':'準備OK！';return;}
