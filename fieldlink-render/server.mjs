@@ -1,3 +1,4 @@
+import {roomCode,roomCodeError} from './public/rooms.mjs';
 import {friendCode,friendCodeError} from './public/friends.mjs';
 import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
@@ -5,7 +6,7 @@ import {fileURLToPath} from 'node:url';
 import {createHmac,randomBytes,timingSafeEqual} from 'node:crypto';
 import {WebSocketServer,WebSocket} from 'ws';
 import QRCode from 'qrcode';
-import {newProfile,purchase,makePlayer,createMatch,tick,action,snapshot,clamp,WORLD} from './public/engine.mjs';
+import {newProfile,normalizeProfile,purchase,makePlayer,createMatch,tick,action,snapshot,clamp,WORLD} from './public/engine.mjs';
 
 const root=fileURLToPath(new URL('./public/',import.meta.url));
 const secret=process.env.GAME_SECRET||randomBytes(32).toString('hex');
@@ -41,8 +42,9 @@ function route(a,m){const r=rooms.get(a.room),p=r?.game?.players.find(x=>x.id===
   switch(m.type){
   case 'name':a.p.name=cleanName(m.name);profile(a);break;
   case 'buy':if(r?.game&&r.game.status!=='ended')throw Error('ショップは対戦の前後に使えます');{const e=purchase(a.p,m.item);if(e)throw Error(e);profile(a);send(a.socket,{type:'notice',message:'購入しました！'});}break;
-  case 'create':createRoom(a,m);break;
-  case 'join':{const room=rooms.get(String(m.code||'').toUpperCase());if(!room)throw Error('ルームが見つかりません');if(m.control&&m.control!==room.control)throw Error('相手と同じ操作方法にしてください。本体操作とPCキー操作テストは別のルームです');if(room.game||room.members.size>=2)throw Error('このルームは対戦中か満員です');if(room.control==='physical'){if(!validLocation(m.location))throw Error('位置情報を取得してから参加してください');const xy=project(m.location,room.origin);if(Math.hypot(xy.x,xy.y)>35)throw Error('相手から離れています。35m以内で参加してください');}leave(a);room.members.add(a.p.id);a.room=room.code;a.location=room.control==='physical'?m.location:null;a.ready=false;a.low=!!m.low;announce(room);break;}
+  case 'create':if(String(m.code||'').trim()){route(a,{...m,type:'join'});break;}createRoom(a,m);break;
+  case 'roomLookup':{const code=roomCode(m.code);if(!code)throw Error(roomCodeError(m.code));const room=rooms.get(code);if(!room)throw Error('ルームが見つかりません。相手が待機画面を開いているか、コードが新しいか確認してね');if((room.game||room.members.size>=2)&&!room.members.has(a.p.id))throw Error('このルームは対戦中か満員です');send(a.socket,{type:'roomPreview',room:{code:room.code,control:room.control,hostName:accounts.get([...room.members][0])?.p.name||'友達'}});break;}
+  case 'join':{const code=roomCode(m.code);if(!code)throw Error(roomCodeError(m.code));const room=rooms.get(code);if(!room)throw Error('ルームが見つかりません。相手が待機画面を開いているか確認してね');if(room.members.has(a.p.id)){send(a.socket,{type:'room',room:roomInfo(room)});break;}if(m.control&&m.control!==room.control)throw Error('相手と同じ操作方法にしてください。本体操作とPCキー操作テストは別のルームです');if(room.game||room.members.size>=2)throw Error('このルームは対戦中か満員です');if(room.control==='physical'){if(!validLocation(m.location))throw Error('位置情報を取得してから参加してください');const xy=project(m.location,room.origin);if(Math.hypot(xy.x,xy.y)-m.location.accuracy-room.origin.accuracy>35)throw Error('相手から離れています。35m以内で参加してください');}leave(a);room.members.add(a.p.id);a.room=room.code;a.location=room.control==='physical'?m.location:null;a.ready=false;a.low=!!m.low;announce(room);break;}
   case 'ready':if(!r||r.game)return;a.ready=!a.ready;announce(r);if(r.members.size===2&&[...r.members].every(id=>accounts.get(id)?.ready))start(r);break;
   case 'leave':leave(a);send(a.socket,{type:'left'});profile(a);break;
   case 'input':if(!p||r.paused||Date.now()<r.starts)return;p.lastInput=r.game.t;p.input={mx:clamp(Number(m.mx)||0,-1,1),my:clamp(Number(m.my)||0,-1,1),turn:clamp(Number(m.turn)||0,-1,1),tilt:clamp(Number(m.tilt)||0,-1,1),fire:!!m.fire};
@@ -77,14 +79,14 @@ const http=createServer(async(req,res)=>{try{
   if(url.pathname==='/health'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({ok:true,version:'0.1.0',rooms:rooms.size}));return;}
   if(url.pathname==='/qr.svg'){const c=(url.searchParams.get('code')||'').toUpperCase();if(!/^[A-F0-9]{8,10}$/.test(c)){res.writeHead(400);res.end('Invalid code');return;}const key=url.searchParams.get('kind')==='friend'?'friend':'room';const protocol=req.headers['x-forwarded-proto']==='https'?'https':process.env.RENDER?'https':'http';const origin=process.env.PUBLIC_ORIGIN||protocol+'://'+req.headers.host;const svg=await QRCode.toString(origin+'/?'+key+'='+c,{type:'svg',margin:2,width:240,color:{dark:'#16252b',light:'#ffffff'}});res.setHeader('Content-Type','image/svg+xml');res.setHeader('Cache-Control','no-store');res.end(svg);return;}
   const path=url.pathname==='/'?'index.html':url.pathname.slice(1);
-  if(!['index.html','app.mjs','location.mjs','controls.mjs','friends.mjs','engine.mjs','style.css','icon.svg','manifest.webmanifest'].includes(path)){res.writeHead(404);res.end('Not found');return;}
+  if(!['index.html','app.mjs','location.mjs','controls.mjs','friends.mjs','rooms.mjs','engine.mjs','style.css','icon.svg','manifest.webmanifest'].includes(path)){res.writeHead(404);res.end('Not found');return;}
   const data=await readFile(root+path);res.setHeader('Content-Type',contentTypes['.'+path.split('.').pop()]||'text/plain');res.setHeader('Cache-Control','no-cache');res.end(data);
 }catch{res.writeHead(500);res.end('Server error');}});
 const wss=new WebSocketServer({noServer:true,maxPayload:24000,perMessageDeflate:false});
 http.on('upgrade',(req,socket,head)=>{let origin;try{origin=new URL(req.headers.origin);}catch{socket.destroy();return;}if(req.url!=='/ws'||origin.host!==req.headers.host){socket.destroy();return;}if(wss.clients.size>=250){socket.destroy();return;}wss.handleUpgrade(req,socket,head,ws=>wss.emit('connection',ws,req));});
 wss.on('connection',ws=>{let account=null,count=0,windowStart=Date.now();ws.alive=true;const authTimeout=setTimeout(()=>{if(!account)ws.close(4001,'Handshake required');},10000);ws.on('pong',()=>ws.alive=true);
   ws.on('message',raw=>{let context;try{if(Date.now()-windowStart>1000){count=0;windowStart=Date.now();}if(++count>65){ws.close(4008,'Too many messages');return;}const m=JSON.parse(raw.toString());context=m?.type;if(!m||typeof m.type!=='string')return;
-    if(!account){if(m.type!=='hello')return;const recovered=verify(m.save);let reset=!!m.save&&!recovered;const saved=recovered||newProfile(code(),cleanName(m.name));account=accounts.get(saved.id);if(!account){if(accounts.size>=2000)throw Error('ただいま満員です');account={p:saved,socket:null,room:null,ready:false,low:false,last:Date.now()};accounts.set(saved.id,account);}if(account.socket&&account.socket!==ws)account.socket.close(4002,'別の画面でログインしました');account.socket=ws;clearTimeout(authTimeout);profile(account);send(ws,{type:'session',room:account.room});deliverRequests(account);if(reset)send(ws,{type:'notice',message:'保存情報を復元できなかったため、新しくスタートしました'});if(account.room){const r=rooms.get(account.room);if(r)announce(r);}return;}
+    if(!account){if(m.type!=='hello')return;const recovered=verify(m.save);let reset=!!m.save&&!recovered;const saved=normalizeProfile(recovered||newProfile(code(),cleanName(m.name)));account=accounts.get(saved.id);if(!account){if(accounts.size>=2000)throw Error('ただいま満員です');account={p:saved,socket:null,room:null,ready:false,low:false,last:Date.now()};accounts.set(saved.id,account);}if(account.socket&&account.socket!==ws)account.socket.close(4002,'別の画面でログインしました');account.socket=ws;clearTimeout(authTimeout);profile(account);send(ws,{type:'session',room:account.room});deliverRequests(account);if(reset)send(ws,{type:'notice',message:'保存情報を復元できなかったため、新しくスタートしました'});if(account.room){const r=rooms.get(account.room);if(r)announce(r);}return;}
     account.last=Date.now();route(account,m);
   }catch(e){error(ws,e.message==='Unexpected end of JSON input'?'通信を確認してください':String(e.message||'操作できませんでした').slice(0,200),context);}});
   ws.on('close',()=>{clearTimeout(authTimeout);if(account?.socket===ws){account.socket=null;account.last=Date.now();const r=rooms.get(account.room);if(r){r.paused=true;r.disconnected=Date.now();announce(r);}}});ws.on('error',()=>{});

@@ -1,14 +1,36 @@
 export const WORLD = 14;
 export const WEAPONS = {
-  pistol: { name: 'ピストル', tag: 'STANDARD', damage: 25, interval: .45, range: 32, price: 0, ammo: Infinity },
-  rifle: { name: 'ラピッドライフル', tag: 'RAPID', damage: 16, interval: .14, range: 32, price: 280, ammo: 90 },
-  rail: { name: 'パルスライフル', tag: 'POWER', damage: 60, interval: 1.05, range: 40, price: 550, ammo: 18 }
+ pistol:{name:'ピストル',tag:'STANDARD',damage:25,interval:.45,range:32,price:0,ammo:Infinity},
+ rifle:{name:'ラピッドライフル',tag:'RAPID',damage:16,interval:.14,range:32,price:280,ammo:90,refill:60,pickup:20},
+ rail:{name:'パルスライフル',tag:'POWER',damage:60,interval:1.05,range:40,price:550,ammo:18,refill:12,pickup:5},
+ spark:{name:'スパークSMG',tag:'SPEED',damage:11,interval:.12,range:20,price:190,ammo:120,refill:90,pickup:30,art:'rifle'},
+ scatter:{name:'ワイドブラスター',tag:'WIDE',damage:42,interval:.8,range:14,price:420,ammo:24,refill:18,pickup:6,radius:1.15,art:'rifle'},
+ ranger:{name:'ロングレンジャー',tag:'LONG RANGE',damage:85,interval:1.6,range:55,price:850,ammo:10,refill:8,pickup:3,art:'rail'}
 };
 export const GOODS = {
-  rifle: { price: 280, label: 'ラピッドライフル' }, rail: { price: 550, label: 'パルスライフル' },
-  ammo: { price: 80, label: '弾薬パック' }, revive: { price: 160, label: '復活シールド' },
-  grenade: { price: 70, label: 'ボム ×3' }, premium: { price: 110, label: '強化地雷 ×2' }
+ rifle:{price:280,label:'ラピッドライフル',category:'weapons',description:'素早い連射。弾薬90発付き。'},
+ rail:{price:550,label:'パルスライフル',category:'weapons',description:'狙いを定めて大きな一撃。弾薬18発付き。'},
+ spark:{price:190,label:'スパークSMG',category:'weapons',description:'買いやすい近距離連射タイプ。弾薬120発付き。'},
+ scatter:{price:420,label:'ワイドブラスター',category:'weapons',description:'近距離で狙いの幅が広い一撃。複数人への同時命中はなし。弾薬24発付き。'},
+ ranger:{price:850,label:'ロングレンジャー',category:'weapons',description:'遠くに届く高威力タイプ。連射はゆっくり。弾薬10発付き。'},
+ ammo:{price:80,label:'弾薬パック',category:'support',description:'持っている購入銃すべてに弾薬を補充。銃ごとに補充数が違います。',ammoMultiplier:1},
+ revive:{price:160,label:'復活シールド',category:'support',description:'倒されたときに自動復活。4秒間シールド。1回分。',item:'revive',quantity:1},
+ medkit:{price:100,label:'回復キット',category:'support',description:'対戦中にボタンでHPを40回復。最大100。HP満タンなら消費しません。',item:'medkit',quantity:1},
+ shield:{price:140,label:'ポケットシールド',category:'support',description:'ボタンで5秒間ダメージを防ぐ。発射すると解除。1回分。',item:'shield',quantity:1},
+ grenade:{price:70,label:'ボム ×3',category:'explosives',description:'狙った方向へ投げる範囲攻撃。3個入り。省エネ中は使用不可。',item:'grenade',quantity:3},
+ premium:{price:110,label:'強化地雷 ×2',category:'explosives',description:'広い範囲に80ダメージ。2個入り。省エネ中は使用不可。',item:'premium',quantity:2},
+ ammoLarge:{price:200,label:'大容量弾薬パック',category:'packs',description:'通常の弾薬パック3個分をまとめて補充。40コインお得。',ammoMultiplier:3},
+ revivePack:{price:420,label:'復活セット ×3',category:'packs',description:'復活シールド3回分。単品3個より60コインお得。',item:'revive',quantity:3},
+ grenadePack:{price:200,label:'ボムセット ×10',category:'packs',description:'ボム10個を補充。省エネ中は使用できません。',item:'grenade',quantity:10},
+ premiumPack:{price:400,label:'強化地雷セット ×8',category:'packs',description:'強化地雷8個を補充。通常4セットより40コインお得。',item:'premium',quantity:8}
 };
+export function normalizeProfile(p){
+ p.owned=Array.isArray(p.owned)?[...new Set(p.owned.filter(k=>Object.hasOwn(WEAPONS,k)))]:['pistol'];if(!p.owned.includes('pistol'))p.owned.unshift('pistol');
+ p.ammo=p.ammo&&typeof p.ammo==='object'?p.ammo:{};
+ for(const k of Object.keys(WEAPONS))if(k!=='pistol'&&(!Number.isFinite(p.ammo[k])||p.ammo[k]<0))p.ammo[k]=0;
+ for(const k of ['revive','grenade','premium','medkit','shield'])if(!Number.isFinite(p[k])||p[k]<0)p[k]=0;
+ return p;
+}
 export const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 export const distance = (a, b) => Math.hypot(a.x-b.x, a.y-b.y, (a.z||0)-(b.z||0));
 export const direction = (yaw, pitch) => ({x:Math.sin(yaw)*Math.cos(pitch),y:Math.cos(yaw)*Math.cos(pitch),z:Math.sin(pitch)});
@@ -21,21 +43,21 @@ export function rayHit(origin, dir, target, range=32, radius=.65) {
   return hit<=range ? hit : null;
 }
 export function newProfile(id, name='プレイヤー') {
-  return {id,name,coins:500,owned:['pistol'],ammo:{rifle:0,rail:0},revive:0,grenade:3,premium:0,wins:0,kills:0,friends:[],created:Date.now()};
+  return normalizeProfile({id,name,coins:500,owned:['pistol'],ammo:{rifle:0,rail:0},revive:0,grenade:3,premium:0,wins:0,kills:0,friends:[],created:Date.now()});
 }
-export function purchase(profile, key) {
-  const g=GOODS[key];
-  if(!g) return 'この商品はありません';
-  if(profile.coins<g.price) return 'コインが足りません';
-  if(WEAPONS[key] && profile.owned.includes(key)) return 'この武器は持っています';
-  if(key==='ammo' && profile.owned.length===1) return '先に銃を購入してください';
-  profile.coins-=g.price;
-  if(WEAPONS[key]) { profile.owned.push(key); profile.ammo[key]+=WEAPONS[key].ammo; }
-  else if(key==='ammo') { if(profile.owned.includes('rifle')) profile.ammo.rifle+=60; if(profile.owned.includes('rail')) profile.ammo.rail+=12; }
-  else profile[key]+=(key==='grenade'?3:key==='premium'?2:1);
-  return null;
+export function purchase(profile,key){
+ const g=Object.hasOwn(GOODS,key)?GOODS[key]:null;if(!g)return 'この商品はありません';normalizeProfile(profile);
+ if(WEAPONS[key]&&profile.owned.includes(key))return 'この武器は持っています';
+ if(profile.coins<g.price)return 'コインが足りません';
+ if(g.ammoMultiplier&&profile.owned.length===1)return '先に銃を購入してください';
+ profile.coins-=g.price;
+ if(WEAPONS[key]){profile.owned.push(key);profile.ammo[key]+=WEAPONS[key].ammo;}
+ else if(g.ammoMultiplier){for(const k of profile.owned)if(k!=='pistol')profile.ammo[k]+=WEAPONS[k].refill*g.ammoMultiplier;}
+ else profile[g.item]+=g.quantity;
+ return null;
 }
 export function makePlayer(profile, opts={}) {
+  normalizeProfile(profile);
   return {id:profile.id,name:profile.name,profile,x:opts.x??0,y:opts.y??-8,z:0,yaw:0,pitch:0,hp:100,score:0,weapon:'pistol',low:!!opts.low,physical:!!opts.physical,alive:true,cool:0,shield:0,jumpCool:0,mineCool:0,input:{mx:0,my:0,turn:0,tilt:0,fire:false},lastInput:0,ready:false};
 }
 export function createMatch(players, {random=Math.random}={}) {
@@ -63,7 +85,7 @@ export function fire(g,p) {
   p.cool=g.t+w.interval;p.shield=0;
   const origin={x:p.x,y:p.y,z:p.z+.65},dir=direction(p.yaw,p.pitch);
   let best=null,nearest=w.range;
-  for(const target of g.players){if(target===p||!target.alive)continue;const d=rayHit(origin,dir,{x:target.x,y:target.y,z:target.z+.65},w.range);if(d!==null&&d<nearest){best=target;nearest=d;}}
+  for(const target of g.players){if(target===p||!target.alive)continue;const d=rayHit(origin,dir,{x:target.x,y:target.y,z:target.z+.65},w.range,w.radius??.65);if(d!==null&&d<nearest){best=target;nearest=d;}}
   g.effects.push({id:++g.serial,type:'shot',from:origin,to:{x:origin.x+dir.x*nearest,y:origin.y+dir.y*nearest,z:origin.z+dir.z*nearest},owner:p.id,hit:!!best,until:g.t+.2});
   if(best){damage(g,best,w.damage,p);emit(g,p,'命中！','hit');}
   return true;
@@ -72,6 +94,8 @@ export function action(g,p,type,value) {
   if(g.status!=='playing'||!p.alive)return;
   if(type==='fire')fire(g,p);
   if(type==='weapon'&&p.profile.owned.includes(value))p.weapon=value;
+  if(type==='medkit'){if(p.profile.medkit<=0){emit(g,p,'回復キットがありません','item');return;}if(p.hp>=100){emit(g,p,'HPは満タンです','item');return;}p.profile.medkit--;p.hp=Math.min(100,p.hp+40);emit(g,p,'回復キットを使用。HP '+p.hp,'item');}
+  if(type==='shield'){if(p.profile.shield<=0){emit(g,p,'ポケットシールドがありません','item');return;}if(p.shield>g.t){emit(g,p,'シールドはすでに有効です','item');return;}p.profile.shield--;p.shield=g.t+5;emit(g,p,'シールド。5秒間防御','item');}
   if(type==='jump'&&!p.low&&g.t>=p.jumpCool){p.z=Math.min(4,p.z+1);p.jumpCool=g.t+.45;emit(g,p,'高さ '+p.z);}
   if(type==='down'&&g.t>=p.jumpCool){p.z=Math.max(0,p.z-1);p.jumpCool=g.t+.3;}
   if(type==='mine'||type==='premium') {
@@ -110,7 +134,7 @@ export function tick(g,dt=.05) {
     for(const item of g.items)if(item.active&&distance(p,item)<1.1){
       item.active=false;item.respawn=g.t+16;
       if(item.type==='coins'){p.profile.coins+=40;emit(g,p,'コイン +40','pickup');}
-      if(item.type==='ammo'){for(const k of ['rifle','rail'])if(p.profile.owned.includes(k))p.profile.ammo[k]+=(k==='rifle'?20:5);emit(g,p,'弾薬を拾った！','pickup');}
+      if(item.type==='ammo'){for(const k of p.profile.owned)if(k!=='pistol')p.profile.ammo[k]+=WEAPONS[k].pickup;emit(g,p,'弾薬を拾った！','pickup');}
       if(item.type==='health'){p.hp=Math.min(100,p.hp+35);emit(g,p,'HP +35','pickup');}
       if(item.type==='grenade'){p.profile.grenade++;emit(g,p,'ボム +1','pickup');}
     }

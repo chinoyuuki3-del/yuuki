@@ -14,7 +14,8 @@ test('HTTP, shop, QR, mutual friendship, two-player match, disconnect and signed
  assert.match(await (await fetch(origin+'/')).text(),/親指/);
  assert.equal((await fetch(origin+'/../server.mjs')).status,404);
  const a=await client(),b=await client();clients.push(a,b);
- assert.equal(a.hello.profile.coins,500);
+ assert.equal(a.hello.profile.coins,500);assert.equal(a.hello.profile.medkit,0);assert.equal(a.hello.profile.ammo.spark,0);
+ b.send({type:'buy',item:'medkit'});await b.until(m=>m.type==='profile'&&m.profile.medkit===1);b.send({type:'buy',item:'shield'});await b.until(m=>m.type==='profile'&&m.profile.shield===1);b.send({type:'buy',item:'spark'});await b.until(m=>m.type==='profile'&&m.profile.ammo.spark===120);
  a.send({type:'buy',item:'rifle'});const purchased=await a.until(m=>m.type==='profile'&&m.profile.owned.includes('rifle'));assert.equal(purchased.profile.coins,220);
  a.send({type:'buy',item:'rail'});await a.until(m=>m.type==='error'&&m.message.includes('コイン'));
  a.send({type:'friendRequest',code:b.hello.profile.id});const req=await b.until(m=>m.type==='friendRequest');assert.equal(req.from.id,a.hello.profile.id);
@@ -24,9 +25,13 @@ test('HTTP, shop, QR, mutual friendship, two-player match, disconnect and signed
  a.send({type:'create',control:'keyboard'});const room=(await a.until(m=>m.type==='room')).room;
  assert.equal(room.practice,false);assert.equal(room.status,'waiting');
  b.send({type:'join',code:room.code,control:'physical'});await b.until(m=>m.type==='error'&&m.message.includes('同じ操作方法'));
- b.send({type:'join',code:room.code,control:'keyboard'});await b.until(m=>m.type==='room'&&m.room.players.length===2);
+ b.send({type:'roomLookup',code:origin+'/?room='+room.code.toLowerCase()});const preview=await b.until(m=>m.type==='roomPreview');assert.equal(preview.room.control,'keyboard');assert.equal(preview.room.code,room.code);
+ b.send({type:'create',code:origin+'/?room='+room.code,control:'keyboard'});const joined=await b.until(m=>m.type==='room'&&m.room.players.length===2);assert.equal(joined.room.code,room.code);
+ b.log.length=0;b.send({type:'join',code:room.code,control:'keyboard'});const duplicateJoin=await b.until(m=>m.type==='room');assert.equal(duplicateJoin.room.code,room.code);assert.equal(duplicateJoin.room.players.length,2);
  a.send({type:'ready'});b.send({type:'ready'});
  const active=await a.until(m=>m.type==='state'&&m.room.status==='playing');assert.equal(active.state.players.length,2);
+ b.send({type:'action',action:'shield'});await b.until(m=>m.type==='state'&&m.state.players.some(p=>p.id===b.hello.profile.id&&p.shield>0));
+ b.send({type:'action',action:'weapon',value:'spark'});await b.until(m=>m.type==='actionApplied'&&m.weapon==='spark');b.send({type:'action',action:'fire'});await b.until(m=>m.type==='profile'&&m.profile.ammo.spark===119&&m.profile.shield===0);
  a.send({type:'action',action:'weapon',value:'rail'});a.send({type:'action',action:'jump'});
  const raised=await a.until(m=>m.type==='state'&&m.state.players.find(p=>p.id===a.hello.profile.id)?.z===1);assert.equal(raised.state.players.find(p=>p.id===a.hello.profile.id).weapon,'pistol');
  a.send({type:'action',action:'weapon',value:'rifle'});await a.until(m=>m.type==='state'&&m.state.players.find(p=>p.id===a.hello.profile.id)?.weapon==='rifle');
