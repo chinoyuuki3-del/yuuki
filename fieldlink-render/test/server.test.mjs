@@ -9,6 +9,8 @@ test('HTTP, shop, QR, mutual friendship, two-player match, disconnect and signed
  const proc=spawn(process.execPath,['server.mjs'],{cwd:new URL('..',import.meta.url),env:{...process.env,PORT:'3187',GAME_SECRET:'test-only-do-not-use-in-production'},stdio:['ignore','pipe','pipe']});
  const clients=[];t.after(()=>{for(const c of clients)c.ws.terminate();proc.kill();});await once(proc.stdout,'data');
  assert.equal((await fetch(origin+'/health')).status,200);
+ const locationModule=await fetch(origin+'/location.mjs');assert.equal(locationModule.status,200);assert.match(locationModule.headers.get('content-type'),/javascript/);
+ assert.match(await (await fetch(origin+'/')).text(),/① 位置情報を許可する/);
  assert.match(await (await fetch(origin+'/')).text(),/親指/);
  assert.equal((await fetch(origin+'/../server.mjs')).status,404);
  const a=await client(),b=await client();clients.push(a,b);

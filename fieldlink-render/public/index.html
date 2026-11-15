@@ -13,7 +13,18 @@
    <div id="difficultyBlock"><label class="field-label">NPCのレベル <span>DIFFICULTY</span></label><div id="difficulty" class="difficulties"><button data-level="0"><i>Ⅰ</i>簡単</button><button class="selected" data-level="1"><i>Ⅱ</i>普通</button><button data-level="2"><i>Ⅲ</i>難しい</button><button data-level="3"><i>Ⅳ</i>難しすぎる</button></div><p id="difficultyHint" class="tiny">動く相手に狙いを合わせて、5体撃破を目指そう。</p></div>
    <div id="onlineBlock" hidden><p class="tiny">QR接続テスト · 2人対戦<br>ルームを作り、友達にQRコードを見せよう。</p><label class="field-label" for="roomCode">ルームコード</label><div class="inline-input"><input id="roomCode" maxlength="8" placeholder="8文字のコード" autocomplete="off"><button id="joinRoom" class="square-button" aria-label="ルームに参加">→</button></div><p class="tiny">Bluetoothによる近接確認は未対応です。これはQR接続のテストモードです。</p></div>
    <label class="field-label">操作方法 <span>CONTROL</span></label><div class="mode-tabs control-tabs"><button id="keyboardMode" class="selected"><span data-icon="keyboard"></span>特殊キー操作</button><button id="physicalMode"><span data-icon="compass"></span>本体で操作</button></div>
-   <div id="sensorSetup" hidden><button id="locationButton" class="text-button">位置情報を有効にする</button><p id="locationStatus" class="tiny">Wi-Fiなど、端末が選んだ位置情報を使用</p><button id="orientationButton" class="text-button">本体の向きを有効にする</button><p id="orientationStatus" class="tiny">実際の方角を取得し、構えの上下を調整します</p></div>
+   <div id="sensorSetup" class="sensor-setup">
+    <button id="locationButton" class="primary permission-button">① 位置情報を許可する</button>
+    <p id="locationStatus" class="tiny" role="status" aria-live="polite">ボタンを押して、端末の確認画面で「許可」を選んでね。</p>
+    <details id="locationHelp" class="permission-help"><summary>許可画面が出ないとき</summary>
+     <p>許可済みの場合は、確認画面は出ずに現在地を取得します。</p>
+     <p>拒否したことがある場合は、ブラウザーのこのサイトの設定で「位置情報」を「許可」に変更してね。端末側の位置情報もオンにします。</p>
+     <p>アプリ内で開いている場合は、メニューの「ブラウザーで開く」を選ぶか、URLをコピーしてSafari・Chrome・Edgeで開いてね。</p>
+     <a href="https://fieldlink-arena-yuuki.onrender.com/" target="_blank" rel="noopener">ゲームのURLを開く ↗</a>
+     <div class="permission-help-actions"><button id="copyGameLink" class="secondary">URLをコピー</button><button id="retryLocation" class="secondary">もう一度確認する</button></div>
+    </details>
+    <button id="orientationButton" class="secondary permission-button">② 本体の向きを許可する</button><p id="orientationStatus" class="tiny">位置情報の次に、向きのセンサーを許可してね。</p>
+   </div>
    <div class="switch-line"><span><span data-icon="leaf"></span>省エネモード<small>通信・処理の回数を減らす</small></span><label class="switch"><input type="checkbox" id="lowPower" aria-label="省エネモード"><span></span></label></div>
    <div class="setup-footer"><button id="startButton" class="primary" disabled><span data-icon="play"></span><span id="startLabel">接続を待っています</span><span>↗</span></button><p class="tiny center" id="setupNote">ピストルは弾数無限。まずは気軽に一戦！</p></div>
   </aside>

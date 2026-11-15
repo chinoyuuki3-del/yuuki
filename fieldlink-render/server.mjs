@@ -55,7 +55,7 @@ const http=createServer(async(req,res)=>{try{
   if(url.pathname==='/health'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({ok:true,version:'0.1.0',rooms:rooms.size}));return;}
   if(url.pathname==='/qr.svg'){const c=(url.searchParams.get('code')||'').toUpperCase();if(!/^[A-F0-9]{8,10}$/.test(c)){res.writeHead(400);res.end('Invalid code');return;}const key=url.searchParams.get('kind')==='friend'?'friend':'room';const protocol=req.headers['x-forwarded-proto']==='https'?'https':process.env.RENDER?'https':'http';const origin=process.env.PUBLIC_ORIGIN||protocol+'://'+req.headers.host;const svg=await QRCode.toString(origin+'/?'+key+'='+c,{type:'svg',margin:2,width:240,color:{dark:'#16252b',light:'#ffffff'}});res.setHeader('Content-Type','image/svg+xml');res.setHeader('Cache-Control','no-store');res.end(svg);return;}
   const path=url.pathname==='/'?'index.html':url.pathname.slice(1);
-  if(!['index.html','app.mjs','engine.mjs','style.css','icon.svg','manifest.webmanifest'].includes(path)){res.writeHead(404);res.end('Not found');return;}
+  if(!['index.html','app.mjs','location.mjs','engine.mjs','style.css','icon.svg','manifest.webmanifest'].includes(path)){res.writeHead(404);res.end('Not found');return;}
   const data=await readFile(root+path);res.setHeader('Content-Type',contentTypes['.'+path.split('.').pop()]||'text/plain');res.setHeader('Cache-Control','no-cache');res.end(data);
 }catch{res.writeHead(500);res.end('Server error');}});
 const wss=new WebSocketServer({noServer:true,maxPayload:24000,perMessageDeflate:false});

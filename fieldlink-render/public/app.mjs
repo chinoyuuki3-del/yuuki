@@ -1,3 +1,4 @@
+import {locationAccess} from './location.mjs';
 import {WEAPONS,GOODS,DIFFICULTIES,clamp,distance} from './engine.mjs';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const icons={play:'<path d="m8 4 12 8-12 8z"/>',keyboard:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h1m3 0h1m3 0h1m3 0h1M6 13h1m3 0h1m3 0h1m3 0h1M7 16h10"/>',compass:'<circle cx="12" cy="12" r="9"/><path d="m16 8-2 6-6 2 2-6z"/>',leaf:'<path d="M20 3C6 2 2 9 5 16c6 7 15 0 15-13Z M4 21 15 9"/>',crosshair:'<circle cx="12" cy="12" r="7"/><path d="M12 1v6m0 10v6M1 12h6m10 0h6"/>',volume:'<path d="m11 4-6 5H2v6h3l6 5zM16 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/>',bluetooth:'<path d="m7 6 11 12-6 4V2l6 5L7 18"/>'};
@@ -57,18 +58,41 @@ $('#addFriend').onclick=()=>transmit({type:'friendRequest',code:$('#friendInput'
 $('#copyFriend').onclick=async()=>{if(!app.profile)return;const link=location.origin+'/?friend='+app.profile.id;try{await navigator.clipboard.writeText(link);toast('招待リンクをコピーしました');}catch{info('友達コード',app.profile.id+' を友達に伝えてね。');}};
 $('#bluetoothInfo').onclick=()=>info('Bluetoothはアプリ対応が必要です','ブラウザーは、他のスマホへ自分をBluetoothの友達として知らせる機能を共通で提供していません。ウェブ版ではQRコードを使って、お互いが確認して友達になります。Bluetoothの自動発見と近接スタートは未実装です。');
 function handleInvite(){const q=new URLSearchParams(location.search);if(q.has('friend')){page('friends');$('#friendInput').value=q.get('friend').slice(0,10);toast('コードを確認して、矢印ボタンで申請してね。');}if(q.has('room')){setPractice(false);$('#roomCode').value=q.get('room').slice(0,8);toast('ルームコードが入力されました。矢印ボタンで参加しよう。');}if(q.has('friend')||q.has('room'))history.replaceState({},'',location.pathname);}
-function updateStart(){const physicalReady=app.control!=='physical'||(app.physical&&app.physical.accuracy<=20&&app.orientation);$('#startButton').disabled=!app.connected||!physicalReady;$('#startLabel').textContent=!app.connected?'接続を待っています':!physicalReady?'位置と向きを設定してね':app.practice?'トレーニングを始める':'対戦ルームを作る';}
+function updateStart(){
+ const needsLocation=app.control==='physical'&&!app.physical;
+ const needsDirection=app.control==='physical'&&!app.orientation;
+ const inaccurate=app.control==='physical'&&app.physical?.accuracy>20;
+ const locating=['requesting','waiting'].includes(app.locationPhase);
+ $('#startButton').disabled=locating||inaccurate||(!needsLocation&&!needsDirection&&!app.connected);
+ $('#startLabel').textContent=locating?'端末の許可・位置取得を待っています':needsLocation?'① 位置情報を許可する':inaccurate?'位置の精度が上がるのを待っています':needsDirection?'② 本体の向きを許可する':!app.connected?'接続を待っています':app.practice?'トレーニングを始める':'対戦ルームを作る';
+}
 function setPractice(v){app.practice=v;$('#practiceMode').classList.toggle('selected',v);$('#onlineMode').classList.toggle('selected',!v);$('#difficultyBlock').hidden=!v;$('#onlineBlock').hidden=v;$('#setupNote').textContent=v?'ピストルは弾数無限。まずは気軽に一戦！':'QRコードで接続する2人対戦テスト';updateStart();}
 $('#practiceMode').onclick=()=>setPractice(true);$('#onlineMode').onclick=()=>setPractice(false);
 $$('[data-level]').forEach(b=>b.onclick=()=>{app.difficulty=Number(b.dataset.level);$$('[data-level]').forEach(x=>x.classList.toggle('selected',x===b));$('#difficultyHint').textContent=['ゆっくり動くNPCで、操作を覚えよう。','動く相手に狙いを合わせて、5体撃破を目指そう。','素早い敵とボムに注意。高さも使いこなそう。','正確な照準と激しい攻撃。本気の挑戦！'][app.difficulty];});
 function setControl(v){app.control=v;$('#keyboardMode').classList.toggle('selected',v==='keyboard');$('#physicalMode').classList.toggle('selected',v==='physical');$('#sensorSetup').hidden=v!=='physical';updateStart();}
 $('#keyboardMode').onclick=()=>setControl('keyboard');$('#physicalMode').onclick=()=>setControl('physical');
 $('#lowPower').checked=app.low;$('#lowPower').onchange=e=>{app.low=e.target.checked;store.set('fl-low',app.low?'1':'0');toast(app.low?'省エネON。爆発物とジャンプは使えません':'通常モードにしました');};
-$('#locationButton').onclick=()=>{if(!navigator.geolocation){toast('この端末では位置情報を取得できません');return;}if(app.geoWatch!==null)navigator.geolocation.clearWatch(app.geoWatch);$('#locationStatus').textContent='位置を取得しています…';app.geoWatch=navigator.geolocation.watchPosition(pos=>{const p={lat:pos.coords.latitude,lon:pos.coords.longitude,accuracy:pos.coords.accuracy};app.physical=p;$('#locationStatus').textContent='位置情報の精度 ±'+Math.round(p.accuracy)+'m'+(p.accuracy>20?' · キー操作をおすすめします':' · 準備OK');updateStart();if(app.room?.control==='physical')transmit({type:'location',location:p});},e=>{app.physical=null;$('#locationStatus').textContent=e.code===1?'許可されていません。ブラウザーの位置情報設定を確認してね':'取得できません。キー・タッチ操作で遊べます';updateStart();},{enableHighAccuracy:!app.low,maximumAge:2000,timeout:15000});};
+const locationHelp=$('#locationHelp');
+const locationControl=locationAccess({nav:navigator,secure:window.isSecureContext,
+ onState(s){
+  app.locationPhase=s.phase;app.physical=s.position;
+  const pending=['requesting','waiting'].includes(s.phase);
+  $('#locationButton').disabled=pending;
+  $('#locationButton').textContent=pending?'許可・位置取得を待っています…':s.phase==='ready'?'位置情報を取り直す':'① 位置情報を許可する';
+  const messages={idle:s.permission==='granted'?'位置情報は許可済みです。ボタンを押すと取得します。':'ボタンを押して、端末の確認画面で「許可」を選んでね。',requesting:s.permission==='granted'?'許可済みです。現在地を取得しています…':'端末の確認画面で「許可」を選んでね。許可済みなら、そのまま現在地を取得します。',waiting:'許可画面が見つからない・進まない場合は、下の案内を確認してね。',denied:'位置情報がブロックされています。下の手順で許可を変更してね。',timeout:'位置の取得に時間がかかっています。端末の位置情報を確認して、もう一度押してね。',unavailable:'現在地を取得できません。端末の位置情報がオンか確認してね。',unsupported:'このブラウザーでは位置情報を使えません。SafariやChromeで開いてね。',insecure:'位置情報にはHTTPSが必要です。下のリンクから開いてね。'};
+  $('#locationStatus').textContent=s.phase==='ready'?'許可済み · 位置の精度 ±'+Math.round(s.position.accuracy)+'m'+(s.position.accuracy>20?'。対戦には20m以内が必要です。正確な位置情報をオンにして、見晴らしのよい場所で待ってね。':' · 位置の準備OK'):messages[s.phase];
+  if(['waiting','denied','timeout','unavailable','unsupported','insecure'].includes(s.phase))locationHelp.open=true;
+  updateStart();
+ },onPosition(p){if(app.room?.control==='physical')transmit({type:'location',location:p});}
+});
+$('#locationButton').onclick=()=>locationControl.request();
+$('#retryLocation').onclick=()=>locationControl.request();
+$('#copyGameLink').onclick=async()=>{try{await navigator.clipboard.writeText('https://fieldlink-arena-yuuki.onrender.com/');toast('URLをコピーしました。SafariやChromeのアドレス欄に貼り付けてね');}catch{info('ブラウザーで開くURL','https://fieldlink-arena-yuuki.onrender.com/');}};
+locationControl.inspect();
 let lastRaw=null;
 function orientation(e){if(e.alpha===null||e.beta===null||e.gamma===null)return;const compass=typeof e.webkitCompassHeading==='number';if(!compass&&!e.absolute){if(!app.orientation)$('#orientationStatus').textContent='地磁気による方角を取得できません。特殊キー操作で練習できます';return;}const alpha=compass?360-e.webkitCompassHeading:e.alpha;const a=alpha*Math.PI/180,b=e.beta*Math.PI/180,c=e.gamma*Math.PI/180;const x=-(Math.cos(a)*Math.sin(c)+Math.sin(a)*Math.sin(b)*Math.cos(c)),y=-(Math.sin(a)*Math.sin(c)-Math.cos(a)*Math.sin(b)*Math.cos(c)),z=-Math.cos(b)*Math.cos(c);lastRaw={yaw:Math.atan2(x,y),pitch:Math.asin(clamp(z,-1,1))};if(!app.calibration)app.calibration={...lastRaw};app.orientation={yaw:lastRaw.yaw,pitch:clamp(lastRaw.pitch-app.calibration.pitch,-1.35,1.35)};$('#orientationStatus').textContent='方角センサーOK · 構えの上下を調整できます';updateStart();}
 $('#orientationButton').onclick=async()=>{if(!('DeviceOrientationEvent'in window)){toast('方向センサーがありません。キー・タッチ操作を使ってね');return;}try{if(typeof DeviceOrientationEvent.requestPermission==='function'){const r=await DeviceOrientationEvent.requestPermission();if(r!=='granted')throw Error('方向センサーが許可されませんでした');}if(lastRaw){app.calibration={...lastRaw};toast('構えの上下を調整しました。左右の向きは方角センサーを使います');}window.removeEventListener('deviceorientation',orientation);window.addEventListener('deviceorientation',orientation);window.removeEventListener('deviceorientationabsolute',orientation);window.addEventListener('deviceorientationabsolute',orientation);$('#orientationStatus').textContent='本体を構えてください。センサーを待っています…';setTimeout(()=>{if(!app.orientation)$('#orientationStatus').textContent='センサーの値を受け取れません。キー操作を使ってね';},4000);}catch(e){toast(e.message);}};
-function begin(){if(app.control==='physical'&&(!app.physical||app.physical.accuracy>20||!app.orientation)){toast('位置情報と本体の向きを設定してください');return;}unlockAudio();app.eventId=0;lastEffect=0;app.shownResult=false;app.state=null;transmit({type:'create',practice:app.practice,difficulty:app.difficulty,control:app.control,low:app.low,location:app.physical});}
+function begin(){if(app.control==='physical'){if(!app.physical){locationControl.request();return;}if(!app.orientation){$('#orientationButton').click();return;}if(app.physical.accuracy>20){toast('位置の精度が20m以内になるまで待ってね');return;}}unlockAudio();app.eventId=0;lastEffect=0;app.shownResult=false;app.state=null;transmit({type:'create',practice:app.practice,difficulty:app.difficulty,control:app.control,low:app.low,location:app.physical});}
 $('#startButton').onclick=begin;$('#joinRoom').onclick=()=>{unlockAudio();app.shownResult=false;app.eventId=0;transmit({type:'join',code:$('#roomCode').value,location:app.physical,low:app.low});};
 $('#readyButton').onclick=()=>transmit({type:'ready'});$('#cancelRoom').onclick=()=>transmit({type:'leave'});$('#leaveButton').onclick=()=>transmit({type:'leave'});
 function roomUpdate(r){const old=app.room;app.room=r;$$('#touchControls button').forEach(b=>b.disabled=r.status!=='playing');if(r.status==='waiting'){if(!$('#roomDialog').open)$('#roomDialog').showModal();$('#roomDisplay').textContent=r.code;if($('#roomQR').dataset.code!==r.code){$('#roomQR').src='/qr.svg?code='+r.code;$('#roomQR').dataset.code=r.code;}$('#roomPlayers').replaceChildren();for(const p of r.players){const row=document.createElement('div'),name=document.createElement('b'),status=document.createElement('span');name.textContent=p.name;status.textContent=p.ready?'準備OK':'準備中';row.append(name,status);$('#roomPlayers').append(row);}const self=r.players.find(p=>p.id===app.profile.id);$('#readyButton').textContent=self?.ready?'準備OKを取り消す':'準備OK！';return;}
