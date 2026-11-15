@@ -17,7 +17,8 @@ function connect(){
     if(m.type==='session'&&!m.room&&app.room){endUI();toast('サーバーの再接続が完了しました。新しい対戦を始められます');}
     if(m.type==='room')roomUpdate(m.room);
     if(m.type==='state'){app.state=m.state;roomUpdate(m.room);updateBattle();}
-    if(m.type==='error'||m.type==='notice')toast(m.message);
+    if(m.type==='error'||m.type==='notice'){toast(m.message);if(app.room)speak(m.message);}
+    if(m.type==='actionApplied'){const self=app.state?.players.find(p=>p.id===app.profile?.id);if(self){self.weapon=m.weapon;self.z=m.height;}if(app.profile)app.profile.ammo=m.ammo;renderProfile();if(m.action==='weapon')speak(WEAPONS[m.weapon].name+'を装備');}
     if(m.type==='left'){endUI();if(m.message)toast(m.message);}
     if(m.type==='friendRequest')friendRequest(m.from);
     if(m.type==='pong'){app.latency=Date.now()-m.time;$('#connectionText').textContent='接続済み · '+app.latency+'ms';}
