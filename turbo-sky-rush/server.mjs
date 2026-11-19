@@ -56,6 +56,15 @@ async function api(req,res,pathname){
   rooms.set(code,{code,name,official:false,raceNo:0,raceStartAt:0,laps:3,createdAt:now()});
   return reply(res,201,{code,name,storage:'memory'});
  }
+ // Let the lobby verify invitation links before entering a 3D session.
+ const lookup=/^\/api\/rooms\/([a-z0-9-]{3,32})$/.exec(pathname);
+ if(lookup&&method==='GET'){
+  retire();
+  const room=rooms.get(lookup[1]);
+  if(!room)return reply(res,404,{error:'room_not_found'});
+  const t=now();
+  return reply(res,200,{room:{code:room.code,name:room.name,raceNo:room.raceNo,players:[...players.values()].filter(p=>p.roomCode===room.code&&p.updatedAt>t-6000).length}});
+ }
  if(pathname==='/api/records'&&method==='GET')return reply(res,200,{car:top('car'),plane:top('plane')});
  if(pathname==='/api/records'&&method==='POST'){
    const b=await parseJson(req),timeMs=Math.round(Number(b.timeMs)),kind=b.kind;
