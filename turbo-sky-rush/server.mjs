@@ -35,7 +35,7 @@ function activeRooms(){
  }));
 }
 function reply(res,status,data){
- res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'});
+ res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff', 'access-control-allow-origin':'*'});
  res.end(JSON.stringify(data));
 }
 async function parseJson(req){
@@ -51,7 +51,9 @@ async function api(req,res,pathname){
  if(pathname==='/api/rooms'&&method==='GET')return reply(res,200,{rooms:activeRooms(),storage:'memory'});
  if(pathname==='/api/rooms'&&method==='POST'){
   const b=await parseJson(req),code=randomBytes(5).toString('hex'),name=clean(b.name,24,'ニュールーム');
-  retire();rooms.set(code,{code,name,official:false,raceNo:0,raceStartAt:0,laps:3,createdAt:now()});
+  retire();
+  if(rooms.size>=103)return reply(res,429,{error:'room_limit_reached'});
+  rooms.set(code,{code,name,official:false,raceNo:0,raceStartAt:0,laps:3,createdAt:now()});
   return reply(res,201,{code,name,storage:'memory'});
  }
  if(pathname==='/api/records'&&method==='GET')return reply(res,200,{car:top('car'),plane:top('plane')});
@@ -88,6 +90,7 @@ async function api(req,res,pathname){
    yaw:numeric(b.yaw,0,100),pitch:numeric(b.pitch,0,100),roll:numeric(b.roll,0,100),speed:numeric(b.speed,0,1000),
    cp:Math.round(Math.max(0,numeric(b.cp,0,10000))),finishMs:Math.round(numeric(b.finishMs,-1,1e9)),
    raceNo:Math.round(Math.max(0,numeric(b.raceNo,0,1e9))),updatedAt:t};
+  if(!players.has(id)&&[...players.values()].filter(other=>other.roomCode===code).length>=32)return reply(res,429,{error:'room_full'});
   players.set(id,p);
   const others=[...players.values()].filter(other=>other.roomCode===code&&other.id!==id&&other.updatedAt>t-6000)
    .map(({id,name,vehicleId,color,x,y,z,vx,vy,vz,yaw,pitch,roll,speed,cp,finishMs,raceNo})=>({id,name,vehicleId,color,x,y,z,vx,vy,vz,yaw,pitch,roll,speed,cp,finishMs,raceNo}));
@@ -102,6 +105,7 @@ const PORT = Number(process.env.PORT||10000);
 const server=http.createServer(async (req,res)=>{
  try{
   const url=new URL(req.url||'/',`http://${req.headers.host||'localhost'}`),pathname=url.pathname;
+  if(pathname.startsWith('/api/')&&req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':'*','access-control-allow-headers':'content-type','access-control-allow-methods':'GET,POST,OPTIONS','access-control-max-age':'86400'});res.end();return;}
   if(pathname.startsWith('/api/'))return await api(req,res,pathname);
   if(req.method!=='GET'&&req.method!=='HEAD')return reply(res,405,{error:'method_not_allowed'});
   if(pathname!=='/'&&pathname!=='/index.html')return reply(res,404,{error:'not_found'});
