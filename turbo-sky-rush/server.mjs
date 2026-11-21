@@ -9,7 +9,10 @@ const BASE = path.dirname(fileURLToPath(import.meta.url));
 const rooms = new Map();
 const players = new Map();
 const records = [];
+// One highest speed per browser/vehicle. Memory-only until a persistent DB is configured.
+const speedRecords = new Map();
 let recordId = 0;
+let speedRecordId = 0;
 const now = () => Date.now();
 const DEFAULTS = [
  ['arena-1', 'サーキット ALPHA'],
@@ -45,6 +48,19 @@ async function parseJson(req){
  return txt ? JSON.parse(txt):{};
 }
 function top(kind){return records.filter(r=>r.kind===kind).sort((a,b)=>a.timeMs-b.timeMs).slice(0,10);}
+function speedTop(kind) {
+ return [...speedRecords.values()].filter(r=>r.kind===kind)
+  .sort((a,b)=>b.speedKmh-a.speedKmh || a.createdAt-b.createdAt)
+  .slice(0,10)
+  .map(({id,name,vehicleId,kind,speedKmh,createdAt})=>({id,name,vehicleId,kind,speedKmh,createdAt}));
+}
+const vehicleSpeedLimitKmh = new Map(Object.entries({
+ starhatch:190,minicute:160,blazecoupe:240,turbosedan:250,roadking:270,
+ thundergt:290,phantomr:320,neondrifter:270,mountainsuv:210,junglebuggy:200,
+ toughtruck:200,deliveryvan:170,formulazero:360,solarev:260,venomgtr:340,
+ retrobug:150,interceptor:280,rallymonster:230,goldemperor:260,hyperrocket:380,
+ skyhawk:288,aeroracer:396,stormfighter:684,phantomv:864,
+}));
 async function api(req,res,pathname){
  const method=req.method;
  if(pathname==='/api/health'&&method==='GET')return reply(res,200,{ok:true,service:'turbo-sky-rush',storage:'memory',players:players.size});
@@ -64,6 +80,26 @@ async function api(req,res,pathname){
   if(!room)return reply(res,404,{error:'room_not_found'});
   const t=now();
   return reply(res,200,{room:{code:room.code,name:room.name,raceNo:room.raceNo,players:[...players.values()].filter(p=>p.roomCode===room.code&&p.updatedAt>t-6000).length}});
+ }
+ if(pathname==='/api/speed-records'&&method==='GET')
+  return reply(res,200,{car:speedTop('car'),plane:speedTop('plane'),storage:'memory'});
+ if(pathname==='/api/speed-records'&&method==='POST'){
+  const b=await parseJson(req), speedKmh=Math.round(Number(b.speedKmh));
+  const vehicleId=String(b.vehicleId??''), playerId=String(b.playerId??'');
+  const vmax=vehicleSpeedLimitKmh.get(vehicleId);
+  if (!playerIdOK(playerId)||!vmax||!Number.isFinite(speedKmh)||speedKmh<30||speedKmh>Math.ceil(vmax*1.65))
+   return reply(res,400,{error:'invalid_speed_record'});
+  const key=`${playerId}:${vehicleId}`, previous=speedRecords.get(key), t=now();
+  if(previous && speedKmh<=previous.speedKmh)return reply(res,200,{ok:true,updated:false});
+  if(previous && t-previous.updatedAt<8000)return reply(res,429,{error:'too_many_updates'});
+  if(!previous && speedRecords.size>=2000) {
+   const oldest=[...speedRecords].sort((a,b)=>a[1].updatedAt-b[1].updatedAt)[0];
+   if(oldest) speedRecords.delete(oldest[0]);
+  }
+  const item={id:previous?.id??++speedRecordId,name:clean(b.name,16),vehicleId,
+   kind:vehicleKinds.get(vehicleId),speedKmh,createdAt:previous?.createdAt??t,updatedAt:t};
+  speedRecords.set(key,item);
+  return reply(res,201,{ok:true,updated:true,rank:speedTop(item.kind).findIndex(r=>r.id===item.id)+1});
  }
  if(pathname==='/api/records'&&method==='GET')return reply(res,200,{car:top('car'),plane:top('plane')});
  if(pathname==='/api/records'&&method==='POST'){
