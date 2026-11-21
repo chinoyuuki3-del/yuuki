@@ -60,6 +60,7 @@ const vehicleSpeedLimitKmh = new Map(Object.entries({
  toughtruck:200,deliveryvan:170,formulazero:360,solarev:260,venomgtr:340,
  retrobug:150,interceptor:280,rallymonster:230,goldemperor:260,hyperrocket:380,
  skyhawk:288,aeroracer:396,stormfighter:684,phantomv:864,
+ wagonx:220,roadster:250,boxtruck:160,skybus:150,cargomaster:468,rocketx:936,
 }));
 async function api(req,res,pathname){
  const method=req.method;
@@ -144,8 +145,8 @@ async function api(req,res,pathname){
  return reply(res,404,{error:'not_found'});
 }
 // VEHICLE_IDS generated from original src/lib/vehicles.ts by build step; fallback list is kept in sync below.
-const vehicleIDs = new Set(["starhatch", "minicute", "blazecoupe", "turbosedan", "roadking", "thundergt", "phantomr", "neondrifter", "mountainsuv", "junglebuggy", "toughtruck", "deliveryvan", "formulazero", "solarev", "venomgtr", "retrobug", "interceptor", "rallymonster", "goldemperor", "hyperrocket", "skyhawk", "aeroracer", "stormfighter", "phantomv"]);
-const vehicleKinds = new Map([["starhatch", "car"], ["minicute", "car"], ["blazecoupe", "car"], ["turbosedan", "car"], ["roadking", "car"], ["thundergt", "car"], ["phantomr", "car"], ["neondrifter", "car"], ["mountainsuv", "car"], ["junglebuggy", "car"], ["toughtruck", "car"], ["deliveryvan", "car"], ["formulazero", "car"], ["solarev", "car"], ["venomgtr", "car"], ["retrobug", "car"], ["interceptor", "car"], ["rallymonster", "car"], ["goldemperor", "car"], ["hyperrocket", "car"], ["skyhawk", "plane"], ["aeroracer", "plane"], ["stormfighter", "plane"], ["phantomv", "plane"]]);
+const vehicleIDs = new Set(["starhatch", "minicute", "blazecoupe", "turbosedan", "roadking", "thundergt", "phantomr", "neondrifter", "mountainsuv", "junglebuggy", "toughtruck", "deliveryvan", "formulazero", "solarev", "venomgtr", "retrobug", "interceptor", "rallymonster", "goldemperor", "hyperrocket", "skyhawk", "aeroracer", "stormfighter", "phantomv", "wagonx", "roadster", "boxtruck", "skybus", "cargomaster", "rocketx"]);
+const vehicleKinds = new Map([["starhatch", "car"], ["minicute", "car"], ["blazecoupe", "car"], ["turbosedan", "car"], ["roadking", "car"], ["thundergt", "car"], ["phantomr", "car"], ["neondrifter", "car"], ["mountainsuv", "car"], ["junglebuggy", "car"], ["toughtruck", "car"], ["deliveryvan", "car"], ["formulazero", "car"], ["solarev", "car"], ["venomgtr", "car"], ["retrobug", "car"], ["interceptor", "car"], ["rallymonster", "car"], ["goldemperor", "car"], ["hyperrocket", "car"], ["skyhawk", "plane"], ["aeroracer", "plane"], ["stormfighter", "plane"], ["phantomv", "plane"], ["wagonx","car"], ["roadster","car"], ["boxtruck","car"], ["skybus","car"], ["cargomaster","plane"], ["rocketx","plane"]]);
 const PORT = Number(process.env.PORT||10000);
 const server=http.createServer(async (req,res)=>{
  try{
